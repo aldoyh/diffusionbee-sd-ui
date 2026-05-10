@@ -118,3 +118,30 @@ References
 5) https://github.com/huggingface/diffusers
 
  
+
+## Installing Models from HuggingFace
+You can use the provided installer script to seamlessly download and configure HuggingFace models. The script requires the HuggingFace `huggingface_hub` package which it can install automatically, and an API token.
+
+```bash
+# Export your token
+export HF_TOKEN=your_huggingface_api_token
+
+# Run the installer
+python3 install_hf_model.py \
+  --model-id runwayml/stable-diffusion-v1-5 \
+  --filename v1-5-pruned-emaonly.ckpt \
+  --output-name stable-diffusion-v1-5
+```
+
+Once installed, restart DiffusionBee or refresh the models list and the newly downloaded model will be available!
+
+### Automated Top Models Installer
+We also provide an automated script to download the most popular (highest liked) text-to-image models from Hugging Face automatically:
+
+```bash
+# Export your token
+export HF_TOKEN=your_huggingface_api_token
+
+# Automatically download and install top 5 models
+python3 install_top_hf_models.py --limit 5
+```
