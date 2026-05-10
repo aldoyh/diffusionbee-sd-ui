@@ -136,7 +136,7 @@ python3 install_hf_model.py \
 Once installed, restart DiffusionBee or refresh the models list and the newly downloaded model will be available!
 
 ### Automated Top Models Installer
-We also provide an automated script to download the most popular (highest liked) text-to-image models from Hugging Face automatically:
+We also provide an automated script to download the most popular text-to-image models from the native DiffusionBee model repository. It automatically falls back to fetching the highest liked models from Hugging Face if you request a larger limit than what's available natively.
 
 ```bash
 # Export your token
