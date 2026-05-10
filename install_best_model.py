@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 """
-DiffusionBee Automated Top Models Installer
-===========================================
+DiffusionBee Best Model Installer
+=================================
 
-This script automates fetching the top downloaded text-to-image models
-from DiffusionBee's native list, and falls back to Hugging Face
-if more models are requested.
+This script automates fetching the absolute best text-to-image model
+available. It tries the official DiffusionBee top list first.
+If the first fails, it moves to the second, and so on. If all fail,
+it falls back to the top liked model on HuggingFace.
 
 Usage:
-  python3 install_top_hf_models.py --api-key YOUR_HF_TOKEN --limit 5
+  python3 install_best_model.py --api-key YOUR_HF_TOKEN
 
 Or set HF_TOKEN environment variable:
   export HF_TOKEN=YOUR_HF_TOKEN
-  python3 install_top_hf_models.py --limit 5
+  python3 install_best_model.py
 """
 
 import argparse
@@ -21,6 +22,7 @@ import os
 import subprocess
 import json
 import urllib.request
+import shutil
 import time
 
 def print_header(msg):
@@ -30,7 +32,7 @@ def print_header(msg):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Automated top models installer from DiffusionBee and HuggingFace",
+        description="Automated best model installer for DiffusionBee",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__
     )
@@ -39,8 +41,6 @@ def parse_args():
 
     parser.add_argument("--api-key", type=str, required=not bool(hf_token), default=hf_token,
                         help="HuggingFace API Key (can also be set via HF_TOKEN env var)")
-    parser.add_argument("--limit", type=int, default=3,
-                        help="Number of top models to find and install (default: 3)")
 
     return parser.parse_args()
 
@@ -67,7 +67,7 @@ def get_native_models():
         return []
 
 def get_top_hf_models(api, limit):
-    print_header(f"Querying Top {limit} text-to-image models from Hugging Face")
+    print_header(f"Querying Top text-to-image models from Hugging Face")
     try:
         models = list(api.list_models(filter="text-to-image", sort="likes", limit=limit))
         print(f"Found {len(models)} Hugging Face models.")
@@ -205,13 +205,13 @@ def register_in_diffusionbee(output_name, out_path, downloaded_path, metadata, d
         with open(assets_json_path, 'w') as f:
             json.dump(assets, f, indent=4)
         print(f"  ✅ Registered model '{output_name}' in DiffusionBee.")
+        return True
     except Exception as e:
         print(f"  ⚠️ Could not automatically register model: {e}")
-
-import shutil
+        return False
 
 def main():
-    print("DiffusionBee - Automated Top Models Installer")
+    print("DiffusionBee - Automated Best Model Installer")
     print("=============================================")
 
     install_requirements()
@@ -220,15 +220,10 @@ def main():
     from huggingface_hub import HfApi
     api = HfApi(token=args.api_key)
 
-    installed_count = 0
-
     # 1. Try Native Models first
     native_models = get_native_models()
     for index, model in enumerate(native_models, 1):
-        if installed_count >= args.limit:
-            break
-
-        print_header(f"[{installed_count+1}/{args.limit}] Processing Native: {model.get('title', model.get('id'))}")
+        print_header(f"Processing Native: {model.get('title', model.get('id'))}")
         download_url = model.get('fallback_url') or model.get('url')
         if not download_url:
             print(f"  ❌ No valid URL found for {model.get('id')}. Skipping.")
@@ -253,39 +248,39 @@ def main():
             else:
                 continue
 
-        register_in_diffusionbee(output_name, out_path, downloaded_path, metadata, description=model.get('description'))
-        installed_count += 1
+        if register_in_diffusionbee(output_name, out_path, downloaded_path, metadata, description=model.get('description')):
+            print_header("Process Complete!")
+            print(f"Successfully installed the best native model: {output_name}")
+            print("Restart DiffusionBee or refresh the models list to use it.")
+            sys.exit(0)
 
-    # 2. Fallback to HF Models if limit not reached
-    if installed_count < args.limit:
-        remaining = args.limit - installed_count
-        print_header(f"Fetching {remaining} more from Hugging Face...")
+    # 2. Fallback to HF Models
+    print_header("Native models failed. Falling back to Hugging Face...")
+    hf_models = get_top_hf_models(api, limit=10) # Fetch a few in case top ones fail
 
-        hf_models = get_top_hf_models(api, remaining + 5) # Fetch a bit more in case some fail
+    for model in hf_models:
+        print_header(f"Processing HF: {model.id} (Likes: {model.likes})")
+        filename = find_suitable_weight_file(api, model.id)
+        if not filename:
+            print(f"  ❌ No suitable weight file found for {model.id}. Skipping.")
+            continue
 
-        for model in hf_models:
-            if installed_count >= args.limit:
-                break
+        downloaded_path = download_hf_model(args.api_key, model.id, filename)
+        if not downloaded_path:
+            continue
 
-            print_header(f"[{installed_count+1}/{args.limit}] Processing HF: {model.id} (Likes: {model.likes})")
-            filename = find_suitable_weight_file(api, model.id)
-            if not filename:
-                print(f"  ❌ No suitable weight file found for {model.id}. Skipping.")
-                continue
+        output_name = model.id.replace('/', '_')
+        out_path, metadata = convert_model(downloaded_path, output_name)
 
-            downloaded_path = download_hf_model(args.api_key, model.id, filename)
-            if not downloaded_path:
-                continue
+        if out_path:
+            if register_in_diffusionbee(output_name, out_path, downloaded_path, metadata, description=f"HuggingFace: {model.id}"):
+                print_header("Process Complete!")
+                print(f"Successfully installed the best Hugging Face model: {output_name}")
+                print("Restart DiffusionBee or refresh the models list to use it.")
+                sys.exit(0)
 
-            output_name = model.id.replace('/', '_')
-            out_path, metadata = convert_model(downloaded_path, output_name)
-
-            if out_path:
-                register_in_diffusionbee(output_name, out_path, downloaded_path, metadata, description=f"HuggingFace: {model.id}")
-                installed_count += 1
-
-    print_header("Process Complete!")
-    print("Restart DiffusionBee or refresh the models list to use your new models.")
+    print_header("Failed to install any model.")
+    sys.exit(1)
 
 if __name__ == "__main__":
     main()
