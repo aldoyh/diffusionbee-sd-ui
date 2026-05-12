@@ -1,0 +1,10 @@
+allowBuilds:
+  '@fortawesome/fontawesome-common-types': set this to true or false
+  '@fortawesome/free-solid-svg-icons': set this to true or false
+  bootstrap-vue: true
+  core-js: true
+  electron: true
+  electron-winstaller: set this to true or false
+  fsevents: true
+  ttf2woff2: true
+  yorkie: true

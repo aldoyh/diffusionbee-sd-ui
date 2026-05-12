@@ -1,0 +1,471 @@
+
+> diffusionbee-sd-ui@2.4.0 build
+> vue-cli-service build
+
+All browser targets in the browserslist configuration have supported ES module.
+Therefore we don't build two separate bundles for differential loading.
+
+
+-  Building for production...
+ ERROR  Failed to compile with 2 errors7:41:26 PM
+
+[eslint] 
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/App.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/AssetsManager.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/SDManager.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/StableDiffusion.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/clip_tokeniser/clip_encoder.js
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/clip_tokeniser/html_entities.js
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components/AppletPage.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components/BasicSDApplet.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components/DownloadButton.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components/GenerationGallery.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components/MainToolbar.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components/PagesRouter.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components/SDImageGenerationApplet.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components/image_menu_functions.js
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/ApplicationFrame.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/CircleProgress.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/Form.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/GalleryImage.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/GalleryPane.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/ImageCanvas.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/LoaderModal.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/SplashScreen.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/TwoColAppletLayout.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/icon_library.js
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/inputform/Accordian.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/inputform/BetterSelector.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/inputform/Checkbox.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/inputform/Dropdown.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/inputform/FilePathTextBox.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/inputform/FormInputMixin.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/inputform/ImageInput.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/inputform/InputWithDesc.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/inputform/OutputImage.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/inputform/OutputText.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/inputform/ResolveInputComponent.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/inputform/Slider.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/inputform/Textarea.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/components_bare/inputform/Textbox.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/init_vue_libs.js
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/main.js
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/native_functions_vue_bridge.js
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/pages/ContactUs.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/pages/History.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/pages/Homepage.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/pages/Img2Img.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/pages/Inpainting.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/pages/Logs.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/pages/ModelStore.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/pages/PostProcessImage.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/pages/Settings.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/pages/Training.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/pages/Txt2Img.vue
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/py_vue_bridge.js
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/utils.js
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/utils/controlnet_frontend_utils.js
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src/utils/in_out_paint_utils.js
+  0:0  error  Parsing error: Cannot find module 'babel-eslint'
+Require stack:
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/vue-eslint-parser@9.4.3_eslint@8.57.1/node_modules/vue-eslint-parser/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/configs/flat/base.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/eslint-plugin-vue@9.33.0_eslint@8.57.1/node_modules/eslint-plugin-vue/lib/index.js
+- /Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+
+✖ 56 problems (56 errors, 0 warnings)
+
+
+You may use special comments to disable some warnings.
+Use // eslint-disable-next-line to ignore the next line.
+Use /* eslint-disable */ to ignore all warnings in a file.
+ error  in ./src/StableDiffusion.vue?vue&type=script&lang=js
+
+Module not found: Error: Can't resolve 'moment' in '/Users/aldoyh/Projects/GitHub-apps/diffusionbee-sd-ui/electron_app/src'
+
+ ERROR  Error: Build failed with errors.
