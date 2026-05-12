@@ -27,8 +27,17 @@ function start_bridge() {
     }
     else{
         const path = require('path');
-        let backend_path =  path.join(path.dirname(__dirname), 'core' , 'diffusionbee_backend' );
-        python = require('child_process').spawn( backend_path  );
+        let backend_path =  path.join(path.dirname(__dirname), 'core' , 'stable_diffusion' , 'diffusionbee_backend' );
+        let backend_script_path =  path.join(path.dirname(__dirname), 'core' , 'stable_diffusion' , 'diffusionbee_backend.py' );
+        
+        if (fs.existsSync(backend_path)) {
+            python = require('child_process').spawn( backend_path  );
+        } else if (fs.existsSync(backend_script_path)) {
+            python = require('child_process').spawn('python3', [backend_script_path]);
+        } else {
+            console.error("Backend not found at: " + backend_path + " or " + backend_script_path);
+            // Fallback or handle error
+        }
     }
     
    

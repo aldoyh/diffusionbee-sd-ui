@@ -1,6 +1,6 @@
 {
   "name": "DiffusionBee",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "build_number": "0029",
   "website": "https://diffusionbee.com",
   "description": "Diffusion Bee - Stable Diffusion App.",
@@ -20,6 +20,7 @@
   "main": "background.js",
   "dependencies": {
     "@codekraft-studio/vue-record": "^0.0.3",
+    "@fortawesome/fontawesome-svg-core": "^7.2.0",
     "@fortawesome/free-solid-svg-icons": "^5.15.4",
     "@fortawesome/vue-fontawesome": "^2.0.6",
     "apexcharts": "^3.33.0",

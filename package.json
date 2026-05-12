@@ -1,0 +1,11 @@
+{
+  "name": "diffusionbee-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd electron_app && PYTHON_PATH=/usr/bin/python3 BUILD_ARCH=arm64 BACKEND_BUILD_PATH=../backends npm run electron:build",
+    "electron:build": "cd electron_app && PYTHON_PATH=/usr/bin/python3 BUILD_ARCH=arm64 BACKEND_BUILD_PATH=../backends npm run electron:build",
+    "serve": "cd electron_app && npm run electron:serve",
+    "install": "cd electron_app && npm install"
+  }
+}
