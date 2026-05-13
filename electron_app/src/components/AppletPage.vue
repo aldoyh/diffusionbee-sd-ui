@@ -35,9 +35,9 @@
                  <p style="color:red"> Error : {{ backend_error  }} </p>
             </div>
             
-            <div v-if="!backend_error" style="padding: 20px"> 
-                <Form ref="output_form"  :form_data="output_form"  :form_values="out_vals" :form_save_key="'out'+applet_id"  ></Form>
-                
+            <div v-if="!backend_error" style="padding: 20px">
+                <FormComponent ref="output_form"  :form_data="output_form"  :form_values="out_vals" :form_save_key="'out'+applet_id"  ></FormComponent>
+
             </div>
              
         </template>
@@ -47,7 +47,7 @@
 <script>
 
 import BasicSDApplet from "../components/BasicSDApplet.vue"
-import Form from "../components_bare/Form.vue"
+import FormComponent from "../components_bare/Form.vue"
 import MoonLoader from 'vue-spinner/src/MoonLoader.vue'
 
 export default {
@@ -55,12 +55,12 @@ export default {
     props: {
         app:Object,
         input_form : Array,
-        applet_id: String, 
+        applet_id: String,
         output_form:Array,
         is_stop_avail:Boolean
 
     },
-    components: { BasicSDApplet, Form , MoonLoader},
+    components: { BasicSDApplet, FormComponent , MoonLoader},
     mounted() {
         this.stable_diffusion = this.app.stable_diffusion
         this.is_mounted = true

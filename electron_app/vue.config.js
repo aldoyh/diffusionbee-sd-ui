@@ -1,8 +1,9 @@
+let build_config = {};
 try {
-    var build_config = require('./build_config.json');
+    build_config = require('./build_config.json');
     console.log(build_config + "\n\n\n\n\n")
 } catch (err) {
-    var build_config = {}
+    build_config = {}
 }
 
 

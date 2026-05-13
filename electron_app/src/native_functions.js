@@ -1,8 +1,5 @@
-import { ipcMain, dialog, clipboard } from 'electron'
-import { app , screen } from 'electron'
+const { ipcMain, dialog, clipboard, app, screen } = require('electron')
 import settings from 'electron-settings';
-
-const path = require('path');
 
 var win;
 
@@ -146,7 +143,7 @@ ipcMain.on('copy_to_clipboard', (event, arg) => {
 })
 
 
-ipcMain.on('get_from_clipboard', (event, arg) => {
+ipcMain.on('get_from_clipboard', (event) => {
     event.returnValue = clipboard.readText();
 })
 
@@ -162,7 +159,7 @@ ipcMain.on('show_dialog_on_quit', (event, msg) => {
 })
 
 
-ipcMain.on('dont_show_dialog_on_quit', (event, arg) => {
+ipcMain.on('dont_show_dialog_on_quit', (event) => {
     if(win)
         win.show_dialog_on_quit = false;
     event.returnValue = 'ok';
@@ -170,7 +167,7 @@ ipcMain.on('dont_show_dialog_on_quit', (event, arg) => {
 })
 
 
-ipcMain.on('get_instance_id', (event, arg) => {
+ipcMain.on('get_instance_id', (event) => {
     if (settings.hasSync('instance_id')){
         event.returnValue =  settings.getSync('instance_id')
         return;
@@ -182,7 +179,7 @@ ipcMain.on('get_instance_id', (event, arg) => {
 })
 
 
-ipcMain.on('unfreeze_win', (event, arg) => {
+ipcMain.on('unfreeze_win', (event) => {
 
     if (win) {
 	win.savable=true;
@@ -224,7 +221,7 @@ ipcMain.on('unfreeze_win', (event, arg) => {
 
 
 
-ipcMain.on('freeze_win', (event, arg) => {
+ipcMain.on('freeze_win', (event) => {
 
     if (win) {
 	win.savable=false;
@@ -251,14 +248,14 @@ ipcMain.on('freeze_win', (event, arg) => {
 
 
 
-ipcMain.on('show_about', (event, arg) => {
+ipcMain.on('show_about', (event) => {
 
     if (win) {
 
         if(is_windows)
         {
             let about_content = require('../package.json').name + "\n" + "Version " + require('../package.json').version + " (" + require('../package.json').build_number + ")\n" + require('../package.json').description;
-            const choice = require('electron').dialog.showMessageBoxSync(this, {
+            require('electron').dialog.showMessageBoxSync(this, {
                 buttons: ['Okay'],
                 title: require('../package.json').name ,
                 message: about_content
@@ -304,10 +301,10 @@ ipcMain.on('native_confirm', (event, arg) => {
 
 
 
-ipcMain.on('close_window', (event, arg) => {
+ipcMain.on('close_window', (event) => {
 
     if (win) {
-        
+
         win.close()
         event.returnValue = true ;
     }
@@ -323,15 +320,15 @@ ipcMain.on('close_window', (event, arg) => {
 ipcMain.on('native_alert', (event, arg) => {
 
     if (win) {
-        
-        const choice = require('electron').dialog.showMessageBoxSync(this, {
+
+        require('electron').dialog.showMessageBoxSync(this, {
             buttons: ['Okay'],
             title: require('../package.json').name ,
             message: arg
         });
-        
+
     }
-    
+
     event.returnValue = true ;
 
 })
@@ -461,7 +458,7 @@ function run_realesrgan(input_path , cb ){
         console.error(`sr stderr: ${data}`);
     });
 
-    proc.on('close', (code) => {
+    proc.on('close', () => {
         if (fs.existsSync(out_path)) {
             cb(out_path);
         }
@@ -517,20 +514,26 @@ function add_custom_pytorch_models(pytorch_model_path, model_name, convert_param
         if(convert_params.delete_origional_always){
             try{
                 fs.unlinkSync(pytorch_model_path);
-            } catch {}
+            } catch (err) {
+                console.error('Error deleting file:', err);
+            }
         }
 
         if(code != 0){
             cb({success:false , error:errors  })
             try{
                 fs.unlinkSync(out_path);
-            } catch {}
+            } catch (err) {
+                console.error('Error deleting file:', err);
+            }
         }
         else{
             if(convert_params.delete_origional_on_success){
                 try{
                     fs.unlinkSync(pytorch_model_path);
-                } catch {}
+                } catch (err) {
+                    console.error('Error deleting file:', err);
+                }
             }
 
             let converted_model_data = {}
@@ -565,7 +568,7 @@ ipcMain.handle('run_realesrgan', async (event, arg) => {
 
 
 
-ipcMain.on('list_imported_models', (event, arg) => {
+ipcMain.on('list_imported_models', (event) => {
     const path = require('path');
     const fs = require('fs');
     const homedir = require('os').homedir();
@@ -583,7 +586,7 @@ ipcMain.on('list_imported_models', (event, arg) => {
 
 
 
-ipcMain.on('get_assets_dir', (event, arg) => {
+ipcMain.on('get_assets_dir', (event) => {
     const path = require('path');
     const fs = require('fs');
     const homedir = require('os').homedir();
@@ -599,9 +602,8 @@ ipcMain.on('get_assets_dir', (event, arg) => {
 
 
 ipcMain.on('download-file', (event, url, dest, downloadId) => {
-  
+
   const fs = require('fs');
-  const path = require('path');
 
   const file = fs.createWriteStream(dest);
   const request = require('request');

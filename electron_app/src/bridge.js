@@ -1,4 +1,4 @@
-import { ipcMain, dialog, app } from 'electron'
+const { ipcMain, dialog, app } = require('electron')
 
 var win;
 var python;
@@ -9,8 +9,6 @@ var is_app_closing = false;
 var last_few_err = ""
 
 let RESTART_BACKEND_ON_CLOSE = false
-
-const path = require('path');
 
 function start_bridge() {
 
@@ -84,7 +82,7 @@ function start_bridge() {
              win.webContents.send('to_renderer', 'adlg ' + data.toString('utf8') );
     });
 
-    python.on('close', (code) => {
+    python.on('close', () => {
         // if( code != 0 )
         // {
         // 	dialog.showMessageBox("Backend quit unexpectedly")

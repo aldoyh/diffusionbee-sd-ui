@@ -24,7 +24,7 @@ import Vue from 'vue'
 // TODO: add conditional rendering of some form elements based on values of other elements
 
 export default {
-    name: 'Form',
+    name: 'FormComponent',
     props: {
         form_data : Array , // [ {...} , {} ]
         is_disabled : Boolean, 

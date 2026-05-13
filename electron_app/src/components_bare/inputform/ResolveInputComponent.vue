@@ -10,7 +10,7 @@
 import Dropdown from "./Dropdown.vue"
 import Slider from "./Slider.vue"
 import Textbox from "./Textbox.vue"
-import Textarea from "./Textarea.vue"
+import TextareaComponent from "./Textarea.vue"
 import ImageInput from "./ImageInput.vue"
 import Checkbox from "./Checkbox.vue"
 import FilePathTextBox from "./FilePathTextBox.vue"
@@ -23,10 +23,10 @@ import BetterSelector from "./BetterSelector.vue"
 export default {
     name: 'ResolveInputComponent',
     props: {
-        config: Object , 
+        config: Object,
         form_values: Object,
     },
-    components: { 'Dropdown':Dropdown , 'Slider':Slider, 'Textbox':Textbox , 'Textarea':Textarea, 'ImageInput':ImageInput , 'Checkbox':Checkbox , 'FilePathTextBox':FilePathTextBox , OutputText:OutputText, OutputImage:OutputImage , BetterSelector:BetterSelector },
+    components: { 'Dropdown':Dropdown , 'Slider':Slider, 'Textbox':Textbox , 'TextareaInput':TextareaComponent, 'ImageInput':ImageInput , 'Checkbox':Checkbox , 'FilePathTextBox':FilePathTextBox , OutputText:OutputText, OutputImage:OutputImage , BetterSelector:BetterSelector },
     beforeCreate: function () {
          this.$options.components.InputWithDesc = require('./InputWithDesc.vue').default // use this as circular
          this.$options.components.Accordian = require('./Accordian.vue').default // use this as circular

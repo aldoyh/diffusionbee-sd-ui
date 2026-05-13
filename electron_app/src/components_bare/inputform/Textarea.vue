@@ -20,7 +20,7 @@ import { icon_library } from "../icon_library.js"
 import Vue from 'vue'
 
 export default {
-    name: 'Textarea',
+    name: 'TextareaComponent',
     mixins: [FormInputMixin],
     props: {
          config: Object , 

@@ -1,20 +1,12 @@
 ﻿'use strict'
 
 
-import { app, protocol, BrowserWindow, nativeTheme, ipcMain , Menu} from 'electron'
-import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
-import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
-import contextMenu from 'electron-context-menu'
+import { app, protocol, BrowserWindow, nativeTheme, Menu} from 'electron'
+import createProtocol from 'vue-cli-plugin-electron-builder/lib/createProtocol'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
 const electronLocalshortcut = require('electron-localshortcut')
 import settings from 'electron-settings';
-
-
-import { start_bridge, bind_window_bridge } from './bridge.js'
-import { bind_window_native_functions } from "./native_functions.js"
-
-start_bridge();
 
 
 let is_windows = process.platform.startsWith('win');
@@ -43,9 +35,16 @@ function save_window_size() {
 	settings.set('windowPosState', windowState);
 }
 
-contextMenu({
-	showSaveImageAs: true
-});
+function installContextMenu() {
+	try {
+		const contextMenu = require('electron-context-menu')
+		contextMenu({
+			showSaveImageAs: true
+		})
+	} catch (e) {
+		console.warn('Context menu helper unavailable:', e.toString())
+	}
+}
 
 async function createWindow() {
 	// Create the browser window.
@@ -79,9 +78,9 @@ async function createWindow() {
 	// win.setResizable(false);
 	win.setMaximizable(false);
 
-	// save the window state on resize , move, etc 
+	// save the window state on resize , move, etc
 	['resize', 'move'].forEach(event => {
-	  win.on(event, save_window_size);
+		win.on(event, save_window_size);
 	});
 
 
@@ -138,9 +137,18 @@ app.on('activate', () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', async () => {
+	installContextMenu()
+
+	const [{ start_bridge, bind_window_bridge }, { bind_window_native_functions }] = await Promise.all([
+		import('./bridge.js'),
+		import('./native_functions.js')
+	])
+
+	start_bridge()
+
 	if (isDevelopment && !process.env.IS_TEST) {
-		// Install Vue Devtools
 		try {
+			const { default: installExtension, VUEJS_DEVTOOLS } = await import('electron-devtools-installer')
 			await installExtension(VUEJS_DEVTOOLS)
 		} catch (e) {
 			console.error('Vue Devtools failed to install:', e.toString())

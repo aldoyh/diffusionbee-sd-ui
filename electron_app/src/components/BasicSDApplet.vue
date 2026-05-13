@@ -3,7 +3,7 @@
         
         <template v-slot:input_workspace>
               <slot name="input_workspace_pre_form"></slot>
-              <Form ref="form"  :form_data="input_form_elements_processed"  :form_values="sd_options" :form_save_key="'1fdaedjdfddeef1'+name" :tags="all_tags" ></Form>
+              <FormComponent ref="form"  :form_data="input_form_elements_processed"  :form_values="sd_options" :form_save_key="'1fdaedjdfddeef1'+name" :tags="all_tags" ></FormComponent>
               <div @click="$refs.form.reset_to_default()" class="l_button" style="margin-left:-10px"> Reset to default </div>
               <slot name="input_workspace_post_form"></slot>
         </template>
@@ -29,7 +29,7 @@
 </template>
 <script>
 
-import Form from "../components_bare/Form.vue"
+import FormComponent from "../components_bare/Form.vue"
 import TwoColAppletLayout from "../components_bare/TwoColAppletLayout.vue"
 import DownloadButton from "./DownloadButton.vue"
 import Vue from 'vue'
@@ -56,15 +56,15 @@ function prep_sd_options(options){
 export default {
     name: 'BasicSDApplet',
     props: {
-        app:Object, 
+        app:Object,
         input_form : Array,
         sd_options: Object,
         name:String,
         form_tags: Array,
-        required_assets : Array, 
+        required_assets : Array,
         model_options_types : Array, // what kind of models should it show in teh dropdown ( sd, sd_inpaint etc )
     },
-    components: {Form  , TwoColAppletLayout, DownloadButton },
+    components: {FormComponent  , TwoColAppletLayout, DownloadButton },
     mounted() {
 
     },
