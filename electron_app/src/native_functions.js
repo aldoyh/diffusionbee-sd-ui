@@ -638,6 +638,24 @@ ipcMain.on('get_homedir', (event) => {
     event.returnValue = homedir;
 });
 
+ipcMain.on('file_exists', (event, fpath) => {
+    const fs = require('fs');
+    try {
+        event.returnValue = !!(fpath && fs.existsSync(fpath));
+    } catch {
+        event.returnValue = false;
+    }
+});
+
+ipcMain.on('to_file_url', (event, fpath) => {
+    const { pathToFileURL } = require('url');
+    try {
+        event.returnValue = fpath ? pathToFileURL(fpath).href : '';
+    } catch {
+        event.returnValue = '';
+    }
+});
+
 
 ipcMain.on('get_assets_dir', (event) => {
     const path = require('path');

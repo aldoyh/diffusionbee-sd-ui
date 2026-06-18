@@ -1,126 +1,256 @@
-# Diffusion Bee - Stable Diffusion GUI App for MacOS
+# DiffusionBee - Stable Diffusion GUI App for macOS
 
 [![Twitter](https://img.shields.io/twitter/url.svg?label=Follow%20%40divamgupta&style=social&url=https%3A%2F%2Ftwitter.com%2Fdivamgupta)](https://twitter.com/divamgupta)
 
-## Diffusion Bee is the easiest way to run Stable Diffusion locally on your Intel / M1 Mac. Comes with a one-click installer. No dependencies or technical knowledge needed
+DiffusionBee is the easiest way to run Stable Diffusion locally on your Intel / Apple Silicon Mac. Comes with a one-click installer. No dependencies or technical knowledge needed.
 
-* Runs locally on your computer no data is sent to the cloud ( other than request to download the weights or unless you chose to upload an image ).
-* *If you like Diffusion Bee, consider checking <https://Liner.ai> , a one-click tool to train machine learning models*
-
----
-> SCREENSHOTS & DOWNLOAD LOGOS
----
-
-Download at <https://diffusionbee.com/>
+* Runs locally on your computer — no data is sent to the cloud (other than requests to download model weights, unless you choose to upload an image).
+* If you like DiffusionBee, consider checking [Liner.ai](https://Liner.ai), a one-click tool to train machine learning models.
 
 ---
 
-For prompt ideas visit <https://arthub.ai>
+Download at [diffusionbee.com](https://diffusionbee.com/)
 
-Join discord server : <https://discord.gg/t6rC5RaJQn>
+For prompt ideas visit [arthub.ai](https://arthub.ai)
+
+Join the Discord server: [discord.gg/t6rC5RaJQn](https://discord.gg/t6rC5RaJQn)
+
+---
 
 ## Features
 
-* Full data privacy - nothing is sent to the cloud ( unless you chose to upload an image )
-* Clean and easy to use UI with one-click installer
-* Image to image
-* Supported models : - SD 1.x, SD 2.x, SD XL, Inpainting, ControlNet, LoRA
-* Download models from the app
-* In-painting
-* Out-painting
-* Generation history
-* Upscaling images
-* Multiple image sizes
-* Optimized for M1/M2 Chips
-* Runs locally on your computer
-* Negative prompts
-* Advanced prompt options
-* ControlNet
-* **New: Arabic Language Support** (with Tajawal font)
-* **New: DreamBooth Training UI** (Coming soon: backend integration)
+* Full data privacy — nothing is sent to the cloud (unless you choose to upload an image)
+* Clean, easy-to-use UI with one-click installer
+* **New homepage** — chat-style prompt input, model chips, style presets, and history carousel
+* Text to image, image to image, inpainting, outpainting, upscaling
+* Supported models: SD 1.x, SD 2.x, SDXL, FLUX, inpainting, ControlNet, LoRA
+* Download and import models from the app
+* Generation history with search and sorting
+* Optimized for Apple Silicon (M1/M2/M3)
+* Negative prompts and advanced generation options
+* **Arabic language support** with Tajawal font and RTL layout
+* **DreamBooth Training UI** (frontend ready; backend integration coming soon)
 
-## How to use
+## Screenshots
 
-1) Download and start the application
+### Homepage (new welcome screen)
 
-![image](https://user-images.githubusercontent.com/1890549/198916443-c6a2e40a-3d1e-4000-882d-993aa1941391.png)
+![Homepage](docs/screenshots/01-homepage.png)
 
-1) Enter a prompt and click generate
+### Text to image
 
-Text to image:
+![Text to image](docs/screenshots/02-txt2img.png)
 
-![Screenshot 2023-12-13 at 1 19 38 PM](https://github.com/divamgupta/diffusionbee-stable-diffusion-ui/assets/1890549/3ee8e70b-ea17-4b26-8069-6d8c65aaa729)
+### Image to image
 
-Image to image:
+![Image to image](docs/screenshots/03-img2img.png)
 
-![Screenshot 2023-12-13 at 1 14 35 PM](https://github.com/divamgupta/diffusionbee-stable-diffusion-ui/assets/1890549/ceb4b799-5003-47c6-a689-1a5dcd110935)
+### Inpainting
 
-Multiple Apps:
+![Inpainting](docs/screenshots/04-inpainting.png)
 
-![Screenshot 2023-12-13 at 1 11 14 PM](https://github.com/divamgupta/diffusionbee-stable-diffusion-ui/assets/1890549/5deb2129-b1c7-4f25-9718-754aa9a96008)
+### Upscaler
 
-Image to image with mask:
+![Upscaler](docs/screenshots/05-upscaler.png)
 
-![image](https://user-images.githubusercontent.com/1890549/198915075-dba8e90f-47f6-4915-87b5-fd09c17a58e5.png)
+### Models
 
-Inpainting:
+![Models](docs/screenshots/06-models.png)
 
-![image](https://user-images.githubusercontent.com/1890549/198915349-6261dc9e-c24d-4fb0-98a2-973b429914b8.png)
+### History
 
-![image](https://user-images.githubusercontent.com/1890549/198915395-71d4d278-2434-4e21-aea6-42988593941a.png)
+![History](docs/screenshots/07-history.png)
 
-Advanced AI Canvas:
+### Sample generation output
 
-![Screenshot 2023-12-13 at 1 13 59 PM](https://github.com/divamgupta/diffusionbee-stable-diffusion-ui/assets/1890549/f01273d3-6a01-4498-8d11-5f46b9946213)
+![Sample generation](docs/screenshots/sample-generation.png)
 
-![image](https://user-images.githubusercontent.com/1890549/198916091-62872915-af1d-4553-b657-934c1c8c7aca.png)
-
-ControlNet:
-
-![Screenshot 2023-12-13 at 1 12 43 PM](https://github.com/divamgupta/diffusionbee-stable-diffusion-ui/assets/1890549/55f8d6b0-2f18-4706-9771-999f379a8e4d)
-
-![Screenshot 2023-12-13 at 1 12 22 PM](https://github.com/divamgupta/diffusionbee-stable-diffusion-ui/assets/1890549/53f5e3ef-6398-4c43-aeb6-0f1ded052a9a)
-
-Download Models:
-
-![Screenshot 2023-12-13 at 1 13 08 PM](https://github.com/divamgupta/diffusionbee-stable-diffusion-ui/assets/1890549/4202ba4e-f33f-47e7-bd27-26b1b93142db)
-
-History:
-
-![image](https://user-images.githubusercontent.com/1890549/198916678-9061829c-69da-4eee-b28d-1989e01c11e0.png)
-
-### To learn more, visit the [documentation](https://github.com/divamgupta/diffusionbee-stable-diffusion-ui/blob/master/docs/DOCUMENTATION.md)
+---
 
 ## Requirements
 
-* Mac with Intel or M1/M2 CPU
-* For Intel : MacOS 12.3.1 or later
-* For M1/M2 : MacOS 11.0.0 or later
+* Mac with Intel or Apple Silicon CPU
+* For Intel: macOS 12.3.1 or later
+* For Apple Silicon: macOS 11.0.0 or later
 
-License : Stable Diffusion is released under the CreativeML OpenRAIL M license : <https://github.com/CompVis/stable-diffusion/blob/main/LICENSE>
-Diffusion Bee is just a GUI wrapper on top of Stable Diffusion, so all the term of Stable Diffusion are applied on the outputs.
+**Development requirements:**
 
-References
+| Component | Version |
+|-----------|---------|
+| Node.js | ≥ 26 |
+| npm | ≥ 10 |
+| Python (backend venv) | 3.11 (`backends/stable_diffusion/venv311`) |
 
-1) <https://github.com/CompVis/stable-diffusion>
-2) <https://github.com/madebyollin/maple-diffusion>
-3) <https://github.com/divamgupta/stable-diffusion-tensorflow>
-4) <https://github.com/liuliu/swift-diffusion> (big thanks to Liu Liu)
-5) <https://github.com/huggingface/diffusers>
+---
 
-## Installing Models from HuggingFace
+## Running from source
 
-You can use the provided installer script to seamlessly download and configure HuggingFace models. The script requires the HuggingFace `huggingface_hub` package which it can install automatically, and an API token.
+### 1. Clone the repository
 
 ```bash
-# Export your token
+git clone https://github.com/divamgupta/diffusionbee-stable-diffusion-ui
+cd diffusionbee-stable-diffusion-ui
+```
+
+### 2. Install frontend dependencies
+
+```bash
+cd electron_app
+npm install
+```
+
+### 3. Set up the Python backend
+
+The Electron app expects a populated virtualenv at `backends/stable_diffusion/venv311`.
+
+```bash
+cd backends/stable_diffusion
+python3.11 -m venv venv311
+source venv311/bin/activate
+pip install -r requirements.txt
+```
+
+> **Note:** The legacy docs mention a conda env with Python 3.9.10. Current development and test scripts use `venv311` with Python 3.11, which is what the Electron bridge prefers.
+
+### 4. Run the app
+
+From the repo root:
+
+```bash
+npm run serve
+```
+
+Or from `electron_app/`:
+
+```bash
+npm run electron:serve
+```
+
+To run without DevTools during UI capture or testing:
+
+```bash
+IS_TEST=1 npm run electron:serve
+```
+
+### 5. Build the UI bundle
+
+```bash
+cd electron_app
+npm run build:ui      # Demo UI entry (browser-only, no backend)
+npm run build         # Production renderer build
+```
+
+### 6. Build the full Electron app (macOS)
+
+```bash
+npm run build
+```
+
+This packages the Python backend from `backends/` into the app bundle.
+
+---
+
+## Testing
+
+### Lint
+
+```bash
+cd electron_app && npm run lint
+```
+
+### Backend smoke test
+
+Verifies the Python backend starts, accepts a generation command, and writes an output image:
+
+```bash
+backends/stable_diffusion/venv311/bin/python3 test_generation.py
+```
+
+### Full backend harness
+
+Runs a longer generation test with progress monitoring:
+
+```bash
+backends/stable_diffusion/venv311/bin/python3 test_backend.py
+```
+
+**Prerequisites for tests:**
+
+* `backends/stable_diffusion/venv311` with dependencies installed
+* At least one `.tdict` model in `~/.diffusionbee/downloaded_assets/` or `~/.diffusionbee/imported_models/`
+
+**Verified on this machine (2026-06-18):**
+
+| Test | Result |
+|------|--------|
+| `npm run lint` | Pass |
+| `npm run build:ui` | Pass |
+| `test_generation.py` | Pass — cat image generated in ~41s |
+| `test_backend.py` | Pass — phoenix image generated in ~46s |
+| `npm run electron:serve` | App launches, backend connects |
+
+---
+
+## Installing models from HuggingFace
+
+Use the provided installer script to download and convert HuggingFace models to DiffusionBee's `.tdict` format:
+
+```bash
 export HF_TOKEN=your_huggingface_api_token
 
-# Run the installer
 python3 install_hf_model.py \
   --model-id runwayml/stable-diffusion-v1-5 \
   --filename v1-5-pruned-emaonly.ckpt \
   --output-name stable-diffusion-v1-5
 ```
 
-Once installed, restart DiffusionBee or refresh the models list and the newly downloaded model will be available!
+Restart DiffusionBee or refresh the models list after installation.
+
+---
+
+## Architecture (quick reference)
+
+```
+Electron main (background.js)
+  └── bridge.js → spawns diffusionbee_backend.py (stdin/stdout)
+Renderer (Vue 2.7)
+  ├── App.vue — shell, splash, model onboarding
+  ├── PagesRouter.vue — lazy-loaded pages (Homepage, Txt2Img, …)
+  ├── StableDiffusion.vue — generation state machine
+  └── py_vue_bridge.js — IPC to Python (`b2py` / `sdbk` protocol)
+```
+
+| Path | Purpose |
+|------|---------|
+| `electron_app/src/` | Vue 2 frontend |
+| `backends/stable_diffusion/` | Python inference backend |
+| `backends/model_converter/` | `.ckpt`/`.safetensors` → `.tdict` conversion |
+| `~/.diffusionbee/` | Runtime data (models, images, settings) |
+
+See [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md) and [docs/Running_from_source.md](docs/Running_from_source.md) for more detail.
+
+---
+
+## Capturing screenshots (macOS)
+
+With the Electron app running:
+
+```bash
+./scripts/capture_screenshots.sh
+```
+
+Screenshots are saved to `docs/screenshots/`. Requires [cliclick](https://www.florianreuter.de/cliclick/) (`brew install cliclick`).
+
+---
+
+## License
+
+Stable Diffusion is released under the [CreativeML OpenRAIL-M license](https://github.com/CompVis/stable-diffusion/blob/main/LICENSE). DiffusionBee is a GUI wrapper on top of Stable Diffusion, so the same terms apply to outputs.
+
+## References
+
+1. [CompVis/stable-diffusion](https://github.com/CompVis/stable-diffusion)
+2. [madebyollin/maple-diffusion](https://github.com/madebyollin/maple-diffusion)
+3. [divamgupta/stable-diffusion-tensorflow](https://github.com/divamgupta/stable-diffusion-tensorflow)
+4. [liuliu/swift-diffusion](https://github.com/liuliu/swift-diffusion) (big thanks to Liu Liu)
+5. [huggingface/diffusers](https://github.com/huggingface/diffusers)

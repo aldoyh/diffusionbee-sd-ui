@@ -120,8 +120,9 @@ export default {
 
                  
 
-                // also update the hisroty
-                this.app.functions.add_to_history(current_group_id  , gallery_group )
+                if (typeof this.app.functions.add_to_history === 'function') {
+                    this.app.functions.add_to_history(current_group_id, gallery_group)
+                }
 
             }
 

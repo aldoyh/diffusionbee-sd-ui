@@ -114,7 +114,9 @@ async function createWindow() {
 
 	if (process.env.WEBPACK_DEV_SERVER_URL) {
 		// Load the url of the dev server if in development mode
-		await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
+		await win.webContents.session.clearStorageData({ storages: ['cachestorage', 'shadercache'] });
+		await win.webContents.session.clearCache();
+		await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL);
 		if (!process.env.IS_TEST) win.webContents.openDevTools()
 	} else {
 		createProtocol('app')

@@ -8,6 +8,6 @@
 
 - [x] translate the new replacement screen into Arabic and applying the font Tajawal to it.
 
-- [ ] finalize by taking a screenshot and including it in the README.md file. (Blocked: Environment issues with Electron launch)
+- [x] finalize by taking a screenshot and including it in the README.md file.
 
 - [ ] **Testing**: run or create if it doesn't exist all the tests and ensure they are all successful then check that they called base for any missing test that we need to add.

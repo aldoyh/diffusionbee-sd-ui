@@ -25,6 +25,19 @@ function simple_hash( strr ) {
 }
 
 
+function toFileUrl(path) {
+    if (!path) {
+        return '';
+    }
+    if (path.startsWith('file://') || path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:') || path.startsWith('blob:')) {
+        return path;
+    }
+    if (path.startsWith('/')) {
+        return 'file://' + path;
+    }
+    return 'file://' + path;
+}
+
 function resolve_asset_illustration(name) {
     let pre_assets_list_svg = [
       ];
@@ -37,7 +50,7 @@ function resolve_asset_illustration(name) {
     else if (name.startsWith("https://") || name.startsWith("http://"))
         return name;
     else
-        return "file://" + name;
+        return toFileUrl(name);
 }
 
 
@@ -326,4 +339,4 @@ function migrate_history_only_once( current_new_history ){
 }
 
 
-export { compute_n_cols , compute_time_remaining , resolve_asset_illustration , simple_hash , open_popup, share_on_arthub, form_params_to_text, find_in_form_recursive, form_params_to_readable_dict, migrate_history_only_once}
+export { compute_n_cols , compute_time_remaining , resolve_asset_illustration , toFileUrl , simple_hash , open_popup, share_on_arthub, form_params_to_text, find_in_form_recursive, form_params_to_readable_dict, migrate_history_only_once}

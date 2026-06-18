@@ -64,7 +64,31 @@ const CATEGORIES = {
     name: 'Steampunk',
     nameArabic: 'ستيم بانك',
     icon: '⚙️',
-    description: 'Victorian-era technology meets蒸汽驱动的幻想',
+    description: 'Victorian-era technology meets clockwork fantasy',
+  },
+  anime: {
+    name: 'Anime',
+    nameArabic: 'أنمي',
+    icon: '🍱',
+    description: 'Cel-shaded characters, vibrant skies, and detailed anime backgrounds',
+  },
+  illustration: {
+    name: 'Illustration',
+    nameArabic: 'رسم توضيحي',
+    icon: '🎨',
+    description: 'Painterly scenes, ink washes, and editorial illustration styles',
+  },
+  '3d_render': {
+    name: '3D Render',
+    nameArabic: 'رسم ثلاثي الأبعاد',
+    icon: '🧊',
+    description: 'Clean product renders, studio lighting, and stylized 3D scenes',
+  },
+  sketch: {
+    name: 'Sketch',
+    nameArabic: 'رسم يدوي',
+    icon: '✏️',
+    description: 'Pencil studies, ink linework, and gestural architectural drawings',
   },
   horror: {
     name: 'Horror & Dark',
@@ -303,22 +327,126 @@ const PROMPTS_BY_CATEGORY = {
     'A flock of flamingos taking off from a pink salt lake at sunrise, wings spread wide, soft pink and orange reflections, synchronized motion, beautiful bird photography, vibrant colors, serene landscape',
     'A close-up of a bumblebee collecting pollen from a purple flower, wings in motion blur, pollen baskets full, macro insect photography, incredible detail, golden hour light, busy nature scene',
   ],
+
+  anime: [
+    'Anime key visual of a schoolgirl running through a Tokyo alley at sunset, cherry petals in the wind, cel shading, vibrant sky gradient, detailed background, Makoto Shinkai atmosphere',
+    'Studio Ghibli meadow with wind in tall grass, a distant cottage, soft watercolor sky, gentle clouds, peaceful countryside, hand-painted anime background',
+    'Cyberpunk anime street market at night, ramen stalls steaming, holographic ads in Japanese, neon pink and cyan, detailed crowd silhouettes, cinematic anime composition',
+    'Magical girl transformation sequence in a starlit city rooftop, ribbons of light swirling, dynamic pose, sparkles and lens flare, shoujo anime style, vivid colors',
+    'Samurai anime duel on a wooden bridge over a misty gorge, motion lines, dramatic wind, ink-brush influenced shading, intense eye contact, action key frame',
+    'Cozy anime café interior, cat sleeping on the counter, rain on the window, warm interior lights, slice-of-life mood, soft cel shading, detailed props',
+    'Mecha anime hangar bay with a giant robot being repaired, sparks flying, engineers in orange suits, industrial scale, detailed mechanical panels, dramatic perspective',
+    'Fantasy anime witch brewing potions in a cluttered tower room, floating books, glowing ingredients, whimsical details, warm candlelight, charming character design',
+    'Sports anime moment: sprinter crossing the finish line, sweat droplets frozen mid-air, stadium crowd blur, speed lines, emotional triumph, dynamic camera angle',
+    'Underwater anime scene with a diver discovering a sunken temple, sun rays through water, schools of fish, ethereal blue palette, detailed ruins, serene wonder',
+  ],
+
+  illustration: [
+    'Oil painting still life: copper kettle, sliced citrus on a linen cloth, Rembrandt-style chiaroscuro, visible brushstrokes, rich impasto highlights, classical composition',
+    'Watercolor illustration of a Mediterranean hillside village, terracotta roofs, olive trees, loose pigment blooms, travel journal aesthetic, warm afternoon light',
+    'Editorial illustration of a jazz musician in a smoky club, bold graphic shapes, limited palette of deep blue and gold, mid-century poster style, expressive linework',
+    'Ink wash painting of a lone pine on a foggy mountain, minimalist composition, soft gray gradients, East Asian brush aesthetic, tranquil negative space',
+    'Children\'s book illustration of a fox reading under a mushroom lamp, whimsical forest, soft textures, cozy bedtime mood, gentle pastel colors',
+    'Art nouveau poster of a woman surrounded by peacock feathers and flowing hair, ornate borders, gold leaf accents, Alphonse Mucha inspired, decorative symmetry',
+    'Gouache illustration of a rainy Paris street with umbrellas and cafés, impressionistic color blocks, reflective wet pavement, romantic European atmosphere',
+    'Scientific botanical illustration of exotic orchids, precise linework, labeled petals, vintage naturalist plate style, cream paper background, educational beauty',
+    'Dark fantasy illustration of a knight facing a mirror that shows a different world, gothic framing, muted jewel tones, storybook mystery, detailed engraving texture',
+    'Flat vector illustration of a remote workspace on a cliff overlooking the ocean, geometric shapes, sunset gradient, modern editorial tech lifestyle aesthetic',
+  ],
+
+  '3d_render': [
+    '3D render of a futuristic electric motorcycle in a white studio, brushed titanium body, soft HDRI lighting, octane render, product visualization, ultra clean materials',
+    'Isometric 3D diorama of a cozy ramen shop in the rain, tiny neon sign, steam from bowls, low-poly charm, soft global illumination, playful miniature world',
+    '3D architectural visualization of a glass pavilion in a snowy birch forest, warm interior glow against blue twilight, photoreal materials, clean modern lines',
+    'Stylized 3D character bust of an astronaut with reflective visor showing a nebula, subsurface scattering on suit fabric, studio rim light, collectible figurine quality',
+    '3D render of floating geometric crystals above a desert plateau, iridescent surfaces, dramatic sunset skybox, surreal product art, crisp reflections',
+    'Cute 3D clay render of a sleeping red panda on a mossy stump, soft matte materials, pastel lighting, toy-like proportions, adorable studio scene',
+    'Hard-surface 3D render of a retro sci-fi ray gun on a velvet display stand, chrome and bakelite materials, museum lighting, nostalgic future aesthetic',
+    '3D food visualization of a gourmet burger with melting cheese and sesame bun, macro studio lighting, appetizing steam, commercial advertising quality',
+  ],
+
+  sketch: [
+    'Pencil sketch of a medieval cathedral facade, loose cross-hatching for shadows, gestural lines, architectural study on textured paper, graphite drawing',
+    'Ink sketch of a bustling fish market, quick confident strokes, selective wash of gray tone, travel sketchbook style, energetic urban scene',
+    'Charcoal portrait sketch of an elderly craftsman, smudged shadows, expressive eyes, life drawing energy, rough paper grain visible',
+    'Pen and ink sketch of a Japanese garden bridge over koi pond, fine linework, minimal shading, zen composition, sketchbook margin notes',
+    'Gesture sketch of a dancer mid-leap, dynamic flowing lines, minimal detail, figure drawing study, movement captured in few strokes',
+    'Urban sketch of a Brooklyn brownstone street, watercolor wash over ink lines, parked bicycles, fire escapes, plein air reportage style',
+    'Technical sketch of a vintage camera exploded view, precise line weights, annotation arrows, industrial design drawing, blueprint aesthetic',
+    'Rough concept sketch of a fantasy airship with sails and brass propellers, whiteboard marker style, ideation phase, loose exploratory linework',
+  ],
 };
+
+// ─── Rotating inspiration hints (short, shown under the welcome title) ───────
+
+const INSPIRE_LINES = {
+  en: [
+    'Portrait of a violinist mid-performance, stage lights catching rosin dust',
+    'Brutalist library carved into a desert cliff at golden hour',
+    'Studio Ghibli meadow — wind in tall grass, distant cottage, soft watercolor sky',
+    'Macro shot: dew on a spiderweb at dawn, bokeh forest behind',
+    'Isometric pixel art of a cozy ramen shop in the rain',
+    'Art deco hotel lobby, marble floors, brass elevator doors, 1920s glamour',
+    'Viking longship cutting through arctic fog, aurora overhead',
+    'Street food stall at night — sizzling wok, neon menu, steam and chili oil',
+    'Clay stop-motion forest spirit emerging from mossy roots',
+    'Minimalist ink wash: lone pine on a foggy mountain',
+    'Underwater kelp forest with sun rays and a sea turtle gliding through',
+    'Retro 1950s diner, checkerboard floor, milkshake on chrome counter',
+  ],
+  ar: [
+    'صورة لعازف كمان أثناء العزف، أضواء المسرح تلتقط غبار الصمغ',
+    'مكتبة بروتالية منحوتة في جرف صحراوي عند الساعة الذهبية',
+    'مرج بأسلوب استوديو جيبلي، ريح في العشب الطويل، كوخ بعيد، سماء مائية ناعمة',
+    'لقطة ماكرو: ندى على شبكة عنكبوت عند الفجر، غابة ضبابية بالخلفية',
+    'فن بكسل متساوي القياس لمتجر رامن مريح تحت المطر',
+    'بهو فندق آرت ديكو، رخام، أبواب مصعد نحاسية، أناقة العشرينيات',
+    'سفينة فايكنغ تقطع ضباب القطب الشمالي، وشفق يعلو السماء',
+    'كشك طعام ليلي، مقلاة تطقطق، قائمة نيون، بخار وزيت فلفل حار',
+    'روح غابة بأسلوب ستوب موشن طيني تخرج من جذور مغطاة بالطحالب',
+    'غسل حبر بسيط: شجرة صنوبر وحيدة على جبل ضبابي',
+    'غابة أعشاب بحرية تحت الماء مع أشعة شمس وسلحفاة تسبح',
+    'مطعم خمسينيات، أرضية مربعات، ميلك شيك على طاولة كروم',
+  ],
+};
+
+// ─── Welcome carousel samples (shown when history is empty) ─────────────────
+
+const WELCOME_SAMPLES = [
+  {
+    image_url: 'welcome_anime_tokyo_alley.png',
+    prompt: 'Anime key visual of a Tokyo alley at sunset, cherry petals in the wind, cel shading, vibrant sky gradient, detailed background',
+  },
+  {
+    image_url: 'welcome_glass_pavilion.png',
+    prompt: 'Contemporary glass pavilion in a snowy birch forest, warm interior glow against blue twilight, architectural photography, clean lines',
+  },
+  {
+    image_url: 'welcome_oil_still_life.png',
+    prompt: 'Oil painting still life: copper kettle, sliced citrus, linen tablecloth, Rembrandt chiaroscuro, visible brushstrokes, classical composition',
+  },
+  {
+    image_url: 'welcome_street_food.png',
+    prompt: 'Street food stall at night, sizzling wok, neon menu signs, steam and chili oil, vibrant night market atmosphere, editorial food photography',
+  },
+  {
+    image_url: 'welcome_pixel_ramen.png',
+    prompt: 'Isometric pixel art of a cozy ramen shop in the rain, tiny neon sign, steam from bowls, retro game aesthetic, charming details',
+  },
+  {
+    image_url: 'welcome_underwater_kelp.png',
+    prompt: 'Underwater kelp forest with sun rays piercing the surface, sea turtle gliding through, crystal clear water, serene marine scene',
+  },
+];
 
 // ─── Default Prompts for First-Run Users ────────────────────────────────────
 
-const DEFAULT_PROMPTS = [
-  'A serene zen garden with cherry blossoms in full bloom, koi pond reflecting pink petals, morning mist, award-winning photography',
-  'A cyberpunk cityscape at night with neon signs reflecting on wet asphalt, flying cars, holographic billboards, blade runner aesthetic',
-  'A magical cottagecore cottage surrounded by wildflowers, golden hour sunlight, butterflies, fairy tale aesthetic, ultra detailed',
-  'A majestic dragon with iridescent scales perched on a mountain peak, dramatic sunset sky, cinematic lighting, masterpiece',
-  'A cozy vintage coffee shop interior during rain, warm amber lighting, steam rising from ceramic mugs, hygge atmosphere',
-  'A retrofuturistic space station orbiting a ringed gas giant, 1970s sci-fi book cover style, dramatic lighting',
-];
+const DEFAULT_PROMPTS = WELCOME_SAMPLES.map((s) => s.prompt);
 
 // ─── Storage Key ─────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'user_prompt_library';
+const RECENT_RANDOM_KEY = 'recent_random_prompts';
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
@@ -336,18 +464,41 @@ function getPromptsByCategory(categoryId) {
   return PROMPTS_BY_CATEGORY[categoryId] || [];
 }
 
+function getRecentRandomPrompts() {
+  try {
+    const data = window.localStorage.getItem(RECENT_RANDOM_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function rememberRecentRandomPrompt(prompt) {
+  try {
+    const recent = getRecentRandomPrompts().filter((p) => p !== prompt);
+    recent.unshift(prompt);
+    window.localStorage.setItem(RECENT_RANDOM_KEY, JSON.stringify(recent.slice(0, 12)));
+  } catch (e) {
+    // ignore storage errors
+  }
+}
+
 /**
  * Get a single random prompt from the entire library (built-in + user-saved)
  */
 function getRandomPrompt() {
   const userPrompts = getUserPrompts();
-  const allBuiltIn = Object.values(PROMPTS_BY_CATEGORY).flat();
-  
-  // 70% chance from built-in, 30% from user-saved (if any exist)
-  const useUserPool = userPrompts.length > 0 && Math.random() < 0.3;
-  const pool = useUserPool ? userPrompts : allBuiltIn;
-  
-  return pool[Math.floor(Math.random() * pool.length)];
+  const recent = getRecentRandomPrompts();
+
+  // 15% user-saved, 85% built-in with de-duplication of recent picks
+  const useUserPool = userPrompts.length > 0 && Math.random() < 0.15;
+  if (useUserPool) {
+    return userPrompts[Math.floor(Math.random() * userPrompts.length)];
+  }
+
+  const prompt = getFreshRandomPrompt(recent, 8);
+  rememberRecentRandomPrompt(prompt);
+  return prompt;
 }
 
 /**
@@ -438,12 +589,22 @@ function getDefaultPrompts() {
   return DEFAULT_PROMPTS;
 }
 
+function getInspireLines(locale = 'en') {
+  return locale === 'ar' ? INSPIRE_LINES.ar : INSPIRE_LINES.en;
+}
+
+function getWelcomeSamples() {
+  return WELCOME_SAMPLES;
+}
+
 // ─── Export ──────────────────────────────────────────────────────────────────
 
 export {
   CATEGORIES,
   PROMPTS_BY_CATEGORY,
   DEFAULT_PROMPTS,
+  INSPIRE_LINES,
+  WELCOME_SAMPLES,
   getCategories,
   getPromptsByCategory,
   getRandomPrompt,
@@ -455,4 +616,6 @@ export {
   clearUserPrompts,
   getBuiltInCount,
   getDefaultPrompts,
+  getInspireLines,
+  getWelcomeSamples,
 };

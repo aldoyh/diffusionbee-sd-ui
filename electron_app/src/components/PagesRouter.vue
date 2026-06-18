@@ -31,13 +31,15 @@ import { t } from "../i18n.js"
 
 import Vue from 'vue'
 
-// Async components for code-splitting — each page is lazy-loaded on first visit
-const Homepage = () => import("../pages/Homepage.vue")
+// Eagerly loaded so welcome assets and history persistence are ready on first paint.
+import Homepage from "../pages/Homepage.vue"
+import History from "../pages/History.vue"
+
+// Async components for code-splitting — other pages lazy-load on first visit
 const Txt2Img = () => import("../pages/Txt2Img.vue")
 const Img2Img = () => import("../pages/Img2Img.vue")
 const Inpainting = () => import("../pages/Inpainting.vue")
 const Training = () => import("../pages/Training.vue")
-const History = () => import("../pages/History.vue")
 const ModelStore = () => import("../pages/ModelStore.vue")
 const Logs = () => import("../pages/Logs.vue")
 const ContactUs = () => import("../pages/ContactUs.vue")

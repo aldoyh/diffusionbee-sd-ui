@@ -24,7 +24,7 @@
               {{ app.app_state.isArabic ? 'مسح السجل' : 'Clear History' }}
             </div>
 
-            <div v-if="Object.values(history).length > 0">
+            <div v-if="historyCount > 0">
                 <div v-if="history_to_show.length > 30">
                     <b-pagination
                         v-model="currentPage"
@@ -37,7 +37,7 @@
         </div>
 
         <div style="height: calc(100% - 60px) ; width: 100% ; overflow-y:auto;">
-            <div v-if="Object.values(history).length > 0">
+            <div v-if="historyCount > 0">
 
                 <hr>
         
@@ -58,14 +58,14 @@
 
                     
                     <p class="history_box_info " style="user-select: text;">
-                        <img  v-for=" img in get_inp_imgs_from_group(group)" :src="'file://' +img" :key="img" style="height:50px">
+                        <img  v-for=" img in get_inp_imgs_from_group(group)" :src="toFileUrl(img)" :key="img" style="height:50px">
                         <br  v-if="get_inp_imgs_from_group(group).length > 0 " >
                         <br  v-if="get_inp_imgs_from_group(group).length > 0 " >
                   
                         <span style="opacity: 0.5;" v-if="get_box_params_str(group)"> {{get_box_params_str(group)}} </span>
                         <br   v-if="get_box_params_str(group)">
                         
-                        {{group.params.prompt}}
+                        {{ groupPrompt(group) }}
 
 
                     </p>
@@ -96,7 +96,8 @@ import {native_confirm} from "../native_functions_vue_bridge.js";
 import {share_on_arthub} from '../utils.js'
 import GalleryPane from "../components_bare/GalleryPane.vue"
 import {image_manu_functions} from "../components/image_menu_functions.js"
-import {open_popup , form_params_to_text , form_params_to_readable_dict, migrate_history_only_once} from "../utils"
+import {open_popup , form_params_to_text , form_params_to_readable_dict, toFileUrl} from "../utils"
+import { historyStore, addToHistory, deleteEntry, clearHistory } from "../history_service.js"
 
 import Vue from 'vue'
 import Fuse from 'fuse.js'
@@ -113,23 +114,6 @@ const History =  {
         this.app.functions.add_to_history = this.add_to_history
     },
     data() {
-        let history = {}
-        let hist = window.ipcRenderer.sendSync('load_data' , 'history.json')
-        if(hist.history){
-            history = hist.history;
-        }
-
-        try {
-            let new_items = migrate_history_only_once( history)
-            for(let k in new_items){
-                history[k] = new_items[k]
-            }
-        } catch (error) {
-            console.error(error);
-        }
-
-        
-
         let menu_items = []
         for(let fn of Object.keys(image_manu_functions)){
             if(fn != "use_params_current_page")
@@ -143,17 +127,22 @@ const History =  {
             app_state : this.app.app_state,
             searchText: '',
             currentPage: 1,
-            history : history,
             show_history_in_oldest_first : false,
             menu_items :menu_items,
         };
     },
 
     computed: {
+      history() {
+          return historyStore.entries
+      },
+      historyCount() {
+          return Object.keys(historyStore.entries).length
+      },
       history_to_show() {
-          let history = Object.values(this.history);
+          let history = Object.values(historyStore.entries);
           const that = this;
-          const list = this.show_history_in_oldest_first ? history : history.reverse();
+          const list = this.show_history_in_oldest_first ? history : history.slice().reverse();
           if (that.searchText.trim() === '') {
             return list;
           }
@@ -168,18 +157,15 @@ const History =  {
        },
     },
 
-    watch: {
-        'history': {
-            handler: function() {
-                this.save_history()
-            },
-            deep: false
-        } , 
-    }, 
+
 
 
     methods: {
 
+
+        groupPrompt(group) {
+            return (group && group.params && group.params.prompt) || (group && group.prompt) || ''
+        },
 
         get_inp_imgs_from_group(group){
 
@@ -197,27 +183,19 @@ const History =  {
 
 
         add_to_history(k , history_vals ){
-            history_vals = JSON.parse(JSON.stringify(history_vals))
-            console.log("got to hist")
-            console.log(history_vals)
-            if(history_vals.imgs.length == 0)
-                return
-            history_vals.params = history_vals.imgs[0].params
-            history_vals.key = k
-            history_vals.prompt = history_vals.params.prompt
-            Vue.set(this.history ,  k , history_vals )
+            addToHistory(k, history_vals)
         },
 
         on_image_click(image_item_data){
-            open_popup('file://' + image_item_data.image_url)
+            open_popup(toFileUrl(image_item_data.image_url))
         },
 
         delete_hist(k){
-            Vue.delete( this.history , k );
+            deleteEntry(k)
         },
 
-        save_history(){
-            window.ipcRenderer.sendSync('save_data', {"history": this.history} , 'history.json');
+        toFileUrl(path) {
+            return toFileUrl(path)
         },
 
         toggle_order() {
@@ -234,7 +212,7 @@ const History =  {
 
          clear_history(){
             if (native_confirm(this.app.app_state.isArabic ? "هل أنت متأكد من رغبتك في مسح السجل؟" : "Are you sure you want to clear history?")){
-                Vue.set( this , "history", {});
+                clearHistory()
             }
         },
 

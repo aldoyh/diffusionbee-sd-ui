@@ -57,7 +57,7 @@ def send_and_wait(proc, prompt_text, seed):
         "img_height": 768,
         "num_imgs": 1,
         "seed": seed,
-        "num_inference_steps": 50,
+        "num_steps": 50,
         "guidance_scale": 7.0,
         "model_tdict_path": MODEL_PATH,
     }

@@ -30,12 +30,20 @@ export default {
     },
     components: {GalleryImage},
     mounted() {
-        this.ro = new ResizeObserver(this.on_resize);
+        this.ro = new ResizeObserver(() => {
+            if (this.resizeFrame) {
+                cancelAnimationFrame(this.resizeFrame);
+            }
+            this.resizeFrame = requestAnimationFrame(() => this.on_resize());
+        });
         this.ro.observe( document.getElementById(this.rand_id) );
         this.on_resize()
     },
     
     beforeDestroy(){
+        if (this.resizeFrame) {
+            cancelAnimationFrame(this.resizeFrame);
+        }
         this.ro.disconnect()
     },
 

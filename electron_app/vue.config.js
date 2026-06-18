@@ -8,13 +8,31 @@ try {
 
 
 module.exports = {
-    
+
+    devServer: {
+        client: {
+            overlay: {
+                runtimeErrors: (error) => {
+                    const message = error && error.message ? error.message : '';
+                    if (message.includes('ResizeObserver loop')) {
+                        return false;
+                    }
+                    return true;
+                },
+            },
+        },
+    },
+
     chainWebpack: config => {
-        // Raise size limits since this is an Electron app (not web)
-        config.performance
-            .hints('warning')
-            .maxEntrypointSize(1024 * 1024)  // 1 MiB
-            .maxAssetSize(1024 * 1024)
+        // Electron bundles are large; suppress dev-server overlay noise.
+        if (process.env.NODE_ENV !== 'production') {
+            config.performance.hints(false)
+        } else {
+            config.performance
+                .hints('warning')
+                .maxEntrypointSize(8 * 1024 * 1024)
+                .maxAssetSize(4 * 1024 * 1024)
+        }
 
         // Extract bootstrap into its own chunk (merge preserves Vue CLI's default vendor config)
         config.optimization.merge({

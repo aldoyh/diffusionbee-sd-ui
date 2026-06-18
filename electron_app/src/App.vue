@@ -107,6 +107,7 @@ import MainToolbar from "./components/MainToolbar.vue"
 import LoaderModal from './components_bare/LoaderModal.vue'
 import Vue from "vue"
 import { setLocale, getLocale } from "./i18n.js"
+import { bindHistoryToApp } from "./history_service.js"
 
 native_alert;
 
@@ -140,6 +141,7 @@ export default
         this.applyLocaleAttributes();
 
         bind_app_component(this);
+        bindHistoryToApp(this);
         send_to_py("strt");
 
         if( require('../package.json').is_dev || require('../package.json').build_number.includes("dev") )

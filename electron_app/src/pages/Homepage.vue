@@ -5,7 +5,24 @@
             <h1 class="welcome-title" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
                 {{ app.app_state.isArabic ? 'ماذا ستصنع اليوم؟' : 'What will you create today?' }}
             </h1>
-            
+
+            <p class="carousel-heading" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
+                {{ app.app_state.isArabic ? 'عينات ملهمة' : 'Inspiration samples' }}
+                <span class="sample-count-badge">{{ welcomeTiles.length }}</span>
+            </p>
+            <div class="welcome-samples" dir="ltr">
+                <div
+                    v-for="(img, idx) in welcomeTiles"
+                    :key="img.assetKey || ('welcome-' + idx)"
+                    class="welcome-sample-tile"
+                    :title="img.prompt"
+                    v-bind:style="{ 'background-image': 'url(' + img.src + ')' }"
+                    @click="useWelcomePrompt(img.prompt)"
+                >
+                    <span class="welcome-sample-label">{{ sampleLabel(img, idx) }}</span>
+                </div>
+            </div>
+
             <p class="inspiration-text" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
                 {{ currentInspiration }}
             </p>
@@ -19,7 +36,7 @@
                         :placeholder="app.app_state.isArabic ? 'صف ما تريد رؤيته...' : 'Describe what you want to see...'"
                         class="chat-input"
                         :class="{ 'rtl-text': app.app_state.isArabic }"
-                        autofocus
+
                     />
                     <button @click="randomPrompt" class="chat-submit" :title="app.app_state.isArabic ? 'توليد موجه عشوائي' : 'Generate random prompt'" style="background:rgba(255,255,255,0.08); margin-right:6px;">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -47,46 +64,6 @@
                 </div>
             </div>
 
-            <div class="carousel-wrapper" v-if="carouselImages.length > 0">
-                <div class="carousel-container">
-                    <div class="carousel-track" :style="trackStyle">
-                        <div v-for="(img, idx) in carouselImages" :key="idx" class="carousel-item">
-                            <img :src="'file://' + img.image_url" class="carousel-img" />
-                            <div class="carousel-caption">{{ img.prompt }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div v-else class="empty-carousel">
-                <div class="carousel-item placeholder-item" v-for="i in 5" :key="i">
-                    <div class="placeholder-img"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="models-section" v-if="availableModels.length > 0">
-            <h2 class="category-title">
-                {{ app.app_state.isArabic ? 'النماذج المتاحة' : 'Your Models' }}
-                <span class="model-count-badge">{{ availableModels.length }}</span>
-            </h2>
-            <div class="models-grid">
-                <div v-for="model in availableModels" :key="model.id" 
-                    class="model-chip" 
-                    :class="{ 'model-selected': selectedModelId === model.id }"
-                    @click="selectModel(model)">
-                    <span class="model-icon">🧠</span>
-                    <span class="model-name">{{ model.title || model.id }}</span>
-                    <span class="model-type-badge" v-if="model.model_meta_data && model.model_meta_data.sd_type">
-                        {{ model.model_meta_data.sd_type }}
-                    </span>
-                    <span v-else class="model-type-badge sd-badge">SD</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Generation Gallery (appears when user generates images) -->
-        <div class="gallery-section" v-if="app.is_mounted">
-            <GenerationGallery ref="homeGallery" :app="app" :n_to_keep="10" :menu_items_skip="['use_params_current_page']"></GenerationGallery>
         </div>
 
         <div class="styles-section">
@@ -116,32 +93,99 @@
             </div>
             <br> 
         </div>
+        <div class="models-section" v-if="availableModels.length > 0">
+            <h2 class="category-title">
+                {{ app.app_state.isArabic ? 'النماذج المتاحة' : 'Your Models' }}
+                <span class="model-count-badge">{{ availableModels.length }}</span>
+            </h2>
+            <div class="models-grid">
+                <div v-for="model in availableModels" :key="model.id" 
+                    class="model-chip" 
+                    :class="{ 'model-selected': selectedModelId === model.id }"
+                    @click="selectModel(model)">
+                    <span class="model-icon">🧠</span>
+                    <span class="model-name">{{ model.title || model.id }}</span>
+                    <span class="model-type-badge" v-if="model.model_meta_data && model.model_meta_data.sd_type">
+                        {{ model.model_meta_data.sd_type }}
+                    </span>
+                    <span v-else class="model-type-badge sd-badge">SD</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="gallery-section" v-if="app.is_mounted">
+            <GenerationGallery ref="homeGallery" :app="app" :n_to_keep="10" :menu_items_skip="['use_params_current_page']"></GenerationGallery>
+        </div>
+
         <hr style="border-color: rgba(255,255,255,0.1)">
     </div>
 </template>
 
 <script>
-import { migrate_history_only_once } from "../utils"
-import { getRandomPrompt, saveUserPrompt } from "../prompt_library.js"
+import { getRandomPrompt, saveUserPrompt, getInspireLines } from "../prompt_library.js"
 import GenerationGallery from "../components/GenerationGallery.vue"
+
+const PUBLIC_BASE = (typeof process !== 'undefined' && process.env && process.env.BASE_URL) || '/';
+
+const WELCOME_ASSET_REQUIRES = {
+    'welcome_anime_tokyo_alley.png': require('../assets/welcome/welcome_anime_tokyo_alley.png'),
+    'welcome_glass_pavilion.png': require('../assets/welcome/welcome_glass_pavilion.png'),
+    'welcome_oil_still_life.png': require('../assets/welcome/welcome_oil_still_life.png'),
+    'welcome_street_food.png': require('../assets/welcome/welcome_street_food.png'),
+    'welcome_pixel_ramen.png': require('../assets/welcome/welcome_pixel_ramen.png'),
+    'welcome_underwater_kelp.png': require('../assets/welcome/welcome_underwater_kelp.png'),
+};
+
+function getPublicWelcomePath(assetKey) {
+    const prefix = PUBLIC_BASE.endsWith('/') ? PUBLIC_BASE : `${PUBLIC_BASE}/`;
+    return `${prefix}welcome/${assetKey}`;
+}
+
+function resolveWelcomeAssetUrl(assetKey) {
+    if (!assetKey) return '';
+    return WELCOME_ASSET_REQUIRES[assetKey] || getPublicWelcomePath(assetKey);
+}
+
+const WELCOME_CAROUSEL_META = [
+    {
+        assetKey: 'welcome_anime_tokyo_alley.png',
+        prompt: 'Anime key visual of a Tokyo alley at sunset, cherry petals in the wind, cel shading, vibrant sky gradient, detailed background',
+    },
+    {
+        assetKey: 'welcome_glass_pavilion.png',
+        prompt: 'Contemporary glass pavilion in a snowy birch forest, warm interior glow against blue twilight, architectural photography, clean lines',
+    },
+    {
+        assetKey: 'welcome_oil_still_life.png',
+        prompt: 'Oil painting still life: copper kettle, sliced citrus, linen tablecloth, Rembrandt chiaroscuro, visible brushstrokes, classical composition',
+    },
+    {
+        assetKey: 'welcome_street_food.png',
+        prompt: 'Street food stall at night, sizzling wok, neon menu signs, steam and chili oil, vibrant night market atmosphere, editorial food photography',
+    },
+    {
+        assetKey: 'welcome_pixel_ramen.png',
+        prompt: 'Isometric pixel art of a cozy ramen shop in the rain, tiny neon sign, steam from bowls, retro game aesthetic, charming details',
+    },
+    {
+        assetKey: 'welcome_underwater_kelp.png',
+        prompt: 'Underwater kelp forest with sun rays piercing the surface, sea turtle gliding through, crystal clear water, serene marine scene',
+    },
+];
 
 const Home = {
     name: 'Home',
     props: {app:Object, },
     components: { GenerationGallery },
     mounted() {
-        this.loadHistory();
-        this.startCarousel();
         this.startInspirationRotation();
-        // Auto-select the first available model
         this.$nextTick(() => {
             this.autoSelectModel();
+            this.scrollHomeToTop();
         });
+        setTimeout(() => this.scrollHomeToTop(), 250);
     },
     beforeDestroy() {
-        if (this.carouselInterval) {
-            clearInterval(this.carouselInterval);
-        }
         if (this.inspirationInterval) {
             clearInterval(this.inspirationInterval);
         }
@@ -153,20 +197,6 @@ const Home = {
             selectedModelId: null,
             inspirationIndex: 0,
             inspirationInterval: null,
-            inspirationMessages: [
-                "A futuristic city in the clouds",
-                "A magical forest with glowing plants",
-                "A cybernetic samurai in Tokyo",
-                "An underwater civilization of glass",
-                "A cosmic journey through a nebula"
-            ],
-            inspirationMessagesArabic: [
-                "مدينة مستقبلية في السحب",
-                "غابة سحرية بنباتات مضيئة",
-                "ساموراي سايبربانك في طوكيو",
-                "حضارة تحت الماء من الزجاج",
-                "رحلة كونية عبر سديم"
-            ],
             stylePresets: [
                 { name: "Cinematic", nameArabic: "سينمائي", icon: "🎬" },
                 { name: "Cyberpunk", nameArabic: "سايبربانك", icon: "🌃" },
@@ -177,21 +207,14 @@ const Home = {
                 { name: "Sketch", nameArabic: "رسم يدوي", icon: "✏️" },
                 { name: "Fantasy", nameArabic: "خيالي", icon: "🐉" }
             ],
-            carouselImages: [],
-            carouselOffset: 0,
-            carouselInterval: null,
+            welcomeTiles: WELCOME_CAROUSEL_META.map((sample) => ({
+                assetKey: sample.assetKey,
+                src: resolveWelcomeAssetUrl(sample.assetKey),
+                prompt: sample.prompt,
+            })),
             pendingPrompt: '',
             pendingGenerationReason: '',
             pendingGenerationTimer: null,
-            itemWidth: 280,
-            sampleImages: [
-                { image_url: 'hq_aserenezengardeninfullbl_58953958.png', prompt: 'Serene zen garden with cherry blossoms in full bloom, koi pond reflecting pink petals, morning mist, award-winning photography' },
-                { image_url: 'hq_acyberpunkcityscapeatnight_2898322.png', prompt: 'Cyberpunk cityscape at night with neon signs reflecting on wet asphalt, flying cars, holographic billboards, blade runner aesthetic' },
-                { image_url: 'hq_amagicalcottagecorecottage_34374593.png', prompt: 'Magical cottagecore cottage surrounded by wildflowers, golden hour sunlight, butterflies, fairy tale aesthetic, ultra detailed' },
-                { image_url: 'hq_amajesticdragonwithiridesc_32500687.png', prompt: 'Majestic dragon with iridescent scales perched on a mountain peak, dramatic sunset sky, cinematic lighting, masterpiece' },
-                { image_url: 'hq_acozyvintagecoffeeshopint_6607358.png', prompt: 'Cozy vintage coffee shop interior during rain, warm amber lighting, steam rising from ceramic mugs, hygge atmosphere' },
-                { image_url: 'hq_aretrofuturisticspacestatio_17958407.png', prompt: 'Retrofuturistic space station orbiting a ringed gas giant, 1970s sci-fi book cover style, dramatic lighting' },
-            ],
             categories: [
                 ["main" , "All AI Tools"],
                 ["pages" , "Pages"],
@@ -329,70 +352,21 @@ const Home = {
             this.app.stable_diffusion_manager.add_job(genOptions, rawFormOptions, this.$refs.homeGallery);
             return true;
         },
-        loadSampleImages() {
-            let images = [];
-            try {
-                const homedir = window.ipcRenderer.sendSync('get_homedir');
-                const imagesDir = homedir + '/.diffusionbee/images/';
-                for (let img of this.sampleImages) {
-                    images.push({
-                        image_url: imagesDir + img.image_url,
-                        prompt: img.prompt
-                    });
-                }
-            } catch (e) {
-                console.error("Could not load sample images:", e);
-            }
-            return images;
+        scrollHomeToTop() {
+            const root = this.$el;
+            if (root) root.scrollTop = 0;
         },
-        loadHistory() {
-            let allImages = [];
-            try {
-                let hist = window.ipcRenderer.sendSync('load_data' , 'history.json')
-                let history = hist && hist.history ? hist.history : {};
-
-                let new_items = migrate_history_only_once(history)
-                for(let k in new_items){
-                    history[k] = new_items[k]
-                }
-
-                let historyArray = Object.values(history).reverse();
-                for (let group of historyArray) {
-                    if (group.imgs && group.imgs.length > 0) {
-                        for (let img of group.imgs) {
-                            allImages.push({
-                                image_url: img.image_url,
-                                prompt: group.prompt || (group.params && group.params.prompt) || 'No prompt'
-                            });
-                        }
-                    }
-                    if (allImages.length >= 20) break;
-                }
-            } catch (error) {
-                console.error("Error loading history:", error);
-            }
-
-            if (allImages.length === 0) {
-                allImages = this.loadSampleImages();
-            }
-
-            this.carouselImages = allImages;
-
-            if (this.carouselImages.length > 0) {
-                this.carouselImages = [...this.carouselImages, ...this.carouselImages, ...this.carouselImages];
-            }
+        sampleLabel(img, idx) {
+            const labels = this.app.app_state.isArabic
+                ? ['أنمي', 'عمارة', 'رسم زيتي', 'طعام', 'بكسل', 'تحت الماء']
+                : ['Anime', 'Architecture', 'Oil painting', 'Street food', 'Pixel art', 'Underwater'];
+            return labels[idx] || img.assetKey;
         },
-        startCarousel() {
-            if (this.carouselImages.length === 0) return;
-
-            this.carouselInterval = setInterval(() => {
-                this.carouselOffset -= 1;
-                if (Math.abs(this.carouselOffset) >= (this.carouselImages.length / 3) * this.itemWidth) {
-                    this.carouselOffset = 0;
-                }
-            }, 30);
+        useWelcomePrompt(prompt) {
+            if (!prompt) return;
+            this.promptText = prompt;
+            this.submitPrompt();
         },
-
         // ── DIRECT GENERATION FROM HOMEPAGE ──
         submitPrompt() {
 
@@ -436,7 +410,7 @@ const Home = {
         },
         startInspirationRotation() {
             this.inspirationInterval = setInterval(() => {
-                this.inspirationIndex = (this.inspirationIndex + 1) % this.inspirationMessages.length;
+                this.inspirationIndex = (this.inspirationIndex + 1) % this.inspirationLineCount;
             }, 5000);
         }
     },
@@ -466,21 +440,18 @@ const Home = {
                 this.tryRunPendingPrompt();
             },
             deep: true
-        }
+        },
     },
     computed: {
+        inspirationLineCount() {
+            return getInspireLines(this.app.app_state.isArabic ? 'ar' : 'en').length;
+        },
         currentInspiration() {
-            return this.app.app_state.isArabic 
-                ? this.inspirationMessagesArabic[this.inspirationIndex] 
-                : this.inspirationMessages[this.inspirationIndex];
+            const lines = getInspireLines(this.app.app_state.isArabic ? 'ar' : 'en');
+            return lines[this.inspirationIndex % lines.length];
         },
         displayedStyles() {
             return this.stylePresets;
-        },
-        trackStyle() {
-            return {
-                transform: `translateX(${this.carouselOffset}px)`
-            };
         },
         availableModels() {
             if (!this.app.is_mounted || !this.app.assets_manager) return [];
@@ -530,14 +501,14 @@ Home.sidebar_show = "always"
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 80px 20px 60px;
-    min-height: 40vh;
+    padding: 20px 20px 16px;
+    min-height: auto;
 }
 
 .welcome-title {
-    font-size: 3.5rem;
+    font-size: 2.2rem;
     font-weight: 800;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     text-align: center;
     background: linear-gradient(135deg, #ffffff 0%, #a0a0a0 100%);
     -webkit-background-clip: text;
@@ -546,10 +517,30 @@ Home.sidebar_show = "always"
     letter-spacing: -1px;
 }
 
+.carousel-heading {
+    font-size: 0.82rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.42);
+    margin: 0 0 10px;
+    text-align: center;
+}
+
+.sample-count-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(62, 123, 250, 0.25);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+}
+
 .inspiration-text {
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: rgba(255, 255, 255, 0.5);
-    margin-bottom: 40px;
+    margin: 12px 0 18px;
     font-style: italic;
     transition: opacity 0.5s ease;
     height: 1.5rem;
@@ -558,7 +549,7 @@ Home.sidebar_show = "always"
 .chat-container {
     width: 100%;
     max-width: 800px;
-    margin-bottom: 60px;
+    margin-bottom: 28px;
     position: relative;
     z-index: 10;
 }
@@ -664,56 +655,61 @@ Home.sidebar_show = "always"
     box-shadow: none;
 }
 
-.carousel-wrapper {
+.welcome-samples {
     width: 100%;
-    overflow: hidden;
+    max-width: 900px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(2, 120px);
+    gap: 12px;
+    padding: 4px 8px 16px;
+    margin-bottom: 8px;
+    min-height: 252px;
+    direction: ltr;
+}
+
+.welcome-sample-tile {
+    width: 100%;
+    height: 120px;
+    min-height: 120px;
+    border-radius: 20px;
+    background-color: rgba(255, 255, 255, 0.08);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
+    cursor: pointer;
     position: relative;
-    padding: 40px 0;
-    mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
-    -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
-}
-
-.carousel-item {
-    flex: 0 0 auto;
-    width: 280px;
-    height: 280px;
-    margin: 0 20px;
-    border-radius: 24px;
     overflow: hidden;
-    position: relative;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid rgba(255,255,255,0.05);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
-.carousel-item:hover {
-    transform: translateY(-15px) scale(1.05);
-    z-index: 2;
-    border-color: rgba(255,255,255,0.2);
-    box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+.welcome-sample-tile:hover {
+    transform: translateY(-6px) scale(1.02);
+    border-color: rgba(255, 255, 255, 0.28);
+    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.55);
 }
 
-.carousel-caption {
+.welcome-sample-label {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
-    color: white;
-    padding: 30px 20px 20px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.4s ease;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.62);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: center;
+    backdrop-filter: blur(6px);
 }
 
-.carousel-item:hover .carousel-caption {
-    opacity: 1;
-    transform: translateY(0);
+@media (max-width: 900px) {
+    .welcome-samples {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 .models-section {
