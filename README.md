@@ -37,9 +37,19 @@ Join the Discord server: [discord.gg/t6rC5RaJQn](https://discord.gg/t6rC5RaJQn)
 
 ![Homepage](docs/screenshots/01-homepage.png)
 
-### Text to image
+The welcome carousel uses six locally generated sample images bundled under `electron_app/src/assets/welcome/`.
 
-![Text to image](docs/screenshots/02-txt2img.png)
+### Text to image (UI)
+
+![Text to image UI](docs/screenshots/02-txt2img.png)
+
+### Generation output (history + standalone sample)
+
+Real backend output — not an empty UI placeholder:
+
+![Generation history](docs/screenshots/07-history.png)
+
+![Sample generation](docs/screenshots/sample-generation.png)
 
 ### Image to image
 
@@ -56,14 +66,6 @@ Join the Discord server: [discord.gg/t6rC5RaJQn](https://discord.gg/t6rC5RaJQn)
 ### Models
 
 ![Models](docs/screenshots/06-models.png)
-
-### History
-
-![History](docs/screenshots/07-history.png)
-
-### Sample generation output
-
-![Sample generation](docs/screenshots/sample-generation.png)
 
 ---
 
@@ -233,10 +235,19 @@ See [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md) and [docs/Running_from_source
 
 ## Capturing screenshots (macOS)
 
-With the Electron app running:
+With the Electron app running, use the full documentation pipeline (generates a real image, captures UI, composites output into txt2img, verifies):
 
 ```bash
-./scripts/capture_screenshots.sh
+./scripts/ensure_doc_screenshots.sh
+```
+
+This **fails** if any required screenshot lacks real image content. Individual steps:
+
+```bash
+python3 scripts/prepare_doc_screenshots.py --generate   # backend output → sample-generation.png
+./scripts/capture_screenshots.sh                        # UI captures (needs Electron + cliclick)
+python3 scripts/compose_txt2img_screenshot.py           # merge sample into txt2img UI shot
+python3 scripts/verify_doc_screenshots.py              # strict check
 ```
 
 Screenshots are saved to `docs/screenshots/`. Requires [cliclick](https://www.florianreuter.de/cliclick/) (`brew install cliclick`).

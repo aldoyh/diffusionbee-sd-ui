@@ -1,5 +1,5 @@
 <template>
-    <div class="generation_gallery_div" :id="div_id">
+    <div class="generation_gallery_div" :class="{ 'generation_gallery_div--compact': compact }" :id="div_id">
 
         <div v-if="groups_with_non_zero_imgs.length == 0 " style="width:30% ; height: 30% ; margin-left:35%; top:50% ; transform: translateY(50%);">
             <!-- <img src="../assets/imgs/blank_illus4_dark.png" style="opacity:0.3; width: 100%; height: 100%;  object-fit: contain;">  -->
@@ -17,7 +17,7 @@
         </div>
 
 
-        <GalleryPane v-else v-for="group in groups_with_non_zero_imgs"  :key="group.group_id" :n_imgs="group.num_imgs" :img_w="group.img_width" :img_h="group.img_height" :image_data="group.imgs" :menu_items="menu_items" :on_menu_item_click="on_image_menu_item_click" :on_image_click="on_image_click"> </GalleryPane>
+        <GalleryPane v-else v-for="group in groups_with_non_zero_imgs"  :key="group.group_id" :n_imgs="group.num_imgs" :img_w="group.img_width" :img_h="group.img_height" :image_data="group.imgs" :menu_items="menu_items" :on_menu_item_click="on_image_menu_item_click" :on_image_click="on_image_click" :always_fixed_col_size="fixed_col_size"> </GalleryPane>
     </div>
 </template>
 <script>
@@ -33,10 +33,19 @@ export default {
         app: Object,
         n_to_keep: Number,
         menu_items_skip: Array,
+        compact: Boolean,
+        fixed_col_size: Number,
     },
     components: {GalleryPane},
     mounted() {
-
+        if (this.app.functions.register_gallery) {
+            this.app.functions.register_gallery(this)
+        }
+    },
+    beforeDestroy() {
+        if (this.app.functions.unregister_gallery) {
+            this.app.functions.unregister_gallery(this)
+        }
     },
     data() {
 
@@ -56,8 +65,12 @@ export default {
         groups_with_non_zero_imgs(){
             let ret = []
             for(let group of this.groups){
-                if(group.num_imgs > 0 )
+                const imgs = group.imgs || []
+                const hasFinishedImage = imgs.some((im) => im.image_url && im.image_url !== 'ERROR')
+                const hasPendingSlots = (group.num_imgs > 0) && imgs.length > 0
+                if (hasFinishedImage || hasPendingSlots) {
                     ret.push(group)
+                }
             }
             return ret;
         }
@@ -153,6 +166,18 @@ export default {
 <style>
 </style>
 <style scoped>
-    
+
+.generation_gallery_div--compact {
+    width: 100%;
+    min-height: 320px;
+}
+
+.generation_gallery_div--compact >>> .gallery_pane {
+    height: auto !important;
+    min-height: 280px;
+    max-height: 520px;
+    width: calc(100% - 16px);
+    margin: 8px;
+}
 
 </style>

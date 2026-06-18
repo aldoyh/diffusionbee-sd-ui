@@ -105,6 +105,26 @@ APPLESCRIPT
   sleep 1.0
 }
 
+click_ui_named() {
+  local needle="$1"
+  osascript <<APPLESCRIPT
+tell application "System Events"
+  tell process "Electron"
+    set frontmost to true
+    repeat with el in (entire contents of window 1)
+      try
+        set n to name of el as string
+        if n contains "$needle" then
+          click el
+          exit repeat
+        end if
+      end try
+    end repeat
+  end tell
+end tell
+APPLESCRIPT
+}
+
 echo "Waiting for DiffusionBee (Electron) window..."
 for i in $(seq 1 90); do
   if osascript -e 'tell application "System Events" to return (exists process "Electron")' 2>/dev/null | grep -q true; then
@@ -125,7 +145,7 @@ capture_window "01-homepage.png"
 cp "$OUT_DIR/01-homepage.png" "$OUT_DIR/01-homepage-welcome-carousel.png"
 
 navigate_to_slot 1
-capture_window "02-txt2img.png"
+capture_window "02-txt2img-ui.png"
 
 navigate_to_slot 2
 capture_window "03-img2img.png"
@@ -146,5 +166,9 @@ navigate_to_slot 0
 scroll_home_to_top
 click_lang_toggle
 capture_window "08-homepage-arabic.png"
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+python3 "$ROOT/scripts/prepare_doc_screenshots.py" || true
+python3 "$ROOT/scripts/compose_txt2img_screenshot.py" || true
 
 echo "Screenshot capture complete."

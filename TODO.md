@@ -8,6 +8,6 @@
 
 - [x] translate the new replacement screen into Arabic and applying the font Tajawal to it.
 
-- [x] finalize by taking a screenshot and including it in the README.md file.
+- [x] finalize by taking a screenshot and including it in the README.md file. (`ensure_doc_screenshots.sh` generates, composes, and verifies real output.)
 
 - [ ] **Testing**: run or create if it doesn't exist all the tests and ensure they are all successful then check that they called base for any missing test that we need to add.

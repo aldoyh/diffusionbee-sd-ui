@@ -64,6 +64,13 @@
                 </div>
             </div>
 
+            <div class="gallery-section gallery-section--prominent" v-if="app.is_mounted">
+                <h2 class="category-title gallery-section-title">
+                    {{ app.app_state.isArabic ? 'نتائج التوليد' : 'Your generations' }}
+                </h2>
+                <GenerationGallery ref="homeGallery" :app="app" :n_to_keep="10" :menu_items_skip="['use_params_current_page']" :compact="true" :fixed_col_size="280"></GenerationGallery>
+            </div>
+
         </div>
 
         <div class="styles-section">
@@ -113,10 +120,6 @@
             </div>
         </div>
 
-        <div class="gallery-section" v-if="app.is_mounted">
-            <GenerationGallery ref="homeGallery" :app="app" :n_to_keep="10" :menu_items_skip="['use_params_current_page']"></GenerationGallery>
-        </div>
-
         <hr style="border-color: rgba(255,255,255,0.1)">
     </div>
 </template>
@@ -124,6 +127,7 @@
 <script>
 import { getRandomPrompt, saveUserPrompt, getInspireLines } from "../prompt_library.js"
 import GenerationGallery from "../components/GenerationGallery.vue"
+import { syncGalleryGroup } from "../generation_broadcast.js"
 
 const PUBLIC_BASE = (typeof process !== 'undefined' && process.env && process.env.BASE_URL) || '/';
 
@@ -134,6 +138,12 @@ const WELCOME_ASSET_REQUIRES = {
     'welcome_street_food.png': require('../assets/welcome/welcome_street_food.png'),
     'welcome_pixel_ramen.png': require('../assets/welcome/welcome_pixel_ramen.png'),
     'welcome_underwater_kelp.png': require('../assets/welcome/welcome_underwater_kelp.png'),
+    'welcome_samurai_peak.png': require('../assets/welcome/welcome_samurai_peak.png'),
+    'welcome_desert_highway.png': require('../assets/welcome/welcome_desert_highway.png'),
+    'welcome_northern_lights.png': require('../assets/welcome/welcome_northern_lights.png'),
+    'welcome_lavender_fields.png': require('../assets/welcome/welcome_lavender_fields.png'),
+    'welcome_cyberpunk_city.png': require('../assets/welcome/welcome_cyberpunk_city.png'),
+    'welcome_coastal_lighthouse.png': require('../assets/welcome/welcome_coastal_lighthouse.png'),
 };
 
 function getPublicWelcomePath(assetKey) {
@@ -171,6 +181,30 @@ const WELCOME_CAROUSEL_META = [
         assetKey: 'welcome_underwater_kelp.png',
         prompt: 'Underwater kelp forest with sun rays piercing the surface, sea turtle gliding through, crystal clear water, serene marine scene',
     },
+    {
+        assetKey: 'welcome_samurai_peak.png',
+        prompt: 'Epic cinematic wide landscape, lone samurai on a misty mountain peak at dawn, golden sunlight piercing clouds, dramatic volumetric light, award-winning photography, ultra detailed, 8k',
+    },
+    {
+        assetKey: 'welcome_desert_highway.png',
+        prompt: 'Cinematic wide landscape, empty desert highway at sunset, long straight road vanishing into red rock canyons, dramatic clouds, golden hour, road-trip photography, ultra sharp, 8k',
+    },
+    {
+        assetKey: 'welcome_northern_lights.png',
+        prompt: 'Cinematic wide landscape, aurora borealis over a Norwegian fjord, snow-covered pines, mirror-still water reflection, astrophotography, vivid green curtains of light, 8k',
+    },
+    {
+        assetKey: 'welcome_lavender_fields.png',
+        prompt: 'Cinematic wide landscape, endless lavender fields in Provence at golden hour, lone tree on the horizon, soft purple rows, dreamy atmosphere, fine art landscape photography, 8k',
+    },
+    {
+        assetKey: 'welcome_cyberpunk_city.png',
+        prompt: 'Cinematic wide landscape, cyberpunk megacity at night, neon kanji signs, rain-slick streets, flying cars in distance, blade runner atmosphere, moody teal and magenta, ultra detailed, 8k',
+    },
+    {
+        assetKey: 'welcome_coastal_lighthouse.png',
+        prompt: 'Cinematic wide landscape, dramatic coastal lighthouse during a storm, crashing waves, beam cutting through rain, moody seascape, long exposure photography, powerful atmosphere, 8k',
+    },
 ];
 
 const Home = {
@@ -179,9 +213,13 @@ const Home = {
     components: { GenerationGallery },
     mounted() {
         this.startInspirationRotation();
+        if (this.app.functions.subscribe_generation) {
+            this.app.functions.subscribe_generation((group) => this.onGenerationComplete(group));
+        }
         this.$nextTick(() => {
             this.autoSelectModel();
             this.scrollHomeToTop();
+            this.hydrateGalleryFromLastGeneration();
         });
         setTimeout(() => this.scrollHomeToTop(), 250);
     },
@@ -356,10 +394,29 @@ const Home = {
             const root = this.$el;
             if (root) root.scrollTop = 0;
         },
+        scrollToGallery() {
+            const galleryEl = this.$refs.homeGallery && this.$refs.homeGallery.$el;
+            if (galleryEl) {
+                galleryEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        },
+        hydrateGalleryFromLastGeneration() {
+            const last = this.app.app_state.last_gallery_group;
+            if (!last || !this.$refs.homeGallery) return;
+            if (this.$refs.homeGallery.groups_with_non_zero_imgs.length > 0) return;
+            syncGalleryGroup(this.$refs.homeGallery, last, null);
+        },
+        onGenerationComplete() {
+            this.$nextTick(() => {
+                if (this.app.current_selected_tab === 'Homepage') {
+                    this.scrollToGallery();
+                }
+            });
+        },
         sampleLabel(img, idx) {
             const labels = this.app.app_state.isArabic
-                ? ['أنمي', 'عمارة', 'رسم زيتي', 'طعام', 'بكسل', 'تحت الماء']
-                : ['Anime', 'Architecture', 'Oil painting', 'Street food', 'Pixel art', 'Underwater'];
+                ? ['أنمي', 'عمارة', 'رسم زيتي', 'طعام', 'بكسل', 'تحت الماء', 'ساموراي', 'صحراء', 'شفق', 'لافندر', 'سايبربانك', 'منارة']
+                : ['Anime', 'Architecture', 'Oil painting', 'Street food', 'Pixel art', 'Underwater', 'Samurai', 'Desert', 'Aurora', 'Lavender', 'Cyberpunk', 'Lighthouse'];
             return labels[idx] || img.assetKey;
         },
         useWelcomePrompt(prompt) {
@@ -615,6 +672,25 @@ Home.sidebar_show = "always"
     color: rgba(255, 255, 255, 0.9);
     letter-spacing: 3px;
 }
+.gallery-section {
+    width: 100%;
+    max-width: 900px;
+    margin-top: 8px;
+}
+
+.gallery-section--prominent {
+    margin-top: 24px;
+    padding: 18px 14px 10px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gallery-section-title {
+    margin-bottom: 12px !important;
+    font-size: 1.1rem !important;
+}
+
 .pending-generation-note {
     margin-top: 14px;
     padding: 10px 14px;
@@ -657,21 +733,21 @@ Home.sidebar_show = "always"
 
 .welcome-samples {
     width: 100%;
-    max-width: 900px;
+    max-width: 1100px;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: repeat(2, 120px);
-    gap: 12px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(3, 108px);
+    gap: 10px;
     padding: 4px 8px 16px;
     margin-bottom: 8px;
-    min-height: 252px;
+    min-height: 354px;
     direction: ltr;
 }
 
 .welcome-sample-tile {
     width: 100%;
-    height: 120px;
-    min-height: 120px;
+    height: 108px;
+    min-height: 108px;
     border-radius: 20px;
     background-color: rgba(255, 255, 255, 0.08);
     background-size: cover;

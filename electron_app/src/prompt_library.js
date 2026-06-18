@@ -437,6 +437,30 @@ const WELCOME_SAMPLES = [
     image_url: 'welcome_underwater_kelp.png',
     prompt: 'Underwater kelp forest with sun rays piercing the surface, sea turtle gliding through, crystal clear water, serene marine scene',
   },
+  {
+    image_url: 'welcome_samurai_peak.png',
+    prompt: 'Epic cinematic wide landscape, lone samurai on a misty mountain peak at dawn, golden sunlight piercing clouds, dramatic volumetric light, award-winning photography, ultra detailed, 8k',
+  },
+  {
+    image_url: 'welcome_desert_highway.png',
+    prompt: 'Cinematic wide landscape, empty desert highway at sunset, long straight road vanishing into red rock canyons, dramatic clouds, golden hour, road-trip photography, ultra sharp, 8k',
+  },
+  {
+    image_url: 'welcome_northern_lights.png',
+    prompt: 'Cinematic wide landscape, aurora borealis over a Norwegian fjord, snow-covered pines, mirror-still water reflection, astrophotography, vivid green curtains of light, 8k',
+  },
+  {
+    image_url: 'welcome_lavender_fields.png',
+    prompt: 'Cinematic wide landscape, endless lavender fields in Provence at golden hour, lone tree on the horizon, soft purple rows, dreamy atmosphere, fine art landscape photography, 8k',
+  },
+  {
+    image_url: 'welcome_cyberpunk_city.png',
+    prompt: 'Cinematic wide landscape, cyberpunk megacity at night, neon kanji signs, rain-slick streets, flying cars in distance, blade runner atmosphere, moody teal and magenta, ultra detailed, 8k',
+  },
+  {
+    image_url: 'welcome_coastal_lighthouse.png',
+    prompt: 'Cinematic wide landscape, dramatic coastal lighthouse during a storm, crashing waves, beam cutting through rain, moody seascape, long exposure photography, powerful atmosphere, 8k',
+  },
 ];
 
 // ─── Default Prompts for First-Run Users ────────────────────────────────────

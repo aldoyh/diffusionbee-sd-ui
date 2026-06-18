@@ -30,6 +30,7 @@ import AppletPage from "../components/AppletPage.vue"
 import { t } from "../i18n.js"
 
 import Vue from 'vue'
+import { getTxt2ImgGallery } from '../generation_broadcast.js'
 
 // Eagerly loaded so welcome assets and history persistence are ready on first paint.
 import Homepage from "../pages/Homepage.vue"
@@ -81,6 +82,15 @@ export default {
             Vue.set(this.last_opened_timmings , page_id , Date.now()  )
 
             window.localStorage.setItem('last_opened_times_7768', JSON.stringify(this.last_opened_timmings));
+
+            if (page_id === 'Txt2Img' && this.app.functions.register_gallery) {
+                Vue.nextTick(() => {
+                    const gallery = getTxt2ImgGallery(this.app)
+                    if (gallery) {
+                        this.app.functions.register_gallery(gallery)
+                    }
+                })
+            }
 
         }, 
 

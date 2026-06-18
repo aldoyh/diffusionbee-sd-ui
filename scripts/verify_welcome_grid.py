@@ -25,7 +25,7 @@ def verify_homepage(path: Path) -> tuple[int, int]:
     left, top, right, bottom = (int(190 * scale), int(95 * scale), int(1090 * scale), int(340 * scale))
     region = im.crop((left, top, right, bottom))
     w, h = region.size
-    cols, rows = 3, 2
+    cols, rows = 4, 3
     tw, th = w // cols, h // rows
     passed = 0
     for r in range(rows):

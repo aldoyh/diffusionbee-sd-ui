@@ -104,7 +104,19 @@ export default {
                 // so that there are no empty loading items in gallry 
                 let current_group_id = this.current_group_id
                 let gallery = this.group_gallery_mapping[this.current_group_id]
+                if (!gallery) {
+                    console.warn('finish_current_job: no gallery for group', current_group_id)
+                    this.current_group_id = undefined;
+                    this.queue.current_group = undefined;
+                    return
+                }
                 let gallery_group = gallery.get_group( this.current_group_id )
+                if (!gallery_group) {
+                    console.warn('finish_current_job: no gallery group for', current_group_id)
+                    this.current_group_id = undefined;
+                    this.queue.current_group = undefined;
+                    return
+                }
                 let n_done = 0
                 for(let img of gallery_group.imgs){
                     if(img.image_url)
@@ -118,10 +130,16 @@ export default {
                 this.current_group_id = undefined;
                 this.queue.current_group = undefined;
 
-                 
+                if (typeof this.app.functions.broadcast_gallery_group === 'function') {
+                    this.app.functions.broadcast_gallery_group(gallery_group, gallery)
+                }
 
                 if (typeof this.app.functions.add_to_history === 'function') {
                     this.app.functions.add_to_history(current_group_id, gallery_group)
+                }
+
+                if (typeof this.app.functions.on_generation_complete === 'function') {
+                    this.app.functions.on_generation_complete(gallery_group)
                 }
 
             }
@@ -168,7 +186,15 @@ export default {
                     that.queue.current_group.jobs[that.current_job_index].job_state = "done"
                     console.log("an image done "+ that.queue.current_group.jobs[that.current_job_index].job_state )
                     let gallery = that.group_gallery_mapping[that.current_group_id]
+                    if (!gallery) {
+                        console.warn('No gallery mapped for group', that.current_group_id)
+                        return
+                    }
                     let gallery_group = gallery.get_group( that.current_group_id )
+                    if (!gallery_group) {
+                        console.warn('No gallery group for', that.current_group_id)
+                        return
+                    }
                     let el_to_update = gallery_group.imgs[ that.queue.current_group.jobs[that.current_job_index].image_no ]
                     el_to_update.image_url = img_path ;
                     el_to_update.aux_img_url = aug_img_path ;
@@ -176,6 +202,11 @@ export default {
                     el_to_update.params = JSON.parse(JSON.stringify(job)) ;
 
                     gallery.update_group( gallery_group  )
+
+                    if (typeof that.app.functions.broadcast_gallery_group === 'function') {
+                        that.app.functions.broadcast_gallery_group(gallery_group, gallery)
+                    }
+
                     that.finish_current_job()
 
                 },

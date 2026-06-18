@@ -142,6 +142,8 @@ export default
 
         bind_app_component(this);
         bindHistoryToApp(this);
+        const { registerGenerationBroadcast } = require('./generation_broadcast.js');
+        registerGenerationBroadcast(this);
         send_to_py("strt");
 
         if( require('../package.json').is_dev || require('../package.json').build_number.includes("dev") )

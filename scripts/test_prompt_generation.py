@@ -3,7 +3,7 @@
 Generate images from fixture prompt text and verify outputs.
 
 Runs smoke tests by default (2 prompts, 512x512, fewer steps).
-Use --full to regenerate all six welcome homepage samples at 768x768.
+Use --full to regenerate all twelve welcome homepage samples at 1024x576 landscape.
 """
 
 from __future__ import annotations
@@ -22,6 +22,8 @@ from scripts.lib.fixtures import (  # noqa: E402
     FULL_WELCOME_CASES,
     GENERATION_CASES,
     MODEL_TDICT_PATHS,
+    WELCOME_LANDSCAPE_HEIGHT,
+    WELCOME_LANDSCAPE_WIDTH,
 )
 from scripts.lib.image_checks import validate_image  # noqa: E402
 from scripts.lib.models import verify_required_models  # noqa: E402
@@ -112,7 +114,7 @@ def main() -> int:
     parser.add_argument(
         "--full",
         action="store_true",
-        help="Run all six welcome prompts at 768x768 and sync app assets",
+        help="Run all twelve welcome prompts at 1024x576 and sync app assets",
     )
     parser.add_argument(
         "--skip-setup-check",
@@ -137,7 +139,12 @@ def main() -> int:
         print()
 
     if args.full:
-        return run_cases(FULL_WELCOME_CASES, 768, 768, sync_assets=True)
+        return run_cases(
+            FULL_WELCOME_CASES,
+            WELCOME_LANDSCAPE_WIDTH,
+            WELCOME_LANDSCAPE_HEIGHT,
+            sync_assets=True,
+        )
 
     return run_cases(GENERATION_CASES, 512, 512, sync_assets=False)
 
