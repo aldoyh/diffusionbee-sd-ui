@@ -6,6 +6,11 @@
     "build": "cd electron_app && PYTHON_PATH=/usr/bin/python3 BUILD_ARCH=arm64 BACKEND_BUILD_PATH=../backends npm run electron:build",
     "electron:build": "cd electron_app && PYTHON_PATH=/usr/bin/python3 BUILD_ARCH=arm64 BACKEND_BUILD_PATH=../backends npm run electron:build",
     "serve": "cd electron_app && npm run electron:serve",
-    "install": "cd electron_app && pnpm install"
+    "install": "cd electron_app && pnpm install",
+    "setup:models": "python3 scripts/setup_models.py",
+    "test:generation": "python3 scripts/test_prompt_generation.py",
+    "test:generation:full": "python3 scripts/test_prompt_generation.py --full",
+    "test:setup": "bash scripts/run_setup_and_tests.sh smoke",
+    "test:setup:full": "bash scripts/run_setup_and_tests.sh full"
   }
 }
