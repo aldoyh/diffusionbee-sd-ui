@@ -9,6 +9,28 @@ try {
 
 module.exports = {
     
+    chainWebpack: config => {
+        // Raise size limits since this is an Electron app (not web)
+        config.performance
+            .hints('warning')
+            .maxEntrypointSize(1024 * 1024)  // 1 MiB
+            .maxAssetSize(1024 * 1024)
+
+        // Extract bootstrap into its own chunk (merge preserves Vue CLI's default vendor config)
+        config.optimization.merge({
+            splitChunks: {
+                cacheGroups: {
+                    bootstrap: {
+                        name: 'chunk-bootstrap',
+                        test: /[\\/]node_modules[\\/](bootstrap|bootstrap-vue)[\\/]/,
+                        priority: 20,
+                        chunks: 'all'
+                    }
+                }
+            }
+        })
+    },
+
     pluginOptions: {
         electronBuilder: {
             preload: './src/preload.js',
@@ -16,7 +38,7 @@ module.exports = {
             // Or, for multiple preload files:
             // preload: { preload: 'src/preload.js', otherPreload: 'src/preload2.js' }
             builderOptions: {
-                appId: 'com.diffusionbee.diffusionbee',
+                appId: 'com.diffusionbee.gui',
                 artifactName: "DiffusionBee"+(build_config.build_name||"")+"-${version}.${ext}",
 
                 afterSign: "./afterSignHook.js",

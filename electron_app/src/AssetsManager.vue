@@ -82,6 +82,49 @@ export default {
 
     methods: {
 
+        scan_disk_models() {
+            let models_on_disk = window.ipcRenderer.sendSync('scan_disk_for_models');
+            let that = this;
+
+            for (let model of models_on_disk) {
+                // Skip if this model is already tracked (by id or by path)
+                let already_exists = false;
+
+                if (this.downloaded_assets[model.id]) {
+                    already_exists = true;
+                }
+                if (this.local_assets[model.id]) {
+                    already_exists = true;
+                }
+
+                // Also check by asset_path in case the id differs
+                for (let k in this.all_avail_assets) {
+                    let existing = this.all_avail_assets[k];
+                    if (existing.asset_path === model.asset_path) {
+                        already_exists = true;
+                        break;
+                    }
+                }
+
+                if (!already_exists) {
+                    let asset = {
+                        id: model.id,
+                        filename: model.filename,
+                        asset_path: model.asset_path,
+                        title: model.title || model.id,
+                        description: 'Discovered from ' + model.source,
+                        status: 'done',
+                        is_locally_imported: true,
+                        model_meta_data: model.model_meta_data || { type: 'sd_model' },
+                    };
+                    Vue.set(that.local_assets, model.id, asset);
+                    console.log('Discovered model from disk:', model.id, 'at', model.asset_path);
+                }
+            }
+
+            return models_on_disk.length;
+        },
+
         add_local_asset(asset_details, cb ){
             asset_details = JSON.parse(JSON.stringify(asset_details))
             let that = this;

@@ -2,11 +2,11 @@
     <div style="width: 100%; height :100% ; overflow:auto; padding:30px">
         <div class="model_dialog"> 
             <h2 style="white-space: pre-line"> 
-                To contact us, please send an email at :
+                {{ app.app_state.isArabic ? 'للتواصل معنا، يرجى إرسال بريد إلكتروني إلى :' : 'To contact us, please send an email at :' }}
                 <br><br>
                 diffusionbee@proton.me
             </h2> <br>            
-            <p>We will get back to you as soon as possible</p>
+            <p>{{ app.app_state.isArabic ? 'سنتواصل معك في أقرب وقت ممكن' : 'We will get back to you as soon as possible' }}</p>
         </div>
        
     </div>

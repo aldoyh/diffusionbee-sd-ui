@@ -2,27 +2,34 @@
 <template>
     <div class="main_container dark-theme">
         <div class="welcome-section">
-            <h1 class="welcome-title" :class="{ 'rtl-text': isArabic }">
-                {{ isArabic ? 'ماذا ستصنع اليوم؟' : 'What will you create today?' }}
+            <h1 class="welcome-title" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
+                {{ app.app_state.isArabic ? 'ماذا ستصنع اليوم؟' : 'What will you create today?' }}
             </h1>
             
-            <p class="inspiration-text" :class="{ 'rtl-text': isArabic }">
+            <p class="inspiration-text" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
                 {{ currentInspiration }}
             </p>
 
             <div class="chat-container">
-                <div class="chat-box" :dir="isArabic ? 'rtl' : 'ltr'">
+                <div class="chat-box" :dir="app.app_state.isArabic ? 'rtl' : 'ltr'">
                     <input
                         type="text"
                         v-model="promptText"
                         @keyup.enter="submitPrompt"
-                        :placeholder="isArabic ? 'صف ما تريد رؤيته...' : 'Describe what you want to see...'"
+                        :placeholder="app.app_state.isArabic ? 'صف ما تريد رؤيته...' : 'Describe what you want to see...'"
                         class="chat-input"
-                        :class="{ 'rtl-text': isArabic }"
+                        :class="{ 'rtl-text': app.app_state.isArabic }"
                         autofocus
                     />
+                    <button @click="randomPrompt" class="chat-submit" :title="app.app_state.isArabic ? 'توليد موجه عشوائي' : 'Generate random prompt'" style="background:rgba(255,255,255,0.08); margin-right:6px;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+                            <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+                            <line x1="4" y1="4" x2="9" y2="9"/>
+                        </svg>
+                    </button>
                     <button @click="submitPrompt" class="chat-submit" :disabled="!promptText.trim()">
-                        <svg v-if="!isArabic" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg v-if="!app.app_state.isArabic" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
@@ -32,8 +39,11 @@
                         </svg>
                     </button>
                 </div>
-                <div class="lang-toggle" @click="isArabic = !isArabic">
-                    {{ isArabic ? 'English' : 'العربية' }}
+                <div class="lang-toggle" @click="app.app_state.isArabic = !app.app_state.isArabic" :class="{ 'arabic-text': app.app_state.isArabic }">
+                    {{ app.app_state.isArabic ? 'English' : 'العربية' }}
+                </div>
+                <div v-if="pendingPrompt" class="pending-generation-note" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
+                    {{ app.app_state.isArabic ? 'تمت إضافة الطلب. سيتم التوليد تلقائيًا عند جاهزية النموذج والمحرك.' : 'Prompt queued. We’ll generate automatically as soon as model and backend are ready.' }}
                 </div>
             </div>
 
@@ -54,12 +64,37 @@
             </div>
         </div>
 
+        <div class="models-section" v-if="availableModels.length > 0">
+            <h2 class="category-title">
+                {{ app.app_state.isArabic ? 'النماذج المتاحة' : 'Your Models' }}
+                <span class="model-count-badge">{{ availableModels.length }}</span>
+            </h2>
+            <div class="models-grid">
+                <div v-for="model in availableModels" :key="model.id" 
+                    class="model-chip" 
+                    :class="{ 'model-selected': selectedModelId === model.id }"
+                    @click="selectModel(model)">
+                    <span class="model-icon">🧠</span>
+                    <span class="model-name">{{ model.title || model.id }}</span>
+                    <span class="model-type-badge" v-if="model.model_meta_data && model.model_meta_data.sd_type">
+                        {{ model.model_meta_data.sd_type }}
+                    </span>
+                    <span v-else class="model-type-badge sd-badge">SD</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generation Gallery (appears when user generates images) -->
+        <div class="gallery-section" v-if="app.is_mounted">
+            <GenerationGallery ref="homeGallery" :app="app" :n_to_keep="10" :menu_items_skip="['use_params_current_page']"></GenerationGallery>
+        </div>
+
         <div class="styles-section">
-            <h2 class="category-title">{{ isArabic ? 'استكشف الأنماط' : 'Explore Styles' }}</h2>
+            <h2 class="category-title">{{ app.app_state.isArabic ? 'استكشف الأنماط' : 'Explore Styles' }}</h2>
             <div class="styles-grid">
                 <div v-for="style in displayedStyles" :key="style.name" class="style-chip" @click="applyStyle(style.name)">
                     <span class="style-icon">{{ style.icon }}</span>
-                    <span class="style-name">{{ isArabic ? style.nameArabic : style.name }}</span>
+                    <span class="style-name">{{ app.app_state.isArabic ? style.nameArabic : style.name }}</span>
                 </div>
             </div>
         </div>
@@ -87,15 +122,21 @@
 
 <script>
 import { migrate_history_only_once } from "../utils"
+import { getRandomPrompt, saveUserPrompt } from "../prompt_library.js"
+import GenerationGallery from "../components/GenerationGallery.vue"
 
 const Home = {
     name: 'Home',
     props: {app:Object, },
-    components: {},
+    components: { GenerationGallery },
     mounted() {
         this.loadHistory();
         this.startCarousel();
         this.startInspirationRotation();
+        // Auto-select the first available model
+        this.$nextTick(() => {
+            this.autoSelectModel();
+        });
     },
     beforeDestroy() {
         if (this.carouselInterval) {
@@ -104,11 +145,12 @@ const Home = {
         if (this.inspirationInterval) {
             clearInterval(this.inspirationInterval);
         }
+        this.clearPendingGenerationTimer();
     },
     data() {
         return {
-            isArabic: false,
             promptText: '',
+            selectedModelId: null,
             inspirationIndex: 0,
             inspirationInterval: null,
             inspirationMessages: [
@@ -138,30 +180,182 @@ const Home = {
             carouselImages: [],
             carouselOffset: 0,
             carouselInterval: null,
-            itemWidth: 280, // width + margin
+            pendingPrompt: '',
+            pendingGenerationReason: '',
+            pendingGenerationTimer: null,
+            itemWidth: 280,
+            sampleImages: [
+                { image_url: 'hq_aserenezengardeninfullbl_58953958.png', prompt: 'Serene zen garden with cherry blossoms in full bloom, koi pond reflecting pink petals, morning mist, award-winning photography' },
+                { image_url: 'hq_acyberpunkcityscapeatnight_2898322.png', prompt: 'Cyberpunk cityscape at night with neon signs reflecting on wet asphalt, flying cars, holographic billboards, blade runner aesthetic' },
+                { image_url: 'hq_amagicalcottagecorecottage_34374593.png', prompt: 'Magical cottagecore cottage surrounded by wildflowers, golden hour sunlight, butterflies, fairy tale aesthetic, ultra detailed' },
+                { image_url: 'hq_amajesticdragonwithiridesc_32500687.png', prompt: 'Majestic dragon with iridescent scales perched on a mountain peak, dramatic sunset sky, cinematic lighting, masterpiece' },
+                { image_url: 'hq_acozyvintagecoffeeshopint_6607358.png', prompt: 'Cozy vintage coffee shop interior during rain, warm amber lighting, steam rising from ceramic mugs, hygge atmosphere' },
+                { image_url: 'hq_aretrofuturisticspacestatio_17958407.png', prompt: 'Retrofuturistic space station orbiting a ringed gas giant, 1970s sci-fi book cover style, dramatic lighting' },
+            ],
             categories: [
                 ["main" , "All AI Tools"],
                 ["pages" , "Pages"],
                 ["misc" , "Miscellaneous"],
+                ["tools" , "Tools"],
             ]
         };
     },
     methods: {
+        autoSelectModel() {
+            let models = this.availableModels;
+            if (models.length === 0) return;
+            if (this.selectedModelId && models.find(m => m.id === this.selectedModelId)) return;
+            // Prefer Default_SD1.5, otherwise use first available
+            let preferred = models.find(m => m.id === 'Default_SD1.5');
+            this.selectedModelId = preferred ? preferred.id : models[0].id;
+        },
+        clearPendingGenerationTimer() {
+            if (this.pendingGenerationTimer) {
+                clearInterval(this.pendingGenerationTimer);
+                this.pendingGenerationTimer = null;
+            }
+        },
+        isBackendReady() {
+            if (!this.app || !this.app.stable_diffusion_manager) return false;
+            if (!this.app.stable_diffusion_manager.stable_diffusion) return false;
+            return this.app.stable_diffusion_manager.is_ready;
+        },
+        getDefaultModelAsset() {
+            return {
+                id: 'Default_SD1.5',
+                filename: 'sd-v1-5_fp16.tdict',
+                md5: 'a36c79b8edb4b21b75e50d5834d1f4ae',
+                is_stock_model: true,
+                url: 'https://huggingface.co/divamgupta/stable_diffusion_mps/resolve/main/sd-v1-5_fp16.tdict',
+                title: 'Stable Diffusion 1.5 (Default)',
+                model_meta_data: { type: 'sd_model', float_type: 'float16', sd_type: 'SD_1x' }
+            };
+        },
+        ensureModelReadyForGeneration() {
+            if (!this.app || !this.app.assets_manager) return false;
+
+            this.autoSelectModel();
+            if (this.selectedModelId) {
+                let selectedModelPath = this.app.assets_manager.get_downloaded_asset_path(this.selectedModelId);
+                if (selectedModelPath) return true;
+            }
+
+            // If first-run setup dialog is active, trigger its download flow automatically.
+            if (this.app.show_model_setup) {
+                if (this.app.model_to_download && !this.app.is_downloading_model && !this.app.model_download_completed) {
+                    this.app.start_model_download();
+                }
+                return false;
+            }
+
+            // Fallback: bootstrap default model download so the queued prompt can run.
+            let defaultAsset = this.getDefaultModelAsset();
+            if (this.app.assets_manager.get_downloaded_asset_path(defaultAsset.id)) {
+                this.selectedModelId = defaultAsset.id;
+                return true;
+            }
+
+            this.selectedModelId = defaultAsset.id;
+            if (!this.app.assets_manager.downloading[defaultAsset.id]) {
+                this.app.assets_manager.download_asset(defaultAsset);
+            }
+            return false;
+        },
+        queuePromptForAutoGeneration(prompt, reason) {
+            let normalizedPrompt = (prompt || '').trim();
+            if (!normalizedPrompt) return;
+
+            let isNewPrompt = this.pendingPrompt !== normalizedPrompt;
+            this.pendingPrompt = normalizedPrompt;
+            this.pendingGenerationReason = reason || '';
+            this.promptText = '';
+
+            this.ensureModelReadyForGeneration();
+            this.tryRunPendingPrompt();
+
+            if (!this.pendingGenerationTimer) {
+                this.pendingGenerationTimer = setInterval(() => {
+                    this.tryRunPendingPrompt();
+                }, 700);
+            }
+
+            if (isNewPrompt) {
+                this.app.show_toast(this.app.app_state.isArabic
+                    ? 'تمت إضافة الطلب وسيبدأ التوليد تلقائيًا.'
+                    : 'Prompt queued — generation will start automatically.');
+            }
+        },
+        tryRunPendingPrompt() {
+            if (!this.pendingPrompt) {
+                this.clearPendingGenerationTimer();
+                return;
+            }
+
+            if (!this.ensureModelReadyForGeneration()) return;
+            if (!this.isBackendReady()) return;
+            if (!this.$refs.homeGallery) return;
+
+            let prompt = this.pendingPrompt;
+            this.pendingPrompt = '';
+            this.pendingGenerationReason = '';
+            this.clearPendingGenerationTimer();
+            this.generatePrompt(prompt);
+        },
+        generatePrompt(prompt) {
+            let modelPath = this.app.assets_manager.get_downloaded_asset_path(this.selectedModelId);
+            if (!modelPath) return false;
+            if (!this.$refs.homeGallery) return false;
+
+            let genOptions = {
+                model_tdict_path: modelPath,
+                prompt: prompt,
+                negative_prompt: '',
+                img_width: 512,
+                img_height: 512,
+                num_imgs: 1,
+                seed: Math.floor(Math.random() * 1000000),
+                guidance_scale: 7.5,
+                num_steps: 25,
+                scheduler: 'ddim',
+                applet_name: 'txt2img',
+            };
+
+            let rawFormOptions = {
+                prompt: prompt,
+                seed: genOptions.seed,
+                selected_sd_model: this.selectedModelId,
+            };
+
+            this.app.stable_diffusion_manager.add_job(genOptions, rawFormOptions, this.$refs.homeGallery);
+            return true;
+        },
+        loadSampleImages() {
+            let images = [];
+            try {
+                const homedir = window.ipcRenderer.sendSync('get_homedir');
+                const imagesDir = homedir + '/.diffusionbee/images/';
+                for (let img of this.sampleImages) {
+                    images.push({
+                        image_url: imagesDir + img.image_url,
+                        prompt: img.prompt
+                    });
+                }
+            } catch (e) {
+                console.error("Could not load sample images:", e);
+            }
+            return images;
+        },
         loadHistory() {
-            let history = {}
+            let allImages = [];
             try {
                 let hist = window.ipcRenderer.sendSync('load_data' , 'history.json')
-                if(hist && hist.history){
-                    history = hist.history;
-                }
+                let history = hist && hist.history ? hist.history : {};
 
                 let new_items = migrate_history_only_once(history)
                 for(let k in new_items){
                     history[k] = new_items[k]
                 }
 
-                // Extract images and sort by date (newest first)
-                let allImages = [];
                 let historyArray = Object.values(history).reverse();
                 for (let group of historyArray) {
                     if (group.imgs && group.imgs.length > 0) {
@@ -172,17 +366,20 @@ const Home = {
                             });
                         }
                     }
-                    if (allImages.length >= 20) break; // limit to 20 images
-                }
-
-                this.carouselImages = allImages;
-
-                // Clone images for infinite scroll effect
-                if (this.carouselImages.length > 0) {
-                    this.carouselImages = [...this.carouselImages, ...this.carouselImages, ...this.carouselImages];
+                    if (allImages.length >= 20) break;
                 }
             } catch (error) {
                 console.error("Error loading history:", error);
+            }
+
+            if (allImages.length === 0) {
+                allImages = this.loadSampleImages();
+            }
+
+            this.carouselImages = allImages;
+
+            if (this.carouselImages.length > 0) {
+                this.carouselImages = [...this.carouselImages, ...this.carouselImages, ...this.carouselImages];
             }
         },
         startCarousel() {
@@ -190,39 +387,43 @@ const Home = {
 
             this.carouselInterval = setInterval(() => {
                 this.carouselOffset -= 1;
-
-                // Reset when scrolled past one set of images
                 if (Math.abs(this.carouselOffset) >= (this.carouselImages.length / 3) * this.itemWidth) {
                     this.carouselOffset = 0;
                 }
             }, 30);
         },
+
+        // ── DIRECT GENERATION FROM HOMEPAGE ──
         submitPrompt() {
-            if (!this.promptText.trim()) return;
 
-            let prompt = this.promptText;
+            let prompt = this.promptText.trim();
+            if (!prompt) return;
+
+            if (!this.ensureModelReadyForGeneration() || !this.isBackendReady() || !this.$refs.homeGallery) {
+                this.queuePromptForAutoGeneration(prompt, this.isBackendReady() ? 'model' : 'backend');
+                return;
+            }
             this.promptText = '';
-
-            // Switch page
-            this.app.functions.switch_page('Txt2Img');
-
-            // Wait for Vue to render the new component
-            this.$nextTick(() => {
-                let txt2imgComp = this.app.$refs.router.$refs['Txt2Img'];
-                if (Array.isArray(txt2imgComp)) txt2imgComp = txt2imgComp[0];
-
-                if (txt2imgComp && txt2imgComp.$refs.sd_applet) {
-                    let sd_applet = txt2imgComp.$refs.sd_applet;
-                    sd_applet.load_options({ prompt: prompt });
-                    // Optional: automatically start generation
-                    // sd_applet.generate();
-                }
-            });
+            if (!this.generatePrompt(prompt)) {
+                this.queuePromptForAutoGeneration(prompt, 'retry');
+            }
         },
+
         applyStyle(styleName) {
             if (!this.promptText.includes(styleName)) {
                 this.promptText = this.promptText.trim() ? `${this.promptText}, ${styleName}` : styleName;
             }
+        },
+        randomPrompt() {
+            let prompt = getRandomPrompt();
+            this.promptText = prompt;
+            saveUserPrompt(prompt);
+            setTimeout(() => {
+                this.submitPrompt();
+            }, 600);
+        },
+        selectModel(model) {
+            this.selectedModelId = model.id;
         },
         all_icons(category){
             let ret = []
@@ -232,16 +433,44 @@ const Home = {
                     ret.push(item)
             }
             return ret;
-        }, 
+        },
         startInspirationRotation() {
             this.inspirationInterval = setInterval(() => {
                 this.inspirationIndex = (this.inspirationIndex + 1) % this.inspirationMessages.length;
             }, 5000);
         }
     },
+    watch: {
+        availableModels() {
+            this.autoSelectModel();
+            this.tryRunPendingPrompt();
+        },
+        selectedModelId() {
+            this.tryRunPendingPrompt();
+        },
+        'app.is_mounted': {
+            handler: function(newValue) {
+                if (newValue) {
+                    this.autoSelectModel();
+                    this.tryRunPendingPrompt();
+                }
+            }
+        },
+        'app.stable_diffusion_manager.is_ready': {
+            handler: function() {
+                this.tryRunPendingPrompt();
+            }
+        },
+        'app.assets_manager.downloading': {
+            handler: function() {
+                this.tryRunPendingPrompt();
+            },
+            deep: true
+        }
+    },
     computed: {
         currentInspiration() {
-            return this.isArabic 
+            return this.app.app_state.isArabic 
                 ? this.inspirationMessagesArabic[this.inspirationIndex] 
                 : this.inspirationMessages[this.inspirationIndex];
         },
@@ -252,6 +481,12 @@ const Home = {
             return {
                 transform: `translateX(${this.carouselOffset}px)`
             };
+        },
+        availableModels() {
+            if (!this.app.is_mounted || !this.app.assets_manager) return [];
+            return Object.values(this.app.assets_manager.all_avail_assets).filter(
+                m => m.model_meta_data && m.model_meta_data.type === 'sd_model'
+            );
         },
         default_img(){
             return require("../assets/imgs/page_icon_imgs/default1.png")
@@ -389,6 +624,16 @@ Home.sidebar_show = "always"
     color: rgba(255, 255, 255, 0.9);
     letter-spacing: 3px;
 }
+.pending-generation-note {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 0.86rem;
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(62, 123, 250, 0.16);
+    border: 1px solid rgba(62, 123, 250, 0.35);
+    text-align: center;
+}
 
 .chat-submit {
     background: #ffffff;
@@ -469,6 +714,84 @@ Home.sidebar_show = "always"
 .carousel-item:hover .carousel-caption {
     opacity: 1;
     transform: translateY(0);
+}
+
+.models-section {
+    padding: 0 60px;
+    margin-bottom: 50px;
+}
+
+.models-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.model-chip {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-radius: 12px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+    font-weight: 500;
+    max-width: 320px;
+}
+
+.model-chip:hover {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.5);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.15);
+}
+
+.model-selected {
+    background: rgba(99, 102, 241, 0.2) !important;
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+}
+
+.model-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.model-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: rgba(255,255,255,0.9);
+}
+
+.model-type-badge {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(99, 102, 241, 0.2);
+    color: rgba(255,255,255,0.6);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.sd-badge {
+    background: rgba(34, 197, 94, 0.2);
+    color: rgba(34, 197, 94, 0.8);
+}
+
+.model-count-badge {
+    font-size: 0.75rem;
+    padding: 2px 10px;
+    border-radius: 10px;
+    background: rgba(99, 102, 241, 0.2);
+    color: rgba(255,255,255,0.6);
+    font-weight: 600;
 }
 
 .styles-section {

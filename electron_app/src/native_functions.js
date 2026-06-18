@@ -586,6 +586,59 @@ ipcMain.on('list_imported_models', (event) => {
 
 
 
+
+ipcMain.on('scan_disk_for_models', (event) => {
+    const path = require('path');
+    const fs = require('fs');
+    const homedir = require('os').homedir();
+
+    let results = [];
+    let dirs = [
+        { dir: path.join(homedir, '.diffusionbee', 'imported_models'), source: 'imported_models' },
+        { dir: path.join(homedir, '.diffusionbee', 'downloaded_assets'), source: 'downloaded_assets' },
+    ];
+
+    for (let { dir: dirPath, source } of dirs) {
+        if (fs.existsSync(dirPath)) {
+            let files = fs.readdirSync(dirPath, { withFileTypes: true });
+            for (let item of files) {
+                if (!item.isDirectory() && item.name.endsWith('.tdict')) {
+                    let fullPath = path.join(dirPath, item.name);
+                    let stat = fs.statSync(fullPath);
+
+                    // Derive a readable id from the filename (keep underscores for consistency)
+                    let id = item.name
+                        .replace(/\.(safetensors\.)?tdict$/i, '')
+                        .trim();
+                    let title = id
+                        .replace(/_/g, ' ')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+
+                    results.push({
+                        id: id,
+                        title: title,
+                        filename: item.name,
+                        asset_path: fullPath,
+                        source: source,
+                        size_bytes: stat.size,
+                        model_meta_data: { type: 'sd_model' },
+                    });
+                }
+            }
+        }
+    }
+
+    event.returnValue = results;
+});
+
+
+ipcMain.on('get_homedir', (event) => {
+    const homedir = require('os').homedir();
+    event.returnValue = homedir;
+});
+
+
 ipcMain.on('get_assets_dir', (event) => {
     const path = require('path');
     const fs = require('fs');

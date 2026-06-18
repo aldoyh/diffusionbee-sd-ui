@@ -9,7 +9,7 @@
                 @input="currentPage=1"
                 onkeypress="return event.keyCode != 13;"
                 size="sm"
-                placeholder="Search by prompt text"
+                :placeholder="app.app_state.isArabic ? 'بحث حسب نص الموجه' : 'Search by prompt text'"
                 v-model="searchText"
                 autofocus
                 debounce="200"
@@ -18,10 +18,10 @@
             />
 
             <div @click="toggle_order()" style="float:right; margin-bottom: 20px;" class="l_button">
-              {{this.show_history_in_oldest_first ? "Newest": "Oldest"}} First
+              {{this.show_history_in_oldest_first ? (app.app_state.isArabic ? 'الأحدث أولاً' : 'Newest First') : (app.app_state.isArabic ? 'الأقدم أولاً' : 'Oldest First')}}
             </div>
             <div @click="clear_history()" style="float:right; margin-bottom: 20px;" class="l_button">
-              Clear History
+              {{ app.app_state.isArabic ? 'مسح السجل' : 'Clear History' }}
             </div>
 
             <div v-if="Object.values(history).length > 0">
@@ -44,16 +44,16 @@
                 <div v-for="group in history_to_show.slice((currentPage - 1) * 30, currentPage * 30)" :key="group.key" style="clear: both;">
 
                 
-                    <div @click="delete_hist(group.key)" style="float:right; margin-top: 10px;"  class="l_button">Delete</div>
+                    <div @click="delete_hist(group.key)" style="float:right; margin-top: 10px;"  class="l_button">{{ app.app_state.isArabic ? 'حذف' : 'Delete' }}</div>
                     <!-- <div @click="share_on_arthub(group)" style="float:right; margin-top: 10px;"  class="l_button">Share</div> -->
 
                     <b-dropdown left variant="link" size="sm" toggle-class="text-decoration-none" no-caret style="float:right; margin-top: 5px;">
                         <template #button-content>
                             <div   class=" l_button "  >
-                                Share 
+                                {{ app.app_state.isArabic ? 'مشاركة' : 'Share' }}
                             </div>
                         </template>
-                        <b-dropdown-item-button   @click="share_on_arthub(group)"  >Share on ArtHub.ai</b-dropdown-item-button>
+                        <b-dropdown-item-button   @click="share_on_arthub(group)"  >{{ app.app_state.isArabic ? 'مشاركة على ArtHub.ai' : 'Share on ArtHub.ai' }}</b-dropdown-item-button>
                     </b-dropdown>
 
                     
@@ -85,7 +85,7 @@
             </div>
             <div v-else>
                 <div class="center">
-                        <p>No images generated yet.</p>
+                        <p>{{ app.app_state.isArabic ? 'لم يتم توليد صور بعد.' : 'No images generated yet.' }}</p>
                 </div>
             </div>
         </div>
@@ -233,7 +233,7 @@ const History =  {
         },
 
          clear_history(){
-            if (native_confirm("Are you sure you want to clear history?")){
+            if (native_confirm(this.app.app_state.isArabic ? "هل أنت متأكد من رغبتك في مسح السجل؟" : "Are you sure you want to clear history?")){
                 Vue.set( this , "history", {});
             }
         },
@@ -246,7 +246,7 @@ const History =  {
             share_on_arthub( imgs , params , box.prompt).then((
                 function(){ that.app.app_state.global_loader_modal_msg = ""}
             )).catch(
-                function(e ){ console.log(e); alert("Error in uploading.") ; that.app.app_state.global_loader_modal_msg = ""}
+                function(e ){ console.log(e);                alert(this.app.app_state.isArabic ? "خطأ في الرفع." : "Error in uploading.") ; that.app.app_state.global_loader_modal_msg = ""}
             )
         }
 

@@ -25,23 +25,24 @@
 </template>
 <script>
 
-
-import Txt2Img from "../pages/Txt2Img.vue"
-import Img2Img from "../pages/Img2Img.vue"
-import Training from "../pages/Training.vue"
-import Inpainting from "../pages/Inpainting.vue"
-
-import History from "../pages/History.vue"
-import Homepage from "../pages/Homepage.vue"
-import ModelStore from "../pages/ModelStore.vue"
-import Logs from "../pages/Logs.vue"
-import ContactUs from "../pages/ContactUs.vue"
-
-import Settings from "../pages/Settings.vue"
-import PostProcessImage from "../pages/PostProcessImage.vue"
+import { pageMeta } from "../pages/pageMeta.js"
 import AppletPage from "../components/AppletPage.vue"
+import { t } from "../i18n.js"
 
 import Vue from 'vue'
+
+// Async components for code-splitting — each page is lazy-loaded on first visit
+const Homepage = () => import("../pages/Homepage.vue")
+const Txt2Img = () => import("../pages/Txt2Img.vue")
+const Img2Img = () => import("../pages/Img2Img.vue")
+const Inpainting = () => import("../pages/Inpainting.vue")
+const Training = () => import("../pages/Training.vue")
+const History = () => import("../pages/History.vue")
+const ModelStore = () => import("../pages/ModelStore.vue")
+const Logs = () => import("../pages/Logs.vue")
+const ContactUs = () => import("../pages/ContactUs.vue")
+const Settings = () => import("../pages/Settings.vue")
+const PostProcessImage = () => import("../pages/PostProcessImage.vue")
 
 export default {
     name: 'PagerRouter',
@@ -49,18 +50,14 @@ export default {
         app:Object, 
     },
     components: {
-        Txt2Img, Img2Img , Inpainting , AppletPage , History, Homepage , ModelStore, 
-        Logs, ContactUs , Settings, PostProcessImage, Training
+        Homepage, Txt2Img, Img2Img, Inpainting, AppletPage, History, ModelStore, 
+        Logs, ContactUs, Settings, PostProcessImage, Training
     },
     mounted() {
         this.app.functions.switch_page = this.switch_page; 
         this.app.all_pages_ready = true;
     },
     data() {
-
-        let always_on_pages = { Homepage:Homepage  , Txt2Img:Txt2Img , Img2Img:Img2Img , 
-            Inpainting:Inpainting , PostProcessImage:PostProcessImage  , ModelStore:ModelStore , History:History, Logs:Logs, Settings:Settings , Training:Training, ContactUs:ContactUs  }
-
         let last_opened_timmings = {}
 
         let v =  window.localStorage.getItem( 'last_opened_times_7768' )
@@ -71,7 +68,7 @@ export default {
         return {
             current_open_page_id : 'Homepage',
             last_opened_timmings : last_opened_timmings,
-            always_on_pages : always_on_pages         };
+            always_on_pages : pageMeta         };
     },
     methods: {
          switch_page(page_id){
@@ -96,18 +93,17 @@ export default {
     },
     computed: {
 
-        
-
         all_applet_items(){
             let items = []
             for(let page_id of Object.keys(this.always_on_pages) ){
-                    items.push( { id: page_id , 
-                        text : this.always_on_pages[page_id].title , 
-                        description: this.always_on_pages[page_id].description, 
-                        icon : this.always_on_pages[page_id].icon , 
-                        img_icon:this.always_on_pages[page_id].img_icon , 
-                        sidebar_show: this.always_on_pages[page_id].sidebar_show ,  
-                        home_category:this.always_on_pages[page_id].home_category } )
+                const meta = this.always_on_pages[page_id]
+                items.push( { id: page_id , 
+                    text : (page_id === 'Homepage') ? t('page.home') : t('page.' + page_id.toLowerCase()) || meta.title, 
+                    description: t('page.' + page_id.toLowerCase() + '_desc') || meta.description, 
+                    icon : meta.icon, 
+                    img_icon: meta.img_icon, 
+                    sidebar_show: meta.sidebar_show,  
+                    home_category: meta.home_category } )
             }
 
             // todo : in future count the last used N applets, and then show them on sidebar, and sort them alphabetically

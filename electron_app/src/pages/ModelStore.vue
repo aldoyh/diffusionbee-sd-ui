@@ -1,15 +1,15 @@
 <template>
     <div class="main_container">
 
-        <div class="l_button button_colored button_medium" style="float:right;" @click="import_model_locally"> Import From Computer </div>
+        <div class="l_button button_colored button_medium" style="float:right;" @click="import_model_locally">{{ app.app_state.isArabic ? 'استيراد من الكمبيوتر' : 'Import From Computer' }}</div>
         <br><br>
         <hr>
 
-        <h2 v-if="downloaded_models_list.length > 0 || is_local_model_importing"> My Models </h2>
+        <h2 v-if="downloaded_models_list.length > 0 || is_local_model_importing">{{ app.app_state.isArabic ? 'نماذجي' : 'My Models' }}</h2>
         <div v-if="downloaded_models_list.length > 0 || is_local_model_importing" class="icon_container">
 
             <div v-if="is_local_model_importing"  class="model_card" style="padding:20px">
-                <h2>Importing model</h2>
+                <h2>{{ app.app_state.isArabic ? 'جارٍ استيراد النموذج' : 'Importing model' }}</h2>
                 <br>
                  <MoonLoader class="moonloader" color="#000000" size="50px" style="zoom:0.4"></MoonLoader>
             </div>
@@ -28,7 +28,7 @@
         <br>
 
 
-        <h2> Available Models </h2>
+        <h2>{{ app.app_state.isArabic ? 'النماذج المتاحة' : 'Available Models' }}</h2>
         <div class="icon_container">
 
             <div v-for="model in not_downloaded_models_list" :key="model.id" class="model_card" v-bind:style="{ 'background-image': 'url(' + (model.img_url || default_img_url) + ')' }">
@@ -37,14 +37,14 @@
                     <p> {{model.description}} </p> 
                     <p style="zoom:0.7"> {{ model_metadata_to_str(model) }}</p>
                     <DownloadButton v-if="!(model.min_version) || model.min_version <= app.current_build_number" :app=app  :asset_details="model"> </DownloadButton>
-                    <p  style="color:red" v-if="model.min_version && model.min_version > app.current_build_number"> You need to update DiffusionBee to use this model</p>
+                    <p  style="color:red" v-if="model.min_version && model.min_version > app.current_build_number">{{ app.app_state.isArabic ? 'تحتاج إلى تحديث DiffusionBee لاستخدام هذا النموذج' : 'You need to update DiffusionBee to use this model' }}</p>
                 </div> 
             </div>
 
         </div>
 
         <br> <hr> 
-        <div @click="load_models_list_from_web" class="l_button"> Refresh </div>
+        <div @click="load_models_list_from_web" class="l_button">{{ app.app_state.isArabic ? 'تحديث' : 'Refresh' }}</div>
 
         
 
@@ -135,7 +135,7 @@ const ModelStore ={
 
             if(this.is_local_model_importing)
             {
-                this.app.show_toast("Model is already importing. Please wait")
+                this.app.show_toast(this.app.app_state.isArabic ? "النموذج قيد الاستيراد بالفعل. يرجى الانتظار" : "Model is already importing. Please wait")
                 return;
             }
 
@@ -153,12 +153,12 @@ const ModelStore ={
 
 
             if(model_name.trim() == ""){
-                this.app.show_toast("Put non empty model name");
+                this.app.show_toast(this.app.app_state.isArabic ? "أدخل اسم نموذج غير فارغ" : "Put non empty model name");
                 return;
             }
 
             if(this.app.assets_manager.all_avail_assets[model_name]){
-                this.app.show_toast("A model with this name already exists");
+                this.app.show_toast(this.app.app_state.isArabic ? "يوجد نموذج بهذا الاسم بالفعل" : "A model with this name already exists");
                 return;
             }
 
@@ -178,7 +178,7 @@ const ModelStore ={
                     that.is_local_model_importing = false;
                 } else {
                     that.is_local_model_importing = false;
-                    that.app.show_toast("Error while importing " + err )
+                    that.app.show_toast((that.app.app_state.isArabic ? "خطأ أثناء الاستيراد " : "Error while importing ") + err )
                 }
 
             })

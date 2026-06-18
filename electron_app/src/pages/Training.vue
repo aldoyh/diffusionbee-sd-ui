@@ -1,8 +1,8 @@
 <template>
     <div class="training-container dark-theme">
         <div class="training-header">
-            <h1 class="training-title">Train Your Own Model</h1>
-            <p class="training-subtitle">Use DreamBooth to teach Stable Diffusion new concepts, people, or styles using just a few images.</p>
+            <h1 class="training-title">{{ app.app_state.isArabic ? 'درّب نموذجك الخاص' : 'Train Your Own Model' }}</h1>
+            <p class="training-subtitle">{{ app.app_state.isArabic ? 'استخدم DreamBooth لتعليم Stable Diffusion مفاهيم أو أشخاصًا أو أنماطًا جديدة باستخدام بضع صور فقط.' : 'Use DreamBooth to teach Stable Diffusion new concepts, people, or styles using just a few images.' }}</p>
         </div>
 
         <div class="training-content">
@@ -10,8 +10,8 @@
                 <!-- Step 1: Base Model -->
                 <div class="setup-card">
                     <div class="card-icon">1</div>
-                    <h3>Base Model</h3>
-                    <p>Select the model you want to fine-tune.</p>
+                    <h3>{{ app.app_state.isArabic ? 'النموذج الأساسي' : 'Base Model' }}</h3>
+                    <p>{{ app.app_state.isArabic ? 'اختر النموذج الذي تريد ضبطه.' : 'Select the model you want to fine-tune.' }}</p>
                     <select v-model="trainingConfig.baseModel" class="fancy-select">
                         <option value="sd15">Stable Diffusion v1.5</option>
                         <option value="sd21">Stable Diffusion v2.1</option>
@@ -22,13 +22,13 @@
                 <!-- Step 2: Training Images -->
                 <div class="setup-card">
                     <div class="card-icon">2</div>
-                    <h3>Training Images</h3>
-                    <p>Upload 10-20 high-quality images of your subject.</p>
+                    <h3>{{ app.app_state.isArabic ? 'صور التدريب' : 'Training Images' }}</h3>
+                    <p>{{ app.app_state.isArabic ? 'حمّل 10-20 صورة عالية الجودة لموضوعك.' : 'Upload 10-20 high-quality images of your subject.' }}</p>
                     <div class="image-upload-zone" @click="triggerUpload">
                         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
                         </svg>
-                        <span>Click to upload images</span>
+                        <span>{{ app.app_state.isArabic ? 'انقر لتحميل الصور' : 'Click to upload images' }}</span>
                         <input type="file" ref="fileInput" multiple hidden @change="handleFileUpload">
                     </div>
                     <div class="image-preview-grid" v-if="previewImages.length > 0">
@@ -42,22 +42,22 @@
                 <!-- Step 3: Concepts -->
                 <div class="setup-card">
                     <div class="card-icon">3</div>
-                    <h3>Instance Prompt</h3>
-                    <p>Unique identifier for your subject (e.g., "a photo of sks dog").</p>
-                    <input type="text" v-model="trainingConfig.instancePrompt" placeholder="e.g. sks person" class="fancy-input">
+                    <h3>{{ app.app_state.isArabic ? 'موجه المثيل' : 'Instance Prompt' }}</h3>
+                    <p>{{ app.app_state.isArabic ? 'معرّف فريد لموضوعك (مثل "صورة لكلب sks").' : 'Unique identifier for your subject (e.g., "a photo of sks dog").' }}</p>
+                    <input type="text" v-model="trainingConfig.instancePrompt" :placeholder="app.app_state.isArabic ? 'مثال : sks شخص' : 'e.g. sks person'" class="fancy-input">
                     
-                    <h3 style="margin-top: 20px;">Class Prompt</h3>
-                    <p>Broad category (e.g., "a photo of a dog").</p>
-                    <input type="text" v-model="trainingConfig.classPrompt" placeholder="e.g. person" class="fancy-input">
+                    <h3 style="margin-top: 20px;">{{ app.app_state.isArabic ? 'موجه الفئة' : 'Class Prompt' }}</h3>
+                    <p>{{ app.app_state.isArabic ? 'فئة عامة (مثل "صورة لكلب").' : 'Broad category (e.g., "a photo of a dog").' }}</p>
+                    <input type="text" v-model="trainingConfig.classPrompt" :placeholder="app.app_state.isArabic ? 'مثال : شخص' : 'e.g. person'" class="fancy-input">
                 </div>
             </div>
 
             <div class="action-section">
                 <button class="start-training-btn" @click="startTraining" :disabled="isTraining">
-                    <span v-if="!isTraining">Start Training</span>
-                    <span v-else>Training in Progress...</span>
+                    <span v-if="!isTraining">{{ app.app_state.isArabic ? 'بدء التدريب' : 'Start Training' }}</span>
+                    <span v-else>{{ app.app_state.isArabic ? 'التدريب قيد التقدم...' : 'Training in Progress...' }}</span>
                 </button>
-                <p class="training-disclaimer">Note: Training requires a powerful GPU and may take 20-60 minutes.</p>
+                <p class="training-disclaimer">{{ app.app_state.isArabic ? 'ملاحظة: يتطلب التدريب وحدة معالجة رسومات قوية وقد يستغرق 20-60 دقيقة.' : 'Note: Training requires a powerful GPU and may take 20-60 minutes.' }}</p>
             </div>
         </div>
 
@@ -74,7 +74,7 @@
                         <span>{{ progress }}%</span>
                     </div>
                     <p class="status-msg">{{ statusMsg }}</p>
-                    <button class="cancel-btn" @click="isTraining = false">Cancel</button>
+                    <button class="cancel-btn" @click="isTraining = false">{{ app.app_state.isArabic ? 'إلغاء' : 'Cancel' }}</button>
                 </div>
             </div>
         </transition>
@@ -116,11 +116,11 @@ const Training = {
         },
         startTraining() {
             if (this.previewImages.length === 0) {
-                alert("Please upload some training images first.");
+                alert(this.app.app_state.isArabic ? "يرجى تحميل بعض صور التدريب أولاً." : "Please upload some training images first.");
                 return;
             }
             if (!this.trainingConfig.instancePrompt) {
-                alert("Please provide an instance prompt.");
+                alert(this.app.app_state.isArabic ? "يرجى تقديم موجه المثيل." : "Please provide an instance prompt.");
                 return;
             }
 
@@ -136,7 +136,7 @@ const Training = {
                 if (this.currentStep >= this.totalSteps || !this.isTraining) {
                     clearInterval(interval);
                     if (this.isTraining) {
-                        this.statusMsg = 'Training Complete! Model saved.';
+                        this.statusMsg = this.app.app_state.isArabic ? 'اكتمل التدريب! تم حفظ النموذج.' : 'Training Complete! Model saved.';
                         setTimeout(() => { this.isTraining = false; }, 3000);
                     }
                     return;
@@ -145,11 +145,11 @@ const Training = {
                 this.currentStep += 10;
                 this.progress = Math.floor((this.currentStep / this.totalSteps) * 100);
                 
-                if (this.progress < 10) this.statusMsg = 'Preparing dataset...';
-                else if (this.progress < 30) this.statusMsg = 'Fine-tuning U-Net...';
-                else if (this.progress < 60) this.statusMsg = 'Optimizing Text Encoder...';
-                else if (this.progress < 90) this.statusMsg = 'Saving checkpoints...';
-                else this.statusMsg = 'Finalizing model...';
+                if (this.progress < 10) this.statusMsg = this.app.app_state.isArabic ? 'تحضير مجموعة البيانات...' : 'Preparing dataset...';
+                else if (this.progress < 30) this.statusMsg = this.app.app_state.isArabic ? 'ضبط U-Net...' : 'Fine-tuning U-Net...';
+                else if (this.progress < 60) this.statusMsg = this.app.app_state.isArabic ? 'تحسين تشفير النص...' : 'Optimizing Text Encoder...';
+                else if (this.progress < 90) this.statusMsg = this.app.app_state.isArabic ? 'حفظ نقاط التحقق...' : 'Saving checkpoints...';
+                else this.statusMsg = this.app.app_state.isArabic ? 'إنهاء النموذج...' : 'Finalizing model...';
 
             }, 500);
         }

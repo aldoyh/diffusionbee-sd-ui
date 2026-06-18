@@ -172,7 +172,7 @@ app.setAboutPanelOptions({
 	applicationVersion: require('../package.json').version,
 	version: require('../package.json').build_number,
 	credits: require('../package.json').description,
-	copyright: "Copyright © 2023 " + require('../package.json').name,
+	copyright: "Copyright © 2023 DiffusionBee GUI",
 	website: require('../package.json').website
 });
 

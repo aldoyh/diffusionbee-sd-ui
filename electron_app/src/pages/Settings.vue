@@ -1,14 +1,14 @@
 <template>
     <div style="width:100%; height:100%; overflow: auto; padding: 20px;">
         
-     <h1>Settings</h1>
+     <h1>{{ app.app_state.isArabic ? 'الإعدادات' : 'Settings' }}</h1>
         <br>
-       <h2>General Settings</h2>
+       <h2>{{ app.app_state.isArabic ? 'الإعدادات العامة' : 'General Settings' }}</h2>
         <br>
         <div class="setting_box">
         <div class="settings_left">
-        <h3>Notification sound</h3>
-        <p>To play a notification sound when generation of an image is completed</p>
+        <h3>{{ app.app_state.isArabic ? 'صوت الإشعار' : 'Notification sound' }}</h3>
+        <p>{{ app.app_state.isArabic ? 'تشغيل صوت إشعار عند اكتمال توليد الصورة' : 'To play a notification sound when generation of an image is completed' }}</p>
         </div>
         
         <div style="float:right;margin-right: 9px;align-self: center;" >

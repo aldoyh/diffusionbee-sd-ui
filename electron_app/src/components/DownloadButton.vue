@@ -2,7 +2,7 @@
     <div>
         <div v-if="is_downloaded" >
              <!-- <p>Downloaded </p> -->
-             <div @click="deletee" class="l_button button_colored">Delete</div>
+             <div @click="deletee" class="l_button button_colored">{{ app.app_state.isArabic ? 'حذف' : 'Delete' }}</div>
 
         </div>
 
@@ -13,11 +13,11 @@
 
         <div v-else-if="is_error"  >
             <p style="color:red; margin-bottom:5px">  Error : {{app.assets_manager.downloading[asset_details.id].error}} </p>
-            <div @click="downloadd" class="l_button button_colored">Download Again</div>
+            <div @click="downloadd" class="l_button button_colored">{{ app.app_state.isArabic ? 'تحميل مرة أخرى' : 'Download Again' }}</div>
         </div>
 
 
-        <div v-else class="l_button button_colored" @click="downloadd">Download</div>
+        <div v-else class="l_button button_colored" @click="downloadd">{{ app.app_state.isArabic ? 'تحميل' : 'Download' }}</div>
         
     </div>
 </template>

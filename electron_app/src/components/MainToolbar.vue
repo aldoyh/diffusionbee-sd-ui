@@ -19,14 +19,14 @@
             
              <b-dropdown-form style=" width: 250px;max-height: calc(100vh - 300px); overflow-y: scroll;  " class="dropdown-bubble">
                 <div v-if="app.is_mounted && !(app.stable_diffusion.is_input_avail)">
-                    <h2>Status : Generating Images</h2>
-                    <p  > Generation speed : {{app.stable_diffusion.generation_state_msg || "--"}}</p>
-                    <p  > Current image ETA : {{app.stable_diffusion.remaining_times || "--"}}</p>
+                    <h2>{{ app.app_state.isArabic ? 'الحالة : جارٍ توليد الصور' : 'Status : Generating Images' }}</h2>
+                    <p  > {{ app.app_state.isArabic ? 'سرعة التوليد :' : 'Generation speed :' }} {{app.stable_diffusion.generation_state_msg || "--"}}</p>
+                    <p  > {{ app.app_state.isArabic ? 'الوقت المتبقي للصورة الحالية :' : 'Current image ETA :' }} {{app.stable_diffusion.remaining_times || "--"}}</p>
                 </div>
-                <h2 v-else >Status : Idle</h2>
-                <p>Images remaining : {{n_jobs_left}} </p> 
-                <div @click="stop_all" v-if="(!is_stopping) &&( n_jobs_left > 0 || (app.is_mounted && !(app.stable_diffusion.is_input_avail)))" class="l_button button_small button_colored">Stop All</div>
-                 <div v-if="is_stopping && (n_jobs_left > 0 || (app.is_mounted && !(app.stable_diffusion.is_input_avail)))" class="l_button button_small button_colored">Stopping</div>
+                <h2 v-else >{{ app.app_state.isArabic ? 'الحالة : خامل' : 'Status : Idle' }}</h2>
+                <p>{{ app.app_state.isArabic ? 'الصور المتبقية :' : 'Images remaining :' }} {{n_jobs_left}} </p> 
+                <div @click="stop_all" v-if="(!is_stopping) &&( n_jobs_left > 0 || (app.is_mounted && !(app.stable_diffusion.is_input_avail)))" class="l_button button_small button_colored">{{ app.app_state.isArabic ? 'إيقاف الكل' : 'Stop All' }}</div>
+                 <div v-if="is_stopping && (n_jobs_left > 0 || (app.is_mounted && !(app.stable_diffusion.is_input_avail)))" class="l_button button_small button_colored">{{ app.app_state.isArabic ? 'جارٍ الإيقاف' : 'Stopping' }}</div>
              </b-dropdown-form>
             
         </b-dropdown>
@@ -52,21 +52,21 @@
                      </span>
                 </template>
                 
-                <b-dropdown-item-button @click="show_help" >Help</b-dropdown-item-button>
-                <b-dropdown-item-button @click="open_url('https://discord.gg/t6rC5RaJQn')"  >Start Discord Chat</b-dropdown-item-button>
-                <b-dropdown-item-button  @click="app.functions.switch_page('Logs')" >Show Logs</b-dropdown-item-button>
+                <b-dropdown-item-button @click="show_help" >{{ app.app_state.isArabic ? 'مساعدة' : 'Help' }}</b-dropdown-item-button>
+                <b-dropdown-item-button @click="open_url('https://discord.gg/t6rC5RaJQn')"  >{{ app.app_state.isArabic ? 'بدء محادثة Discord' : 'Start Discord Chat' }}</b-dropdown-item-button>
+                <b-dropdown-item-button  @click="app.functions.switch_page('Logs')" >{{ app.app_state.isArabic ? 'عرض السجلات' : 'Show Logs' }}</b-dropdown-item-button>
 
-                <b-dropdown-item-button @click="open_url('https://diffusionbee.com/MODEL_LICENSE.txt')" >Model License</b-dropdown-item-button>
-                <b-dropdown-item-button @click="open_url('https://diffusionbee.com/OPEN_SOURCE_LICENSES.txt')" >Open-source Licences</b-dropdown-item-button>
+                <b-dropdown-item-button @click="open_url('https://diffusionbee.com/MODEL_LICENSE.txt')" >{{ app.app_state.isArabic ? 'رخصة النموذج' : 'Model License' }}</b-dropdown-item-button>
+                <b-dropdown-item-button @click="open_url('https://diffusionbee.com/OPEN_SOURCE_LICENSES.txt')" >{{ app.app_state.isArabic ? 'تراخيص المصادر المفتوحة' : 'Open-source Licences' }}</b-dropdown-item-button>
 
-                <b-dropdown-item-button @click="show_about"  >About</b-dropdown-item-button>
-                <b-dropdown-item-button  @click="app.functions.switch_page('ContactUs')" >Contact Us</b-dropdown-item-button>
-                <b-dropdown-item-button  @click="app.functions.switch_page('ContactUs')" >Report Issues</b-dropdown-item-button>
+                <b-dropdown-item-button @click="show_about"  >{{ app.app_state.isArabic ? 'حول' : 'About' }}</b-dropdown-item-button>
+                <b-dropdown-item-button  @click="app.functions.switch_page('ContactUs')" >{{ app.app_state.isArabic ? 'اتصل بنا' : 'Contact Us' }}</b-dropdown-item-button>
+                <b-dropdown-item-button  @click="app.functions.switch_page('ContactUs')" >{{ app.app_state.isArabic ? 'الإبلاغ عن مشكلات' : 'Report Issues' }}</b-dropdown-item-button>
 
 
-                <b-dropdown-item-button   @click="app.functions.switch_page('Settings')"  >Settings</b-dropdown-item-button>
+                <b-dropdown-item-button   @click="app.functions.switch_page('Settings')"  >{{ app.app_state.isArabic ? 'الإعدادات' : 'Settings' }}</b-dropdown-item-button>
 
-                <b-dropdown-item-button @click="close_window"  >Close</b-dropdown-item-button>
+                <b-dropdown-item-button @click="close_window"  >{{ app.app_state.isArabic ? 'إغلاق' : 'Close' }}</b-dropdown-item-button>
                 <!-- #TODO set these menu items via python -->
                 
          </b-dropdown>

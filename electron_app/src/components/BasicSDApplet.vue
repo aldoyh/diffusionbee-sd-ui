@@ -4,7 +4,7 @@
         <template v-slot:input_workspace>
               <slot name="input_workspace_pre_form"></slot>
               <FormComponent ref="form"  :form_data="input_form_elements_processed"  :form_values="sd_options" :form_save_key="'1fdaedjdfddeef1'+name" :tags="all_tags" ></FormComponent>
-              <div @click="$refs.form.reset_to_default()" class="l_button" style="margin-left:-10px"> Reset to default </div>
+              <div @click="$refs.form.reset_to_default()" class="l_button" style="margin-left:-10px">{{ app.app_state.isArabic ? 'إعادة إلى الإعدادات الافتراضية' : 'Reset to default' }}</div>
               <slot name="input_workspace_post_form"></slot>
         </template>
 
@@ -17,7 +17,7 @@
                 
             </div>
             <div class="model_dialog" v-if="to_download_left.length > 0 ">
-                <h2> You need to download the following models to generate: </h2>
+                <h2>{{ app.app_state.isArabic ? 'تحتاج إلى تحميل النماذج التالية للتوليد:' : 'You need to download the following models to generate:' }}</h2>
                 <br>
                 <p>{{to_download_left[0].title}}</p> <DownloadButton :app=app  :asset_details="to_download_left[0]"> </DownloadButton>
             </div>
@@ -147,19 +147,19 @@ export default {
 
         check_input_form_n_show_error(){
             if(this.to_download_left.length > 0){
-                this.app.show_toast("First you need to download the model to generate")
+                this.app.show_toast(this.app.app_state.isArabic ? "تحتاج أولاً إلى تحميل النموذج للتوليد" : "First you need to download the model to generate")
                 return false;
             } 
 
             if( this.get_sd_form_outputs().prompt != undefined && this.get_sd_form_outputs().prompt.trim() == ""){
                 console.log(this.get_sd_form_outputs())
-                this.app.show_toast('You need to enter a prompt')
+                this.app.show_toast(this.app.app_state.isArabic ? 'تحتاج إلى إدخال موجه' : 'You need to enter a prompt')
                 return false;
             }
 
             if(this.sd_options.selected_sd_model){
                 if(!(this.app.assets_manager.get_downloaded_asset_path(this.sd_options.selected_sd_model))){
-                    this.app.show_toast("Model not found. Please select a valid model.")
+                    this.app.show_toast(this.app.app_state.isArabic ? "النموذج غير موجود. يرجى اختيار نموذج صالح." : "Model not found. Please select a valid model.")
                     return false                    
                 }
             }

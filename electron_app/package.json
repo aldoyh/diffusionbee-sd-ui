@@ -1,9 +1,9 @@
 {
-  "name": "diffusionbee-sd-ui",
+  "name": "diffusionbee-gui",
   "version": "2.4.0",
   "build_number": "0029",
   "website": "https://diffusionbee.com",
-  "description": "Diffusion Bee - Stable Diffusion App.",
+  "description": "DiffusionBee GUI - Stable Diffusion App.",
   "is_dev": false,
   "private": true,
   "engines": {

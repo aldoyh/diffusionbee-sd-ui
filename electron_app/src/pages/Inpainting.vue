@@ -13,12 +13,12 @@
         
         <template v-slot:input_buttons>
             
-            <div v-if="is_mounted && stable_diffusion.is_input_avail"  @click="generate(false)" class="l_button button_colored button_medium" style="float:right">Generate</div>
-            <div v-if="is_mounted && stable_diffusion.is_input_avail"  @click="clear_canvas" class="l_button button_medium" style="float:right">Clear Stage</div>
+            <div v-if="is_mounted && stable_diffusion.is_input_avail"  @click="generate(false)" class="l_button button_colored button_medium" style="float:right">{{ app.app_state.isArabic ? 'توليد' : 'Generate' }}</div>
+            <div v-if="is_mounted && stable_diffusion.is_input_avail"  @click="clear_canvas" class="l_button button_medium" style="float:right">{{ app.app_state.isArabic ? 'مسح المسرح' : 'Clear Stage' }}</div>
             
             <span v-else-if="is_mounted &&  stable_diffusion.generated_by=='Inpainting'"   >
-                <div v-if="is_stopping" class="l_button button_medium button_colored" style="float:right; float:right ;  " >Stopping ...</div>
-                <div v-else class="l_button button_medium button_colored" style="float:right; float:right ;  " @click="stop_all">Stop</div>
+                <div v-if="is_stopping" class="l_button button_medium button_colored" style="float:right; float:right ;  " >{{ app.app_state.isArabic ? 'جارٍ الإيقاف...' : 'Stopping ...' }}</div>
+                <div v-else class="l_button button_medium button_colored" style="float:right; float:right ;  " @click="stop_all">{{ app.app_state.isArabic ? 'إيقاف' : 'Stop' }}</div>
             </span>
 
         </template>
@@ -26,17 +26,17 @@
         <template v-slot:output_workpace>
             <div>
                 <br> 
-                <div v-if="(redo_history.length > 0 ||  undo_history.length > 0) && is_mounted && stable_diffusion.is_input_avail" class="l_button" style="float:right " @click="do_redo" > Redo</div>
-                <div v-if="(redo_history.length > 0 ||  undo_history.length > 0)  && is_mounted && stable_diffusion.is_input_avail" class="l_button" style="float:right " @click="do_undo" > Undo</div>
-                <div class="l_button" style="float:right " @click="open_input_image" > Open </div>
-                <div  v-if="inp_img"  class="l_button" style="float:right "  @click="save_img" > Save </div>
-                <div v-if="inp_img"   class="l_button" style="float:right " @click="$refs.inp_img_canvas.clear_inpaint()" > Clear Mask</div>
+                <div v-if="(redo_history.length > 0 ||  undo_history.length > 0) && is_mounted && stable_diffusion.is_input_avail" class="l_button" style="float:right " @click="do_redo" >{{ app.app_state.isArabic ? 'إعادة' : 'Redo' }}</div>
+                <div v-if="(redo_history.length > 0 ||  undo_history.length > 0)  && is_mounted && stable_diffusion.is_input_avail" class="l_button" style="float:right " @click="do_undo" >{{ app.app_state.isArabic ? 'تراجع' : 'Undo' }}</div>
+                <div class="l_button" style="float:right " @click="open_input_image" >{{ app.app_state.isArabic ? 'فتح' : 'Open' }}</div>
+                <div  v-if="inp_img"  class="l_button" style="float:right "  @click="save_img" >{{ app.app_state.isArabic ? 'حفظ' : 'Save' }}</div>
+                <div v-if="inp_img"   class="l_button" style="float:right " @click="$refs.inp_img_canvas.clear_inpaint()" >{{ app.app_state.isArabic ? 'مسح القناع' : 'Clear Mask' }}</div>
 
                 <div v-if="is_mounted && stable_diffusion.is_input_avail && inp_img"   style="float:right ; margin-right: 10px" >
                     <input v-model="stroke_size_no" style="zoom:0.8; margin-top: 7px; width:100px" type="range"
                             min="1" max="200" >                
                 </div>
-                <div v-if="is_mounted && stable_diffusion.is_input_avail && inp_img"   class="l_button no_hover_bg" style="float:right ; margin-right: -5px; " > Stroke Size</div>
+                <div v-if="is_mounted && stable_diffusion.is_input_avail && inp_img"   class="l_button no_hover_bg" style="float:right ; margin-right: -5px; " >{{ app.app_state.isArabic ? 'حجم الفرشاة' : 'Stroke Size' }}</div>
 
                 <br> 
             </div>
@@ -45,15 +45,15 @@
                 <ImageCanvas style="cursor: crosshair;"  v-if="inp_img"  ref="inp_img_canvas" :is_inpaint="true" :image_source="inp_img"  :is_disabled="!stable_diffusion.is_input_avail" id="inpaint"  canvas_id="inpaintcan" canvas_d_id="inpaintcand" :stroke_size_no="stroke_size_no" ></ImageCanvas>
                 <div v-else @click="open_input_image" style=" "  :class="{ pointer_cursor  : is_sd_active }" >
                     <center>
-                        <p style="padding-top: calc( 50vh - 115px);padding-bottom: calc( 50vh - 155px);  opacity: 70%;" >Click to add input image and draw a mask</p>
+                        <p style="padding-top: calc( 50vh - 115px);padding-bottom: calc( 50vh - 155px);  opacity: 70%;" >{{ app.app_state.isArabic ? 'انقر لإضافة صورة ورسم قناع' : 'Click to add input image and draw a mask' }}</p>
                     </center>
                 </div>
             </div>
 
             <div v-if="is_post_generate_box_showing" class="post_generate_box"> 
-                <div  class="l_button button_medium" @click="discard_generation"  > Discard </div>
-                <div  class="l_button button_colored button_medium" @click="is_post_generate_box_showing = false"  > Keep </div>
-                <div  class="l_button button_colored button_medium"  @click="retry_generatge" > Retry </div>
+                <div  class="l_button button_medium" @click="discard_generation"  >{{ app.app_state.isArabic ? 'تجاهل' : 'Discard' }}</div>
+                <div  class="l_button button_colored button_medium" @click="is_post_generate_box_showing = false"  >{{ app.app_state.isArabic ? 'احتفاظ' : 'Keep' }}</div>
+                <div  class="l_button button_colored button_medium"  @click="retry_generatge" >{{ app.app_state.isArabic ? 'إعادة المحاولة' : 'Retry' }}</div>
                
             </div>
             
@@ -218,7 +218,7 @@ const Inpainting = {
                     
                 },
                 on_err(err){
-                    that.app.show_toast("Error : " + err)
+                    that.app.show_toast((that.app.app_state.isArabic ? 'خطأ : ' : 'Error : ') + err)
                     that.backend_error = err;
                 },
             }

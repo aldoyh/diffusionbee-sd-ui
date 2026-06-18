@@ -14,6 +14,23 @@ function start_bridge() {
 
     console.log("starting bridge")
     const fs = require('fs')
+    const path = require('path')
+
+    // Helper: if a .venv or venv dir exists next to a Python script, use its Python binary
+    function resolvePythonBin(scriptDir) {
+        let venvCandidates = [
+            path.join(scriptDir, 'venv311', 'bin', 'python3'),
+            path.join(scriptDir, 'venv', 'bin', 'python3'),
+            path.join(scriptDir, '.venv', 'bin', 'python3'),
+        ];
+        for (let candidate of venvCandidates) {
+            if (fs.existsSync(candidate)) {
+                console.log('Using venv Python:', candidate);
+                return candidate;
+            }
+        }
+        return 'python3'; // fallback to system python3
+    }
 
     let script_path = process.env.PY_SCRIPT || "../backends/stable_diffusion/diffusionbee_backend.py"; 
     let bin_path =  process.env.BIN_PATH;
@@ -21,20 +38,20 @@ function start_bridge() {
         python = require('child_process').spawn( bin_path );
     }
     else if (fs.existsSync(script_path)) {
-        python = require('child_process').spawn('python', [script_path]);
+        let pythonBin = resolvePythonBin(path.dirname(path.resolve(script_path)));
+        python = require('child_process').spawn(pythonBin, [script_path]);
     }
     else{
-        const path = require('path');
         let backend_path =  path.join(path.dirname(__dirname), 'core' , 'stable_diffusion' , 'diffusionbee_backend' );
         let backend_script_path =  path.join(path.dirname(__dirname), 'core' , 'stable_diffusion' , 'diffusionbee_backend.py' );
         
         if (fs.existsSync(backend_path)) {
             python = require('child_process').spawn( backend_path  );
         } else if (fs.existsSync(backend_script_path)) {
-            python = require('child_process').spawn('python3', [backend_script_path]);
+            let pythonBin = resolvePythonBin(path.dirname(backend_script_path));
+            python = require('child_process').spawn(pythonBin, [backend_script_path]);
         } else {
             console.error("Backend not found at: " + backend_path + " or " + backend_script_path);
-            // Fallback or handle error
         }
     }
     

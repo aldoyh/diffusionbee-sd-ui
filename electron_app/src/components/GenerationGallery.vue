@@ -10,8 +10,8 @@
             </picture>
 
             <center style="opacity: 0.5">
-                <h2 style="margin-top: 20px;"> No images to display </h2>
-                <p > Enter a prompt to generate images using AI.</p>
+                <h2 style="margin-top: 20px;">{{ app.app_state.isArabic ? 'لا توجد صور للعرض' : 'No images to display' }}</h2>
+                <p >{{ app.app_state.isArabic ? 'أدخل موجهًا لتوليد الصور باستخدام الذكاء الاصطناعي.' : 'Enter a prompt to generate images using AI.' }}</p>
             </center>
             
         </div>

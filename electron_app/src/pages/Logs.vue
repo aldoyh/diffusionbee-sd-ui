@@ -1,6 +1,6 @@
 <template>
     <div style="width: 100%; height :100% ; overflow:auto; padding:10px">
-        <h2> Logs </h2>
+        <h2>{{ app.app_state.isArabic ? 'السجلات' : 'Logs' }}</h2>
         <p style="white-space: pre-line"> 
             {{app.app_state.logs}}
         </p>

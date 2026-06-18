@@ -11,12 +11,14 @@
     >   
         
         <template v-slot:input_buttons>
-            <div v-if="app.stable_diffusion_manager.is_ready" @click="generate" class="l_button button_colored button_medium" style="float:right">Generate</div>
+            <div @click="randomPromptAndGenerate" class="l_button button_medium" style="float:right; margin-right:6px;" :title="(app && app.app_state && app.app_state.isArabic) ? 'توليد موجه عشوائي' : 'Generate a random creative prompt and auto-generate'">{{ (app && app.app_state && app.app_state.isArabic) ? '🎲 عشوائي' : '🎲 Random' }}</div>
 
-            <div v-else-if="is_input_changed_after_last_run " @click="generate" class="l_button button_colored button_medium" style="float:right">Add to Queue</div>
+            <div v-if="app.stable_diffusion_manager.is_ready" @click="generate" class="l_button button_colored button_medium" style="float:right">{{ (app && app.app_state && app.app_state.isArabic) ? 'توليد' : 'Generate' }}</div>
 
-            <div v-if="(!app.stable_diffusion_manager.is_ready) && !is_stopping"  @click="stop_all" class="l_button button_colored button_medium" style="float:right">Stop all</div>
-            <div v-if="(!app.stable_diffusion_manager.is_ready) && is_stopping" class="l_button button_colored button_medium" style="float:right">Stopping ...</div>
+            <div v-else-if="is_input_changed_after_last_run " @click="generate" class="l_button button_colored button_medium" style="float:right">{{ (app && app.app_state && app.app_state.isArabic) ? 'إضافة إلى قائمة الانتظار' : 'Add to Queue' }}</div>
+
+            <div v-if="(!app.stable_diffusion_manager.is_ready) && !is_stopping"  @click="stop_all" class="l_button button_colored button_medium" style="float:right">{{ (app && app.app_state && app.app_state.isArabic) ? 'إيقاف الكل' : 'Stop all' }}</div>
+            <div v-if="(!app.stable_diffusion_manager.is_ready) && is_stopping" class="l_button button_colored button_medium" style="float:right">{{ (app && app.app_state && app.app_state.isArabic) ? 'جارٍ الإيقاف...' : 'Stopping ...' }}</div>
 
         </template>
 
@@ -36,6 +38,7 @@
 import GenerationGallery from "./GenerationGallery.vue"
 import BasicSDApplet from "../components/BasicSDApplet.vue"
 import { controlnet_check_inputs , controlnet_proc_form_outputs , controlnet_required_assets } from "../utils/controlnet_frontend_utils.js"
+import { getRandomPrompt, saveUserPrompt } from "../prompt_library.js"
 import Vue from 'vue'
 
 export default {
@@ -97,6 +100,65 @@ export default {
         load_options(options){
             this.$refs.basic_sd_applet.load_options(options)
         } , 
+
+        randomPromptAndGenerate() {
+            let prompt = getRandomPrompt();
+            console.log('🎲 Random prompt:', prompt);
+
+            // Save to user library (persisted in localStorage)
+            saveUserPrompt(prompt);
+
+            // Load the prompt
+            this.$refs.basic_sd_applet.load_options({ prompt: prompt });
+
+            // Auto-download any required models before generating
+            let that = this;
+            let model_id = that.sd_options.selected_sd_model;
+            
+            // Check if a model is selected and if it needs downloading
+            let needsDownload = model_id && 
+                that.app.is_mounted && 
+                that.app.assets_manager &&
+                !that.app.assets_manager.downloaded_assets[model_id] &&
+                that.app.assets_manager.downloading &&
+                !that.app.assets_manager.downloading[model_id];
+
+            if (needsDownload) {
+                // Find the model asset info from required_assets_modified
+                let toDownload = that.$refs.basic_sd_applet.required_assets_modified;
+                let assetInfo = toDownload.find(a => a.id === model_id);
+                
+                if (assetInfo) {
+                    console.log('Auto-downloading model:', model_id);
+                    that.app.assets_manager.download_asset(assetInfo);
+                    
+                    // Wait for download to finish, then generate
+                    let checkInterval = setInterval(() => {
+                        let dl = that.app.assets_manager.downloading[model_id];
+                        if (!dl) return;
+                        
+                        if (dl.status === 'done') {
+                            clearInterval(checkInterval);
+                            console.log('Model downloaded, generating...');
+                            Vue.nextTick(() => {
+                                that.generate();
+                            });
+                        } else if (dl.status === 'error') {
+                            clearInterval(checkInterval);
+                            console.warn('Model download failed:', dl.error);
+                            that.app.show_toast('Failed to auto-download model. Please download it manually.');
+                        }
+                    }, 500);
+                    
+                    return;
+                }
+            }
+
+            // Model is already available — just generate
+            Vue.nextTick(() => {
+                this.generate();
+            });
+        },
 
         generate_similar_images(options){
             options = JSON.parse(JSON.stringify(options))

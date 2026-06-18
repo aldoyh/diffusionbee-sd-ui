@@ -10,7 +10,7 @@
     >   
 
     <template v-slot:input_buttons>
-            <div v-if="!is_running"  @click="upscale" class="l_button button_colored button_medium" style="float:right">Upscale</div>
+            <div v-if="!is_running"  @click="upscale" class="l_button button_colored button_medium" style="float:right">{{ app.app_state.isArabic ? 'رفع الدقة' : 'Upscale' }}</div>
     </template>
 
     <template v-slot:output_workpace>
@@ -76,7 +76,7 @@ const PostProcessImage = {
             let in_img = this.sd_options.input_img
 
             if(!in_img || in_img==''){
-                this.app.show_toast('Please select an input image first')
+                this.app.show_toast(this.app.app_state.isArabic ? 'يرجى تحديد صورة إدخال أولاً' : 'Please select an input image first')
                 return
             }
                 
@@ -91,8 +91,7 @@ const PostProcessImage = {
             let h = this.sd_options['input_img__AUX__height' ] 
             let w = this.sd_options['input_img__AUX__width' ]
 
-            if(h > 2048 || w > 2048){
-                this.app.show_toast('Input image is too large')
+            if(h > 2048 || w > 2048){                    this.app.show_toast(this.app.app_state.isArabic ? 'صورة الإدخال كبيرة جدًا' : 'Input image is too large')
                 return
             }
 
