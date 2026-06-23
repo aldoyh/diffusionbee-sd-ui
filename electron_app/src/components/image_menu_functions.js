@@ -101,9 +101,12 @@ image_manu_functions['generate_similar_images'] =  function (app, image_item_dat
 
 	let router = app.$refs.router 
 
-	if(router.$refs[ "Txt2Img" ][0].$refs.sd_applet.generate_similar_images( image_item_data.params))
-		app.functions.switch_page("Txt2Img")
-	// app.functions.generate_similar_images( image_item_data.params )
+	if(router.$refs[ "Txt2Img" ][0].$refs.sd_applet.generate_similar_images( image_item_data.params)) {
+		// Generation queued on Txt2Img page — no navigation needed
+		app.show_toast(app.app_state && app.app_state.isArabic
+			? 'جارٍ توليد صور مشابهة — تفقّد معرض الصور'
+			: 'Generating similar images — check the gallery')
+	}
 	
 }
 image_manu_functions['generate_similar_images'].text = "Generate similar images"

@@ -2,12 +2,9 @@
     <div class="main_frame">
 
 
-        <div class="sidebar" v-if="is_sidebar_open">
+        <div class="sidebar" v-show="is_sidebar_open">
            <div class="sidebar_drag"> 
-                 <span class="title_bar_icon" style="float:right; margin-top: 15px; margin-right:10px; padding:0; padding-left: 13px; padding-top:2px ;" @click="is_sidebar_open = !is_sidebar_open"  > 
-                   <svg width="20" height="16" viewBox="0 0 20 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                       <path :d="icon_library['sidebar_collapse']"  />
-                    </svg>
+                 <span class="title_bar_icon" style="float:right; margin-top: 15px; margin-right:10px; padding:0; padding-left: 13px; padding-top:2px ;" @click="is_sidebar_open = !is_sidebar_open" v-html="icon_library['sidebar_collapse']">
                 </span>
 
            </div>
@@ -28,10 +25,7 @@
 
         <div class="title_bar">
             <div class="app_title_sidebar_collapsed" v-if="(!is_sidebar_open)"  v-bind:class="{'app_title_sidebar_collapsed_mac':is_mac}"> 
-                 <span class="title_bar_icon" style=" margin-right: -10px ; margin-left: 10px;" @click="is_sidebar_open = !is_sidebar_open" > 
-                   <svg width="20" height="16" viewBox="0 0 20 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                     <path :d="icon_library['sidebar_collapse']" />
-                   </svg>
+                 <span class="title_bar_icon" style=" margin-right: -10px ; margin-left: 10px;" @click="is_sidebar_open = !is_sidebar_open" v-html="icon_library['sidebar_collapse']">
                  </span>
 
                  <span class="title_bar_icon" style=" margin-right: -10px ; margin-left: 10px;" @click="on_home_click" > 
@@ -83,29 +77,36 @@ export default {
 
             selected_tab: 'txt2img' ,
             is_fullscreen: false ,
-            is_sidebar_open: true,
+            is_sidebar_open: false,
+            sidebar_peek_completed: false, // tracks whether the initial peek has run
         }
     },
 
-     watch: {
+    watch: {
         'is_sidebar_open': {
 
             handler: function(is_open) {
-                if(is_open){
-                    document.querySelector(':root').style.setProperty("--sidebar-width" , "200px")
-                } else {
-                    document.querySelector(':root').style.setProperty("--sidebar-width" , "0px")
-                }
+                this.sync_sidebar_width(is_open)
             },
-            deep: true
-        } , 
+            immediate: true
+        },
     },
 
     mounted() {
         window.addEventListener('resize', this.detect_fullscreen);
+        this.sync_sidebar_width(this.is_sidebar_open)
+
+        // Enable CSS transitions after initial render settles
+        // Trigger the sidebar peek animation a moment after the frame appears
+        setTimeout(() => {
+            this.trigger_sidebar_peek()
+        }, 500)
     },
     unmounted() {
         window.removeEventListener('resize', this.detect_fullscreen);
+        if (this._sidebar_peek_timeout) {
+            clearTimeout(this._sidebar_peek_timeout)
+        }
     },
 
     computed: {
@@ -115,6 +116,28 @@ export default {
     },
 
     methods: {
+        sync_sidebar_width(is_open){
+            document.querySelector(':root').style.setProperty("--sidebar-width" , is_open ? "200px" : "0px")
+        },
+
+        trigger_sidebar_peek(){
+            // Only peek if sidebar hasn't been peeked before and is currently collapsed
+            if (this.sidebar_peek_completed) return
+            if (this.is_sidebar_open) return
+
+            // Expand
+            this.is_sidebar_open = true
+
+            // Hold for 3.5 seconds then contract
+            this._sidebar_peek_timeout = setTimeout(() => {
+                // Guard: only close if still open (user may have manually toggled)
+                if (this.is_sidebar_open) {
+                    this.is_sidebar_open = false
+                }
+                this.sidebar_peek_completed = true
+            }, 3500)
+        },
+
         selectTab(tab) {
             this.selected_tab = tab;
         },
@@ -420,8 +443,9 @@ img {
     border-bottom-width: 1px;
     border-style: solid;
     border-color: var( --thin-border-color);
-}
 
+    transition: margin-left 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), width 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
 
 .title_bar_icons{
     float: right;
@@ -480,8 +504,9 @@ img {
     background-color: var(--sidebar-color);
  
     width: var(--sidebar-width) ;
-}
 
+    transition: width 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
 
 .sidebar_cat{
    
@@ -547,6 +572,8 @@ img {
     margin-left: var(--sidebar-width);
     height: calc( 100vh - var(--titlebar-height) );
     width: calc(100% - var(--sidebar-width) );
+
+    transition: margin-left 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), width 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .tab_content{

@@ -9,7 +9,7 @@
         
         <div v-if="app_state.is_start_screen">
             <transition name="slide_show">
-                <SplashScreen v-if="app_state.show_splash_screen"></SplashScreen>
+                <SplashScreen v-if="app_state.show_splash_screen" :progress="splashProgress" :status="splashStatus" :appVersion="appVersionLabel"></SplashScreen>
             </transition>
         </div>
         <ApplicationFrame ref="app_frame" v-else :title="current_applet_title + ' - ' + 'DiffusionBee GUI'" :sidebar_item_on_click="sidebar_item_on_click"
@@ -108,6 +108,7 @@ import LoaderModal from './components_bare/LoaderModal.vue'
 import Vue from "vue"
 import { setLocale, getLocale } from "./i18n.js"
 import { bindHistoryToApp } from "./history_service.js"
+const { getMachineProfile, pickOptimalStableDiffusionModel, isSelectableStableDiffusionModel } = require("./utils/model_selection.js")
 
 native_alert;
 
@@ -153,24 +154,44 @@ export default
 
         let that = this;
 
+        // ── Splash screen progress updates ──
+        this.updateSplashProgress('Initializing backend...', 5);
+
         this.start_screen_interval = setInterval( function(){
-            console.log(that.stable_diffusion.is_input_avai)
             if(that.stable_diffusion && that.stable_diffusion.is_input_avail){
+                that.updateSplashProgress('Starting services...', 15);
                 that.app_state.is_start_screen = false;
                 clearInterval(that.start_screen_interval)
+            } else {
+                that.updateSplashProgress('Waiting for backend...', 8);
             }
-            
         }  , 1500)
 
         this.is_mounted = true;
 
-        // Scan disk for existing model files so they appear in the UI
+        // Scan disk models and update splash progress
         try {
-            let count = this.assets_manager.scan_disk_models();
-            console.log('Discovered ' + count + ' models from disk');
+            let modelCount = this.assets_manager.scan_disk_models();
+            console.log('Discovered ' + modelCount + ' models from disk');
+            this.updateSplashProgress('Scanning models...', 25);
         } catch (e) {
             console.warn('Failed to scan disk for models:', e);
         }
+
+        // Track model download progress during splash
+        this.splashBackendCheckInterval = setInterval(() => {
+            if (this.assets_manager && this.assets_manager.downloading) {
+                for (let id of Object.keys(this.assets_manager.downloading)) {
+                    let dl = this.assets_manager.downloading[id];
+                    if (dl && dl.status === 'downloading' && dl.progress !== undefined) {
+                        // Map download progress (0-100) to splash progress range (30-85)
+                        let p = 30 + Math.round(dl.progress * 0.55);
+                        this.updateSplashProgress('Downloading model...', p);
+                        break;
+                    }
+                }
+            }
+        }, 500);
 
         // On first run, check for models and automatically prompt download if none found
         // Run immediately after scan and also re-attempt once the start screen finishes
@@ -250,6 +271,14 @@ export default
             if(!this.is_mounted)
                 return false
             return this.$refs.stable_diffusion.is_input_avail 
+        },
+        appVersionLabel(){
+            try {
+                let pkg = require('../package.json');
+                return (pkg.version || '2.4.0') + ' build ' + (pkg.build_number || '0029');
+            } catch(e) {
+                return '2.4.0';
+            }
         }
     },
 
@@ -357,17 +386,11 @@ export default
                     return;
                 }
 
-                // Pick a good default: prefer a base SD model (not inpainting, not XL for first use)
-                let default_model = models.find(m =>
-                    m.id &&
-                    m.url &&
-                    !m.id.toLowerCase().includes('inpainting') &&
-                    !m.id.toLowerCase().includes('xl') &&
-                    !m.id.toLowerCase().includes('v2')
-                );
+                const machineProfile = getMachineProfile();
+                const downloadableModels = models.filter((model) => model && model.id && model.url && isSelectableStableDiffusionModel(model));
+                let default_model = pickOptimalStableDiffusionModel(downloadableModels, machineProfile);
                 if (!default_model) {
-                    // Fallback to the first downloadable model
-                    default_model = models.find(m => m.id && m.url) || models[0];
+                    default_model = downloadableModels[0] || models.find(m => m && m.id && m.url) || models[0];
                 }
 
                 console.log('Found default model:', default_model ? default_model.id : 'none');
@@ -434,6 +457,13 @@ export default
             }
         },
 
+        updateSplashProgress(status, progress) {
+            this.splashStatus = status;
+            if (progress >= 0) {
+                this.splashProgress = progress;
+            }
+        },
+
         format_model_meta(model) {
             if (!model || !model.model_meta_data) return '';
             let parts = [];
@@ -445,6 +475,17 @@ export default
 
         
     },
+
+    beforeDestroy() {
+        if (this.splashBackendCheckInterval) {
+            clearInterval(this.splashBackendCheckInterval);
+        }
+        if (this.start_screen_interval) {
+            clearInterval(this.start_screen_interval);
+        }
+    },
+
+
 
     data() {
         let app_state = {
@@ -472,6 +513,11 @@ export default
             current_applet_title: "Home",
             is_screen_frozen : true , 
             is_dev : require('../package.json').is_dev ||  require('../package.json').build_number.includes("dev") ,
+
+            // Splash screen progress tracking
+            splashProgress: -1, // -1 = indeterminate
+            splashStatus: '',
+            splashBackendCheckInterval: null,
 
             // First-run model setup state
             show_model_setup: false,

@@ -3,14 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "cd electron_app && PYTHON_PATH=/usr/bin/python3 BUILD_ARCH=arm64 BACKEND_BUILD_PATH=../backends npm run electron:build",
-    "electron:build": "cd electron_app && PYTHON_PATH=/usr/bin/python3 BUILD_ARCH=arm64 BACKEND_BUILD_PATH=../backends npm run electron:build",
+    "prepare:backend": "bash scripts/prepare_backend_for_packaging.sh",
+    "build": "npm run prepare:backend && cd electron_app && PYTHON_PATH=/usr/bin/python3 BUILD_ARCH=arm64 BACKEND_BUILD_PATH=../electron_app/.packaged-backend npm run electron:build",
+    "build:install": "npm run prepare:backend && cd electron_app && PYTHON_PATH=/usr/bin/python3 BUILD_ARCH=arm64 BACKEND_BUILD_PATH=../electron_app/.packaged-backend npm run electron:build:install",
+    "build:dir": "npm run prepare:backend && cd electron_app && PYTHON_PATH=/usr/bin/python3 BUILD_ARCH=arm64 BACKEND_BUILD_PATH=../electron_app/.packaged-backend npm run electron:build:dir",
     "serve": "cd electron_app && npm run electron:serve",
+    "lint": "cd electron_app && npm run lint",
+    "lint:fix": "cd electron_app && npm run lint:fix",
     "install": "cd electron_app && pnpm install",
     "setup:models": "python3 scripts/setup_models.py",
     "test:generation": "python3 scripts/test_prompt_generation.py",
     "test:generation:full": "python3 scripts/test_prompt_generation.py --full",
     "test:setup": "bash scripts/run_setup_and_tests.sh smoke",
-    "test:setup:full": "bash scripts/run_setup_and_tests.sh full"
+    "test:setup:full": "bash scripts/run_setup_and_tests.sh full",
+    "test:installed-ui": "bash scripts/verify_installed_app_ui.sh"
   }
 }

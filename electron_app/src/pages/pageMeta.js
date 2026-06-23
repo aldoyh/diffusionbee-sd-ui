@@ -55,6 +55,14 @@ export const pageMeta = {
     home_category: 'pages',
     sidebar_show: 'always'
   },
+  PromptLibrary: {
+    title: 'Prompt Library',
+    icon: 'magic',
+    description: 'Browse, remix and generate prompts with Ollama',
+    img_icon: require('../assets/imgs/page_icon_imgs/default.png'),
+    home_category: 'pages',
+    sidebar_show: 'always'
+  },
   Training: {
     title: 'Training',
     icon: 'file',

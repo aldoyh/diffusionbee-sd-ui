@@ -153,12 +153,19 @@ class Tokenizer {
     return word;
   }
 
+  utf8Bytes(text) {
+    if (typeof TextEncoder !== 'undefined') {
+      return Array.from(new TextEncoder().encode(text));
+    }
+    return Array.from(Buffer.from(text, 'utf8'));
+  }
+
   encode(text) {
     let bpeTokens = []
     text = whitespaceClean(basicClean(text)).toLowerCase();
     for(let token of [...text.matchAll(this.pat)].map(m => m[0])) {
-      token = [...token].map(b => this.byteEncoder[b.charCodeAt(0)]).join("");
-      bpeTokens.push(...this.bpe(token).split(' ').map(bpe_token => this.encoder[bpe_token]));
+      token = this.utf8Bytes(token).map((b) => this.byteEncoder[b]).join("");
+      bpeTokens.push(...this.bpe(token).split(' ').map(bpe_token => this.encoder[bpe_token]).filter((id) => id !== undefined));
     }
     return bpeTokens;
   }

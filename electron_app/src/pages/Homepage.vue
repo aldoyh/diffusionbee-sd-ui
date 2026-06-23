@@ -1,26 +1,65 @@
 
 <template>
     <div class="main_container dark-theme">
-        <div class="welcome-section">
+        <div class="welcome-section" ref="composerSection">
             <h1 class="welcome-title" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
                 {{ app.app_state.isArabic ? 'ماذا ستصنع اليوم؟' : 'What will you create today?' }}
             </h1>
+
+            <div class="mode-switcher" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
+                <button
+                    v-for="mode in homeModes"
+                    :key="mode.id"
+                    class="mode-pill"
+                    :class="{ 'mode-pill--active': activeHomeMode === mode.id }"
+                    @click="focusHomeSection(mode.target, mode.id)"
+                >
+                    <span class="mode-pill-icon">{{ mode.icon }}</span>
+                    <span class="mode-pill-copy">
+                        <span class="mode-pill-title">{{ homeModeLabel(mode) }}</span>
+                        <span class="mode-pill-desc">{{ homeModeDescription(mode) }}</span>
+                    </span>
+                </button>
+            </div>
 
             <p class="carousel-heading" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
                 {{ app.app_state.isArabic ? 'عينات ملهمة' : 'Inspiration samples' }}
                 <span class="sample-count-badge">{{ welcomeTiles.length }}</span>
             </p>
-            <div class="welcome-samples" dir="ltr">
-                <div
-                    v-for="(img, idx) in welcomeTiles"
-                    :key="img.assetKey || ('welcome-' + idx)"
-                    class="welcome-sample-tile"
-                    :title="img.prompt"
-                    v-bind:style="{ 'background-image': 'url(' + img.src + ')' }"
-                    @click="useWelcomePrompt(img.prompt)"
+
+            <div class="carousel-shell">
+                <button
+                    class="carousel-nav"
+                    type="button"
+                    @click="scrollSamples(-1)"
+                    :title="app.app_state.isArabic ? 'تمرير العينات لليسار' : 'Scroll samples left'"
+                    :aria-label="app.app_state.isArabic ? 'تمرير العينات لليسار' : 'Scroll samples left'"
                 >
-                    <span class="welcome-sample-label">{{ sampleLabel(img, idx) }}</span>
+                    ‹
+                </button>
+
+                <div class="welcome-samples" ref="welcomeSamples" dir="ltr" @wheel.prevent="onWelcomeSamplesWheel">
+                    <div
+                        v-for="(img, idx) in welcomeTiles"
+                        :key="img.assetKey || ('welcome-' + idx)"
+                        class="welcome-sample-tile"
+                        :title="img.prompt"
+                        v-bind:style="{ 'background-image': 'url(' + img.src + ')' }"
+                        @click="useWelcomePrompt(img.prompt)"
+                    >
+                        <span class="welcome-sample-label" :class="{ 'arabic-text': app.app_state.isArabic }">{{ sampleLabel(img, idx) }}</span>
+                    </div>
                 </div>
+
+                <button
+                    class="carousel-nav"
+                    type="button"
+                    @click="scrollSamples(1)"
+                    :title="app.app_state.isArabic ? 'تمرير العينات لليمين' : 'Scroll samples right'"
+                    :aria-label="app.app_state.isArabic ? 'تمرير العينات لليمين' : 'Scroll samples right'"
+                >
+                    ›
+                </button>
             </div>
 
             <p class="inspiration-text" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
@@ -38,7 +77,7 @@
                         :class="{ 'rtl-text': app.app_state.isArabic }"
 
                     />
-                    <button @click="randomPrompt" class="chat-submit" :title="app.app_state.isArabic ? 'توليد موجه عشوائي' : 'Generate random prompt'" style="background:rgba(255,255,255,0.08); margin-right:6px;">
+                    <button @click="randomPrompt" class="chat-submit" :disabled="is_random_prompt_generating" :title="is_random_prompt_generating ? (app.app_state.isArabic ? 'جارٍ إنشاء موجه...' : 'Generating prompt...') : (app.app_state.isArabic ? 'توليد موجه عشوائي' : 'Generate random prompt')" style="background:rgba(255,255,255,0.08); margin-right:6px;">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
                             <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
@@ -64,16 +103,110 @@
                 </div>
             </div>
 
-            <div class="gallery-section gallery-section--prominent" v-if="app.is_mounted">
-                <h2 class="category-title gallery-section-title">
-                    {{ app.app_state.isArabic ? 'نتائج التوليد' : 'Your generations' }}
-                </h2>
+            <div class="quick-controls-card" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
+                <div class="quick-controls-head">
+                    <div>
+                        <p class="quick-controls-kicker">{{ app.app_state.isArabic ? 'إعدادات سريعة' : 'Quick settings' }}</p>
+                        <h2 class="quick-controls-title">{{ app.app_state.isArabic ? 'غيّر النموذج والإعدادات هنا' : 'Change the model and generation options here' }}</h2>
+                    </div>
+                    <button class="quick-controls-link" type="button" @click="focusHomeSection('modelsSection', 'models')">
+                        {{ app.app_state.isArabic ? 'جميع النماذج' : 'All models' }}
+                    </button>
+                </div>
+
+                <div class="quick-model-summary" v-if="selectedModelLabel">
+                    <div>
+                        <span class="quick-controls-label">{{ app.app_state.isArabic ? 'النموذج الحالي' : 'Current model' }}</span>
+                        <strong>{{ selectedModelLabel }}</strong>
+                        <span class="quick-controls-muted">{{ selectedModelMetaLabel }}</span>
+                    </div>
+                    <button class="quick-controls-link quick-controls-link--ghost" type="button" @click="focusHomeSection('modelsSection', 'models')">
+                        {{ app.app_state.isArabic ? 'تبديل' : 'Change' }}
+                    </button>
+                </div>
+
+                <div class="quick-options-grid">
+                    <div class="quick-option-group">
+                        <span class="quick-controls-label">{{ app.app_state.isArabic ? 'الحجم' : 'Canvas' }}</span>
+                        <button
+                            v-for="preset in resolutionPresets"
+                            :key="preset.id"
+                            class="quick-chip"
+                            :class="{ 'quick-chip--active': selectedResolutionPresetId === preset.id }"
+                            type="button"
+                            @click="selectedResolutionPresetId = preset.id"
+                        >
+                            {{ resolutionPresetLabel(preset) }}
+                        </button>
+                    </div>
+                    <div class="quick-option-group">
+                        <span class="quick-controls-label">{{ app.app_state.isArabic ? 'الجودة' : 'Quality' }}</span>
+                        <button
+                            v-for="preset in qualityPresets"
+                            :key="preset.id"
+                            class="quick-chip"
+                            :class="{ 'quick-chip--active': selectedQualityPresetId === preset.id }"
+                            type="button"
+                            @click="selectedQualityPresetId = preset.id"
+                        >
+                            {{ qualityPresetLabel(preset) }}
+                        </button>
+                    </div>
+                    <div class="quick-option-group">
+                        <span class="quick-controls-label">{{ app.app_state.isArabic ? 'الدفعة' : 'Batch' }}</span>
+                        <button
+                            v-for="count in batchPresetOptions"
+                            :key="count"
+                            class="quick-chip"
+                            :class="{ 'quick-chip--active': selectedBatchCount === count }"
+                            type="button"
+                            @click="selectedBatchCount = count"
+                        >
+                            {{ count }}×
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-section gallery-section--prominent" v-if="app.is_mounted" ref="latestSection">
+                <div class="gallery-section-header">
+                    <h2 class="category-title gallery-section-title">
+                        {{ app.app_state.isArabic ? 'نتائج التوليد' : 'Your generations' }}
+                    </h2>
+                    <div class="gallery-section-actions">
+                        <button class="gallery-nav-button" type="button" @click="scrollHomeGallery(-1)">
+                            ‹
+                        </button>
+                        <button class="gallery-nav-button" type="button" @click="scrollHomeGallery(1)">
+                            ›
+                        </button>
+                        <button class="gallery-nav-button gallery-nav-button--ghost" type="button" @click="scrollHomeGalleryToTop">
+                            ↑
+                        </button>
+                    </div>
+                </div>
                 <GenerationGallery ref="homeGallery" :app="app" :n_to_keep="10" :menu_items_skip="['use_params_current_page']" :compact="true" :fixed_col_size="280"></GenerationGallery>
             </div>
 
         </div>
 
-        <div class="styles-section">
+        <div class="styles-section" ref="stylesSection">
+            <div class="prompt-library-strip" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
+                <div>
+                    <p class="quick-controls-kicker">{{ app.app_state.isArabic ? 'مكتبة الموجهات' : 'Prompt Library' }}</p>
+                    <h2 class="prompt-library-title">{{ app.app_state.isArabic ? 'استعرض، عدّل، واستخدم الموجهات من هنا' : 'Browse, tweak, and use prompts from here' }}</h2>
+                    <p class="prompt-library-copy">{{ app.app_state.isArabic ? 'ابدأ من مكتبة الموجهات، ثم ارجع مباشرة إلى التوليد دون مغادرة الشاشة الرئيسية.' : 'Start from the prompt library and jump back into generation without leaving the home screen.' }}</p>
+                </div>
+                <div class="prompt-library-actions">
+                    <button class="quick-controls-link" type="button" @click="openPage('PromptLibrary')">
+                        {{ app.app_state.isArabic ? 'فتح المكتبة' : 'Open library' }}
+                    </button>
+                    <button class="quick-controls-link quick-controls-link--ghost" type="button" @click="scrollToHomeSection('toolsSection')">
+                        {{ app.app_state.isArabic ? 'الأوضاع' : 'Modes' }}
+                    </button>
+                </div>
+            </div>
+
             <h2 class="category-title">{{ app.app_state.isArabic ? 'استكشف الأنماط' : 'Explore Styles' }}</h2>
             <div class="styles-grid">
                 <div v-for="style in displayedStyles" :key="style.name" class="style-chip" @click="applyStyle(style.name)">
@@ -83,24 +216,26 @@
             </div>
         </div>
 
-        <div v-for="category in categories" :key="category[0]" class="tools-section">
-            <h2 class="category-title"> {{category[1]}} </h2>
-            <div class="icon_container">
-                <div v-for="item in all_icons(category[0]) " 
-                    :key="item.id" 
-                    v-bind:style="{ 'background-image': 'url(' +( item.img_icon || default_img )+ ')' }"
-                    @click="app.functions.switch_page(item.id)" 
-                    class="select_app"> 
-                    <div class="select_app_desc"> 
-                        <h2>  {{item.text}}</h2> 
-                        <p> {{item.description}} </p>
-                        <div class="l_button button_colored" style="margin-top: 10px;"> Open </div>
-                    </div> 
+        <div class="tools-sections" ref="toolsSection">
+            <div v-for="category in categories" :key="category[0]" class="tools-section">
+                <h2 class="category-title"> {{category[1]}} </h2>
+                <div class="icon_container">
+                    <div v-for="item in all_icons(category[0]) " 
+                        :key="item.id" 
+                        v-bind:style="{ 'background-image': 'url(' +( item.img_icon || default_img )+ ')' }"
+                        @click="app.functions.switch_page(item.id)" 
+                        class="select_app"> 
+                        <div class="select_app_desc"> 
+                            <h2>  {{item.text}}</h2> 
+                            <p> {{item.description}} </p>
+                            <div class="l_button button_colored" style="margin-top: 10px;"> Open </div>
+                        </div> 
+                    </div>
                 </div>
+                <br> 
             </div>
-            <br> 
         </div>
-        <div class="models-section" v-if="availableModels.length > 0">
+        <div class="models-section" v-if="availableModels.length > 0" ref="modelsSection">
             <h2 class="category-title">
                 {{ app.app_state.isArabic ? 'النماذج المتاحة' : 'Your Models' }}
                 <span class="model-count-badge">{{ availableModels.length }}</span>
@@ -125,9 +260,12 @@
 </template>
 
 <script>
-import { getRandomPrompt, saveUserPrompt, getInspireLines } from "../prompt_library.js"
+import { getRandomPrompt, getInspireLines, rememberPrompt } from "../prompt_library.js"
 import GenerationGallery from "../components/GenerationGallery.vue"
 import { syncGalleryGroup } from "../generation_broadcast.js"
+import { preparePromptForSd, validatePromptLength } from "../prompt_utils.js"
+const { getFallbackDefaultStableDiffusionAsset, sortStableDiffusionModelsBestFirst } = require("../utils/model_selection.js")
+const { generatePromptWithOllama, normalizeGeneratedPrompt } = require("../utils/ollama_prompt_service.js")
 
 const PUBLIC_BASE = (typeof process !== 'undefined' && process.env && process.env.BASE_URL) || '/';
 
@@ -253,6 +391,102 @@ const Home = {
             pendingPrompt: '',
             pendingGenerationReason: '',
             pendingGenerationTimer: null,
+            activeHomeMode: 'create',
+            selectedResolutionPresetId: 'square',
+            selectedQualityPresetId: 'balanced',
+            selectedBatchCount: 1,
+            is_random_prompt_generating: false,
+            homeModes: [
+                {
+                    id: 'create',
+                    icon: '✨',
+                    label: 'Create',
+                    labelArabic: 'إنشاء',
+                    description: 'Prompt, model, and options',
+                    descriptionArabic: 'الموجه والنموذج والإعدادات',
+                    target: 'composerSection',
+                },
+                {
+                    id: 'library',
+                    icon: '📚',
+                    label: 'Prompt Library',
+                    labelArabic: 'مكتبة الموجهات',
+                    description: 'Browse and remix prompts',
+                    descriptionArabic: 'استعرض وامزج الموجهات',
+                    target: 'stylesSection',
+                },
+                {
+                    id: 'models',
+                    icon: '🧠',
+                    label: 'Models',
+                    labelArabic: 'النماذج',
+                    description: 'Change the active model',
+                    descriptionArabic: 'غيّر النموذج الحالي',
+                    target: 'modelsSection',
+                },
+                {
+                    id: 'latest',
+                    icon: '🖼️',
+                    label: 'Latest',
+                    labelArabic: 'الأحدث',
+                    description: 'Latest generated images',
+                    descriptionArabic: 'آخر الصور المولدة',
+                    target: 'latestSection',
+                },
+                {
+                    id: 'tools',
+                    icon: '🕹️',
+                    label: 'Modes',
+                    labelArabic: 'الأوضاع',
+                    description: 'Open any tool quickly',
+                    descriptionArabic: 'افتح أي أداة بسرعة',
+                    target: 'toolsSection',
+                },
+            ],
+            resolutionPresets: [
+                {
+                    id: 'square',
+                    label: '1:1',
+                    labelArabic: 'مربع',
+                },
+                {
+                    id: 'portrait',
+                    label: '4:5',
+                    labelArabic: 'عمودي',
+                },
+                {
+                    id: 'landscape',
+                    label: '16:9',
+                    labelArabic: 'عريض',
+                },
+            ],
+            qualityPresets: [
+                {
+                    id: 'fast',
+                    label: 'Fast',
+                    labelArabic: 'سريع',
+                    num_steps: 20,
+                    guidance_scale: 6.5,
+                    scheduler: 'ddim',
+                },
+                {
+                    id: 'balanced',
+                    label: 'Balanced',
+                    labelArabic: 'متوازن',
+                    num_steps: 25,
+                    guidance_scale: 7.5,
+                    scheduler: 'karras',
+                },
+                {
+                    id: 'detail',
+                    label: 'Detailed',
+                    labelArabic: 'تفصيلي',
+                    num_steps: 35,
+                    guidance_scale: 8.5,
+                    scheduler: 'karras',
+                },
+            ],
+            batchPresetOptions: [1, 2, 4],
             categories: [
                 ["main" , "All AI Tools"],
                 ["pages" , "Pages"],
@@ -265,10 +499,87 @@ const Home = {
         autoSelectModel() {
             let models = this.availableModels;
             if (models.length === 0) return;
-            if (this.selectedModelId && models.find(m => m.id === this.selectedModelId)) return;
-            // Prefer Default_SD1.5, otherwise use first available
-            let preferred = models.find(m => m.id === 'Default_SD1.5');
-            this.selectedModelId = preferred ? preferred.id : models[0].id;
+            if (this.selectedModelId && models.find(m => m.id === this.selectedModelId)) {
+                if (this.selectedModelId === 'Default_SD1.5' && models[0] && models[0].id !== 'Default_SD1.5') {
+                    this.selectedModelId = models[0].id;
+                }
+                return;
+            }
+            this.selectedModelId = models[0].id;
+        },
+        getSectionElement(refName) {
+            const ref = this.$refs[refName];
+            if (!ref) return null;
+            return Array.isArray(ref) ? ref[0] : ref;
+        },
+        scrollToHomeSection(refName) {
+            const el = this.getSectionElement(refName);
+            if (!el || !el.scrollIntoView) return;
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        },
+        focusHomeSection(refName, modeId) {
+            if (modeId) {
+                this.activeHomeMode = modeId;
+            }
+            this.scrollToHomeSection(refName);
+        },
+        openPage(pageId) {
+            if (this.app && this.app.functions && this.app.functions.switch_page) {
+                this.app.functions.switch_page(pageId);
+            }
+        },
+        homeModeLabel(mode) {
+            return this.app.app_state.isArabic ? (mode.labelArabic || mode.label) : mode.label;
+        },
+        homeModeDescription(mode) {
+            return this.app.app_state.isArabic ? (mode.descriptionArabic || mode.description) : mode.description;
+        },
+        resolutionPresetLabel(preset) {
+            return this.app.app_state.isArabic ? (preset.labelArabic || preset.label) : preset.label;
+        },
+        qualityPresetLabel(preset) {
+            return this.app.app_state.isArabic ? (preset.labelArabic || preset.label) : preset.label;
+        },
+        getSelectedModelAsset() {
+            return this.availableModels.find((model) => model.id === this.selectedModelId) || this.availableModels[0] || getFallbackDefaultStableDiffusionAsset();
+        },
+        isXLModelAsset(model) {
+            const sdType = String((model && model.model_meta_data && model.model_meta_data.sd_type) || '').toLowerCase();
+            return sdType.includes('xl');
+        },
+        getSelectedQualityPreset() {
+            return this.qualityPresets.find((preset) => preset.id === this.selectedQualityPresetId) || this.qualityPresets[1];
+        },
+        getSelectedResolutionPreset() {
+            return this.resolutionPresets.find((preset) => preset.id === this.selectedResolutionPresetId) || this.resolutionPresets[0];
+        },
+        getSelectedResolutionDimensions() {
+            const model = this.getSelectedModelAsset();
+            const isXL = this.isXLModelAsset(model);
+            const preset = this.getSelectedResolutionPreset();
+
+            if (preset.id === 'portrait') {
+                return isXL ? { width: 832, height: 1216 } : { width: 512, height: 640 };
+            }
+
+            if (preset.id === 'landscape') {
+                return isXL ? { width: 1216, height: 832 } : { width: 768, height: 512 };
+            }
+
+            return isXL ? { width: 1024, height: 1024 } : { width: 512, height: 512 };
+        },
+        buildQuickGenerationOptions() {
+            const quality = this.getSelectedQualityPreset();
+            const dimensions = this.getSelectedResolutionDimensions();
+
+            return {
+                img_width: dimensions.width,
+                img_height: dimensions.height,
+                num_imgs: this.selectedBatchCount || 1,
+                num_steps: quality.num_steps,
+                guidance_scale: quality.guidance_scale,
+                scheduler: quality.scheduler,
+            };
         },
         clearPendingGenerationTimer() {
             if (this.pendingGenerationTimer) {
@@ -282,15 +593,7 @@ const Home = {
             return this.app.stable_diffusion_manager.is_ready;
         },
         getDefaultModelAsset() {
-            return {
-                id: 'Default_SD1.5',
-                filename: 'sd-v1-5_fp16.tdict',
-                md5: 'a36c79b8edb4b21b75e50d5834d1f4ae',
-                is_stock_model: true,
-                url: 'https://huggingface.co/divamgupta/stable_diffusion_mps/resolve/main/sd-v1-5_fp16.tdict',
-                title: 'Stable Diffusion 1.5 (Default)',
-                model_meta_data: { type: 'sd_model', float_type: 'float16', sd_type: 'SD_1x' }
-            };
+            return this.availableModels[0] || getFallbackDefaultStableDiffusionAsset();
         },
         ensureModelReadyForGeneration() {
             if (!this.app || !this.app.assets_manager) return false;
@@ -317,7 +620,8 @@ const Home = {
             }
 
             this.selectedModelId = defaultAsset.id;
-            if (!this.app.assets_manager.downloading[defaultAsset.id]) {
+            const downloading = this.app.assets_manager.downloading || {};
+            if (!downloading[defaultAsset.id]) {
                 this.app.assets_manager.download_asset(defaultAsset);
             }
             return false;
@@ -367,24 +671,42 @@ const Home = {
             if (!modelPath) return false;
             if (!this.$refs.homeGallery) return false;
 
+            const prepared = preparePromptForSd(prompt, this.app.app_state.isArabic);
+            const validation = validatePromptLength(prepared.prompt, this.app.app_state.isArabic);
+            if (!validation.valid) {
+                this.app.show_toast(validation.message);
+                return false;
+            }
+
+            if (prepared.wasTranslated) {
+                this.app.show_toast(this.app.app_state.isArabic
+                    ? 'تمت ترجمة الموجه إلى الإنجليزية لتحسين جودة التوليد.'
+                    : 'Prompt translated to English for better generation quality.');
+            }
+
+            const quickOptions = this.buildQuickGenerationOptions();
+
             let genOptions = {
                 model_tdict_path: modelPath,
-                prompt: prompt,
+                prompt: prepared.prompt,
                 negative_prompt: '',
-                img_width: 512,
-                img_height: 512,
-                num_imgs: 1,
+                img_width: quickOptions.img_width,
+                img_height: quickOptions.img_height,
+                num_imgs: quickOptions.num_imgs,
                 seed: Math.floor(Math.random() * 1000000),
-                guidance_scale: 7.5,
-                num_steps: 25,
-                scheduler: 'ddim',
+                guidance_scale: quickOptions.guidance_scale,
+                num_steps: quickOptions.num_steps,
+                scheduler: quickOptions.scheduler,
                 applet_name: 'txt2img',
             };
 
             let rawFormOptions = {
-                prompt: prompt,
+                prompt: prepared.originalPrompt,
                 seed: genOptions.seed,
                 selected_sd_model: this.selectedModelId,
+                selected_resolution_preset: this.selectedResolutionPresetId,
+                selected_quality_preset: this.selectedQualityPresetId,
+                num_imgs: genOptions.num_imgs,
             };
 
             this.app.stable_diffusion_manager.add_job(genOptions, rawFormOptions, this.$refs.homeGallery);
@@ -395,10 +717,8 @@ const Home = {
             if (root) root.scrollTop = 0;
         },
         scrollToGallery() {
-            const galleryEl = this.$refs.homeGallery && this.$refs.homeGallery.$el;
-            if (galleryEl) {
-                galleryEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
+            this.scrollToHomeSection('latestSection');
+            this.scrollHomeGalleryToTop();
         },
         hydrateGalleryFromLastGeneration() {
             const last = this.app.app_state.last_gallery_group;
@@ -412,6 +732,39 @@ const Home = {
                     this.scrollToGallery();
                 }
             });
+        },
+        scrollHomeGallery(direction) {
+            this.scrollToHomeSection('latestSection');
+            if (!this.$refs.homeGallery) return;
+            if (direction < 0 && this.$refs.homeGallery.scroll_previous) {
+                this.$refs.homeGallery.scroll_previous();
+                return;
+            }
+            if (direction > 0 && this.$refs.homeGallery.scroll_next) {
+                this.$refs.homeGallery.scroll_next();
+            }
+        },
+        scrollHomeGalleryToTop() {
+            this.scrollToHomeSection('latestSection');
+            if (!this.$refs.homeGallery) return;
+            if (this.$refs.homeGallery.scroll_to_top) {
+                this.$refs.homeGallery.scroll_to_top();
+            }
+        },
+        scrollSamples(direction) {
+            const el = this.getSectionElement('welcomeSamples');
+            if (!el) return;
+
+            const amount = Math.max(320, Math.floor((el.clientWidth || 0) * 0.72));
+            el.scrollBy({ left: amount * direction, behavior: 'smooth' });
+        },
+        onWelcomeSamplesWheel(event) {
+            const el = this.getSectionElement('welcomeSamples');
+            if (!el) return;
+
+            const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+            if (!delta) return;
+            el.scrollLeft += delta;
         },
         sampleLabel(img, idx) {
             const labels = this.app.app_state.isArabic
@@ -445,13 +798,36 @@ const Home = {
                 this.promptText = this.promptText.trim() ? `${this.promptText}, ${styleName}` : styleName;
             }
         },
-        randomPrompt() {
-            let prompt = getRandomPrompt();
-            this.promptText = prompt;
-            saveUserPrompt(prompt);
-            setTimeout(() => {
-                this.submitPrompt();
-            }, 600);
+        getRandomStylePreset() {
+            if (!this.stylePresets.length) return '';
+            return this.stylePresets[Math.floor(Math.random() * this.stylePresets.length)].name;
+        },
+        async randomPrompt() {
+            if (this.is_random_prompt_generating) return;
+            this.is_random_prompt_generating = true;
+
+            const fallbackPrompt = getRandomPrompt();
+            const styleHint = this.getRandomStylePreset();
+
+            try {
+                const generated = await generatePromptWithOllama({
+                    sourcePrompt: fallbackPrompt,
+                    style: styleHint,
+                    locale: this.app.app_state.isArabic ? 'ar' : 'en',
+                });
+                const prompt = normalizeGeneratedPrompt(generated.prompt) || fallbackPrompt;
+                rememberPrompt(prompt);
+                this.promptText = prompt;
+            } catch (error) {
+                console.warn('Ollama prompt generation failed, falling back to the local library:', error);
+                rememberPrompt(fallbackPrompt);
+                this.promptText = fallbackPrompt;
+            } finally {
+                this.is_random_prompt_generating = false;
+            }
+
+            await this.$nextTick();
+            this.submitPrompt();
         },
         selectModel(model) {
             this.selectedModelId = model.id;
@@ -510,10 +886,25 @@ const Home = {
         displayedStyles() {
             return this.stylePresets;
         },
+        selectedModelLabel() {
+            const model = this.getSelectedModelAsset();
+            return model ? (model.title || model.id) : '';
+        },
+        selectedModelMetaLabel() {
+            const model = this.getSelectedModelAsset();
+            if (!model || !model.model_meta_data) return '';
+
+            const parts = [];
+            if (model.model_meta_data.sd_type) parts.push(model.model_meta_data.sd_type);
+            if (model.model_meta_data.float_type) parts.push(model.model_meta_data.float_type);
+            return parts.join(' · ');
+        },
         availableModels() {
             if (!this.app.is_mounted || !this.app.assets_manager) return [];
-            return Object.values(this.app.assets_manager.all_avail_assets).filter(
-                m => m.model_meta_data && m.model_meta_data.type === 'sd_model'
+            return sortStableDiffusionModelsBestFirst(
+                Object.values(this.app.assets_manager.all_avail_assets || {}).filter(
+                    m => m.model_meta_data && m.model_meta_data.type === 'sd_model'
+                )
             );
         },
         default_img(){
@@ -581,6 +972,67 @@ Home.sidebar_show = "always"
     color: rgba(255, 255, 255, 0.42);
     margin: 0 0 10px;
     text-align: center;
+}
+
+.mode-switcher {
+    width: 100%;
+    max-width: 1100px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin: 10px 0 18px;
+}
+
+.mode-pill {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 68px;
+    padding: 12px 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: #fff;
+    text-align: start;
+    cursor: pointer;
+    transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.mode-pill:hover {
+    transform: translateY(-2px);
+    border-color: rgba(62, 123, 250, 0.35);
+    background: rgba(62, 123, 250, 0.14);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.24);
+}
+
+.mode-pill--active {
+    background: linear-gradient(135deg, rgba(62, 123, 250, 0.28), rgba(62, 123, 250, 0.1));
+    border-color: rgba(62, 123, 250, 0.55);
+    box-shadow: 0 0 0 1px rgba(62, 123, 250, 0.2) inset, 0 20px 40px rgba(0, 0, 0, 0.22);
+}
+
+.mode-pill-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.mode-pill-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mode-pill-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.mode-pill-desc {
+    font-size: 0.74rem;
+    line-height: 1.3;
+    color: rgba(255, 255, 255, 0.55);
 }
 
 .sample-count-badge {
@@ -686,9 +1138,48 @@ Home.sidebar_show = "always"
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.gallery-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
 .gallery-section-title {
     margin-bottom: 12px !important;
     font-size: 1.1rem !important;
+}
+
+.gallery-section-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.gallery-nav-button {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.9);
+    border-radius: 999px;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.gallery-nav-button:hover {
+    transform: translateY(-1px);
+    background: rgba(62, 123, 250, 0.16);
+    border-color: rgba(62, 123, 250, 0.35);
+}
+
+.gallery-nav-button--ghost {
+    width: 38px;
 }
 
 .pending-generation-note {
@@ -700,6 +1191,157 @@ Home.sidebar_show = "always"
     background: rgba(62, 123, 250, 0.16);
     border: 1px solid rgba(62, 123, 250, 0.35);
     text-align: center;
+}
+
+.quick-controls-card {
+    width: 100%;
+    max-width: 900px;
+    margin-bottom: 22px;
+    padding: 18px 18px 16px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
+}
+
+.quick-controls-head,
+.quick-model-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.quick-model-summary {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 18px;
+    background: rgba(0, 0, 0, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.quick-controls-kicker {
+    margin: 0 0 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.quick-controls-title {
+    margin: 0;
+    font-size: 1.02rem;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.quick-controls-label {
+    display: inline-block;
+    margin-bottom: 8px;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.quick-controls-muted {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.quick-controls-link {
+    border: 1px solid rgba(62, 123, 250, 0.35);
+    background: rgba(62, 123, 250, 0.16);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 999px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.quick-controls-link:hover {
+    transform: translateY(-1px);
+    background: rgba(62, 123, 250, 0.24);
+    border-color: rgba(62, 123, 250, 0.55);
+}
+
+.quick-controls-link--ghost {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.quick-options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.quick-option-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.quick-chip {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.88);
+    padding: 8px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+
+.quick-chip:hover {
+    transform: translateY(-1px);
+    border-color: rgba(62, 123, 250, 0.3);
+    background: rgba(62, 123, 250, 0.08);
+}
+
+.quick-chip--active {
+    border-color: rgba(62, 123, 250, 0.65);
+    background: rgba(62, 123, 250, 0.2);
+    color: #fff;
+}
+
+.prompt-library-strip {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 18px 16px;
+    margin-bottom: 20px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, rgba(62, 123, 250, 0.16), rgba(255, 255, 255, 0.03));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.prompt-library-title {
+    margin: 0;
+    font-size: 1.05rem;
+    color: #fff;
+}
+
+.prompt-library-copy {
+    margin: 8px 0 0;
+    max-width: 56ch;
+    color: rgba(255, 255, 255, 0.64);
+}
+
+.prompt-library-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .chat-submit {
@@ -734,63 +1376,229 @@ Home.sidebar_show = "always"
 .welcome-samples {
     width: 100%;
     max-width: 1100px;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-template-rows: repeat(3, 108px);
-    gap: 10px;
-    padding: 4px 8px 16px;
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    padding: 4px 6px 16px;
     margin-bottom: 8px;
-    min-height: 354px;
+    min-height: 228px;
     direction: ltr;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+}
+
+/* Custom scrollbar for the horizontal carousel */
+.welcome-samples::-webkit-scrollbar {
+    height: 4px;
+}
+
+.welcome-samples::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 4px;
+}
+
+.welcome-samples::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+.welcome-samples::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
 }
 
 .welcome-sample-tile {
-    width: 100%;
-    height: 108px;
-    min-height: 108px;
+    flex: 0 0 clamp(190px, 22vw, 280px);
+    height: 200px;
+    min-height: 200px;
     border-radius: 20px;
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.06);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+        0 16px 32px rgba(0, 0, 0, 0.45),
+        0 0 0 0 rgba(246, 59, 137, 0);
     cursor: pointer;
     position: relative;
     overflow: hidden;
-    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    transition: transform 0.35s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+    scroll-snap-align: start;
+    animation: tileFadeIn 0.6s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+/* Staggered fade-in for each tile */
+.welcome-sample-tile:nth-child(1) { animation-delay: 0.05s; }
+.welcome-sample-tile:nth-child(2) { animation-delay: 0.10s; }
+.welcome-sample-tile:nth-child(3) { animation-delay: 0.15s; }
+.welcome-sample-tile:nth-child(4) { animation-delay: 0.20s; }
+.welcome-sample-tile:nth-child(5) { animation-delay: 0.25s; }
+.welcome-sample-tile:nth-child(6) { animation-delay: 0.30s; }
+.welcome-sample-tile:nth-child(7) { animation-delay: 0.35s; }
+.welcome-sample-tile:nth-child(8) { animation-delay: 0.40s; }
+.welcome-sample-tile:nth-child(9) { animation-delay: 0.45s; }
+.welcome-sample-tile:nth-child(10) { animation-delay: 0.50s; }
+.welcome-sample-tile:nth-child(11) { animation-delay: 0.55s; }
+.welcome-sample-tile:nth-child(12) { animation-delay: 0.60s; }
+
+@keyframes tileFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Gradient overlay at tile bottom for label readability */
+.welcome-sample-tile::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, 
+        rgba(0, 0, 0, 0.65) 0%, 
+        rgba(0, 0, 0, 0.3) 40%, 
+        transparent 70%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+
+.welcome-sample-tile:hover::before {
+    opacity: 1;
+}
+
+/* Subtle inner border glow on the tile */
+.welcome-sample-tile::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 21px;
+    background: linear-gradient(135deg, rgba(246, 59, 137, 0.3), rgba(0, 194, 255, 0.3));
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    z-index: 0;
 }
 
 .welcome-sample-tile:hover {
-    transform: translateY(-6px) scale(1.02);
-    border-color: rgba(255, 255, 255, 0.28);
-    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.55);
+    transform: translateY(-8px) scale(1.03);
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 
+        0 28px 56px rgba(0, 0, 0, 0.6),
+        0 0 40px rgba(246, 59, 137, 0.15);
+}
+
+/* Press effect on click */
+.welcome-sample-tile:active {
+    transform: translateY(-2px) scale(0.98);
+    transition-duration: 0.1s;
+}
+
+.welcome-sample-tile:hover::after {
+    opacity: 1;
 }
 
 .welcome-sample-label {
     position: absolute;
     left: 12px;
     right: 12px;
-    bottom: 12px;
-    padding: 6px 10px;
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.62);
+    bottom: 14px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.5);
     color: #fff;
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     font-weight: 600;
     text-align: center;
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 1;
+    transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), background 0.3s ease, box-shadow 0.3s ease;
+    letter-spacing: 0.02em;
+}
+
+.welcome-sample-tile:hover .welcome-sample-label {
+    background: rgba(0, 0, 0, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.carousel-shell {
+    width: 100%;
+    max-width: 1140px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.carousel-nav {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.94);
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    flex-shrink: 0;
+    cursor: pointer;
+    font-size: 1.6rem;
+    line-height: 1;
+    transition: transform 0.25s cubic-bezier(0.23, 1, 0.32, 1), background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.carousel-nav:hover {
+    transform: translateY(-2px) scale(1.08);
+    background: rgba(62, 123, 250, 0.18);
+    border-color: rgba(62, 123, 250, 0.5);
+    box-shadow: 0 8px 24px rgba(62, 123, 250, 0.2);
+}
+
+.carousel-nav:active {
+    transform: translateY(0) scale(0.95);
+    transition-duration: 0.1s;
 }
 
 @media (max-width: 900px) {
     .welcome-samples {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        min-height: 240px;
+    }
+
+    .welcome-sample-tile {
+        flex-basis: 72vw;
+        height: 220px;
+    }
+
+    .quick-options-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .prompt-library-strip {
+        flex-direction: column;
+    }
+
+    .prompt-library-actions {
+        justify-content: flex-start;
     }
 }
 
 .models-section {
     padding: 0 60px;
     margin-bottom: 50px;
+}
+
+.quick-controls-card .quick-option-group {
+    min-width: 0;
 }
 
 .models-grid {
@@ -869,6 +1677,10 @@ Home.sidebar_show = "always"
 .styles-section {
     padding: 0 60px;
     margin-bottom: 50px;
+}
+
+.tools-sections {
+    width: 100%;
 }
 
 .styles-grid {

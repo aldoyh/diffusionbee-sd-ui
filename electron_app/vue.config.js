@@ -61,12 +61,18 @@ module.exports = {
 
                 afterSign: "./afterSignHook.js",
                 "extraResources": [{
-                    "from": process.env.BACKEND_BUILD_PATH , 
+                    "from": process.env.BACKEND_BUILD_PATH || "../electron_app/.packaged-backend",
                     "to": "core",
                     "filter": [
-                        "**/*"
+                        "**/*",
+                        "!**/venv/**",
+                        "!**/venv311/**",
+                        "!**/.venv/**",
+                        "!**/__pycache__/**",
+                        "!**/*.pyc",
+                        "!**/.DS_Store"
                     ]
-                }], // access via path.join(path.dirname(__dirname), 'liner_core' );
+                }], // access via path.join(path.dirname(__dirname), 'core' );
 
                 "mac": {
                     "icon" : "build/Icon-1024.png" , 

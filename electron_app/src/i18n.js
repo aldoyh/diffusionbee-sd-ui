@@ -122,6 +122,8 @@ const translations = {
   'page.training_desc':          { en: 'Train a model on your own images using DreamBooth.', ar: 'تدريب نموذج على صورك باستخدام DreamBooth' },
   'page.history':                { en: 'History',                                           ar: 'السجل' },
   'page.history_desc':           { en: 'View generated images',                             ar: 'عرض الصور المولدة' },
+  'page.promptlibrary':          { en: 'Prompt Library',                                    ar: 'مكتبة الموجهات' },
+  'page.promptlibrary_desc':     { en: 'Browse, remix and generate prompts with Ollama',    ar: 'تصفح الموجهات وأعد مزجها وولّد موجهات جديدة باستخدام Ollama' },
   'page.models':                 { en: 'Models',                                            ar: 'النماذج' },
   'page.models_desc':            { en: 'Download, import and manage models',                ar: 'تحميل واستيراد وإدارة النماذج' },
   'page.settings':               { en: 'Settings',                                          ar: 'الإعدادات' },

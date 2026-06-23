@@ -32,27 +32,34 @@ function start_bridge() {
         return 'python3'; // fallback to system python3
     }
 
-    let script_path = process.env.PY_SCRIPT || "../backends/stable_diffusion/diffusionbee_backend.py"; 
-    let bin_path =  process.env.BIN_PATH;
-    if(bin_path && (fs.existsSync(script_path))){
-        python = require('child_process').spawn( bin_path );
-    }
-    else if (fs.existsSync(script_path)) {
-        let pythonBin = resolvePythonBin(path.dirname(path.resolve(script_path)));
-        python = require('child_process').spawn(pythonBin, [script_path]);
-    }
-    else{
-        let backend_path =  path.join(path.dirname(__dirname), 'core' , 'stable_diffusion' , 'diffusionbee_backend' );
-        let backend_script_path =  path.join(path.dirname(__dirname), 'core' , 'stable_diffusion' , 'diffusionbee_backend.py' );
-        
+    let bin_path = process.env.BIN_PATH;
+    let core_root = path.join(path.dirname(__dirname), 'core');
+    let backend_path = path.join(core_root, 'diffusionbee_backend');
+    let backend_path_nested = path.join(core_root, 'stable_diffusion', 'diffusionbee_backend');
+    let backend_script_path = path.join(core_root, 'stable_diffusion', 'diffusionbee_backend.py');
+    let dev_script_path = process.env.PY_SCRIPT
+        || path.resolve(__dirname, '..', '..', 'backends', 'stable_diffusion', 'diffusionbee_backend.py');
+
+    if (bin_path && fs.existsSync(bin_path)) {
+        python = require('child_process').spawn(bin_path);
+    } else if (app.isPackaged) {
         if (fs.existsSync(backend_path)) {
-            python = require('child_process').spawn( backend_path  );
+            python = require('child_process').spawn(backend_path);
+        } else if (fs.existsSync(backend_path_nested)) {
+            python = require('child_process').spawn(backend_path_nested);
         } else if (fs.existsSync(backend_script_path)) {
             let pythonBin = resolvePythonBin(path.dirname(backend_script_path));
             python = require('child_process').spawn(pythonBin, [backend_script_path]);
         } else {
-            console.error("Backend not found at: " + backend_path + " or " + backend_script_path);
+            console.error("Backend not found in packaged core at: " + backend_path);
         }
+    } else if (fs.existsSync(dev_script_path)) {
+        let pythonBin = resolvePythonBin(path.dirname(dev_script_path));
+        python = require('child_process').spawn(pythonBin, [dev_script_path]);
+    } else if (fs.existsSync(backend_path)) {
+        python = require('child_process').spawn(backend_path);
+    } else {
+        console.error("Backend not found at: " + dev_script_path);
     }
     
    

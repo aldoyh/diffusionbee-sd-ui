@@ -34,6 +34,8 @@ import TwoColAppletLayout from "../components_bare/TwoColAppletLayout.vue"
 import DownloadButton from "./DownloadButton.vue"
 import Vue from 'vue'
 import {find_in_form_recursive} from "../utils.js"
+import { preparePromptForSd, validatePromptLength } from "../prompt_utils.js"
+const { getFallbackDefaultStableDiffusionAsset, sortStableDiffusionModelsBestFirst } = require("../utils/model_selection.js")
 
 function prep_sd_options(options){
     options = JSON.parse(JSON.stringify(options))
@@ -66,7 +68,9 @@ export default {
     },
     components: {FormComponent  , TwoColAppletLayout, DownloadButton },
     mounted() {
-
+        this.$nextTick(() => {
+            this.ensureOptimalModelSelection()
+        })
     },
     data() {
         return {
@@ -74,6 +78,20 @@ export default {
         };
     },
     methods: {
+        ensureOptimalModelSelection(){
+            if (!this.app || !this.app.assets_manager || !this.sd_options) return
+
+            let assets = Object.values(this.app.assets_manager.all_avail_assets || {})
+            assets = assets.filter(x => x.model_meta_data && (this.model_options_types ||["sd_model"]).includes(x.model_meta_data.type))
+            assets = sortStableDiffusionModelsBestFirst(assets)
+            let best = assets[0]
+            if (!best) return
+
+            let current = this.sd_options.selected_sd_model
+            if (!current || current === 'Default_SD1.5' || !this.app.assets_manager.get_downloaded_asset_path(current)) {
+                Vue.set(this.sd_options, 'selected_sd_model', best.id)
+            }
+        },
         
         // given an options dict, load those values inthe form
         load_options(options){
@@ -151,10 +169,17 @@ export default {
                 return false;
             } 
 
-            if( this.get_sd_form_outputs().prompt != undefined && this.get_sd_form_outputs().prompt.trim() == ""){
-                console.log(this.get_sd_form_outputs())
-                this.app.show_toast(this.app.app_state.isArabic ? 'تحتاج إلى إدخال موجه' : 'You need to enter a prompt')
-                return false;
+            const formOutputs = this.get_sd_form_outputs()
+            if (formOutputs.prompt != undefined) {
+                const prepared = preparePromptForSd(formOutputs.prompt, this.app.app_state.isArabic)
+                const validation = validatePromptLength(prepared.prompt, this.app.app_state.isArabic)
+                if (!validation.valid) {
+                    this.app.show_toast(validation.message)
+                    return false
+                }
+                if (prepared.wasTranslated) {
+                    Vue.set(this.sd_options, 'prompt', prepared.prompt)
+                }
             }
 
             if(this.sd_options.selected_sd_model){
@@ -183,12 +208,14 @@ export default {
             // add the avail models to the form
             let el = find_in_form_recursive( "selected_sd_model" , form)
             if(el){
-                let assets = Object.values(this.app.assets_manager.all_avail_assets)
+                let assets = Object.values(this.app.assets_manager.all_avail_assets || {})
                 assets = assets.filter(x => x.model_meta_data && (this.model_options_types ||["sd_model"]).includes(x.model_meta_data.type))
+                assets = sortStableDiffusionModelsBestFirst(assets)
                 let new_ids = assets.map(x => x.id)
-                for( let idd of new_ids){
-                    if(!el['options'].includes(idd))
-                        el['options'].push(idd)
+                let mergedOptions = new_ids.concat(el['options'].filter((idd) => !new_ids.includes(idd)))
+                el['options'].splice(0, el['options'].length, ...mergedOptions)
+                if (new_ids.length > 0) {
+                    el['default_value'] = new_ids[0]
                 }
             }
 
@@ -215,7 +242,7 @@ export default {
 
             // for sdxl make use different image sizes
             if(this.sd_options && this.sd_options.selected_sd_model){
-                let selected_asset =  this.app.assets_manager.all_avail_assets[this.sd_options.selected_sd_model  ]
+                let selected_asset =  (this.app.assets_manager.all_avail_assets || {})[this.sd_options.selected_sd_model  ]
                 if(selected_asset &&  selected_asset.model_meta_data && selected_asset.model_meta_data.sd_type && selected_asset.model_meta_data.sd_type == "sdxl_base"  ){
                     let el2 = find_in_form_recursive( "img_width" , form)
                     if(el2){
@@ -252,16 +279,8 @@ export default {
                 ret = JSON.parse(JSON.stringify(this.required_assets))
             }
 
-            if(  this.sd_options.selected_sd_model == "Default_SD1.5"){
-                ret.push( { 
-                    id : 'Default_SD1.5' , 
-                    filename: 'sd-v1-5_fp16.tdict' ,   
-                    md5: 'a36c79b8edb4b21b75e50d5834d1f4ae' , 
-                    is_stock_model : true,
-                    url : 'https://huggingface.co/divamgupta/stable_diffusion_mps/resolve/main/sd-v1-5_fp16.tdict' , 
-                    title: "Stable Diffusion 1.5 (Default)", 
-                    model_meta_data : {"type" : "sd_model", "float_type" : "float16" ,  "sd_type" : "SD_1x" }
-                } )
+            if( this.sd_options && this.sd_options.selected_sd_model == "Default_SD1.5"){
+                ret.push(getFallbackDefaultStableDiffusionAsset())
             }
             
             return ret
@@ -272,11 +291,20 @@ export default {
            
             for(let asset of this.required_assets_modified){
                 let asset_id = asset.id
-                if(!(this.app.is_mounted && this.app.assets_manager.downloaded_assets[asset_id] && this.app.assets_manager.downloaded_assets[asset_id].status == 'done')){
+                const downloadedAssets = (this.app.assets_manager && this.app.assets_manager.downloaded_assets) || {}
+                if(!(this.app.is_mounted && downloadedAssets[asset_id] && downloadedAssets[asset_id].status == 'done')){
                     to_download.push(asset)
                 }
             }
             return to_download
+        }
+    },
+    watch: {
+        'app.assets_manager.all_avail_assets': {
+            handler: function() {
+                this.ensureOptimalModelSelection()
+            },
+            deep: true
         }
     }
 }

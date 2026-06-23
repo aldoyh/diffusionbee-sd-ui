@@ -1,5 +1,5 @@
 <template>
-    <div class="generation_gallery_div" :class="{ 'generation_gallery_div--compact': compact }" :id="div_id">
+    <div class="generation_gallery_div" :class="{ 'generation_gallery_div--compact': compact, 'generation_gallery_div--carousel': compact }" :id="div_id">
 
         <div v-if="groups_with_non_zero_imgs.length == 0 " style="width:30% ; height: 30% ; margin-left:35%; top:50% ; transform: translateY(50%);">
             <!-- <img src="../assets/imgs/blank_illus4_dark.png" style="opacity:0.3; width: 100%; height: 100%;  object-fit: contain;">  -->
@@ -77,8 +77,69 @@ export default {
     },
     methods: {
 
+        getScrollContainer(){
+            const root = document.getElementById(this.div_id)
+            if (!root) return null
+
+            let el = root
+            while (el && el !== document.body) {
+                const style = window.getComputedStyle(el)
+                const overflowY = style.overflowY
+                const overflowX = style.overflowX
+                if (/(auto|scroll|overlay)/.test(overflowY) || /(auto|scroll|overlay)/.test(overflowX)) {
+                    return el
+                }
+                el = el.parentElement
+            }
+
+            return window
+        },
+
         scroll_to_top(){
-            document.getElementById(this.div_id).parentNode.scrollTo({ top: 0, behavior: 'smooth' });
+            const container = this.getScrollContainer()
+            if (!container) return
+
+            if (container === window) {
+                window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+                return
+            }
+
+            container.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+        },
+
+        scroll_by(deltaX){
+            const container = this.getScrollContainer()
+            if (!container) return
+
+            const amount = Number(deltaX) || 0
+            if (!amount) return
+
+            if (container === window) {
+                window.scrollBy({ left: amount, top: 0, behavior: 'smooth' })
+                return
+            }
+
+            container.scrollBy({ left: amount, top: 0, behavior: 'smooth' })
+        },
+
+        scroll_previous(){
+            const container = this.getScrollContainer()
+            if (!container || container === window) {
+                this.scroll_by(-480)
+                return
+            }
+
+            this.scroll_by(-Math.max(320, Math.floor(container.clientWidth * 0.9)))
+        },
+
+        scroll_next(){
+            const container = this.getScrollContainer()
+            if (!container || container === window) {
+                this.scroll_by(480)
+                return
+            }
+
+            this.scroll_by(Math.max(320, Math.floor(container.clientWidth * 0.9)))
         },
 
         on_image_menu_item_click(menu_item_id , image_item_data){
@@ -170,6 +231,25 @@ export default {
 .generation_gallery_div--compact {
     width: 100%;
     min-height: 320px;
+}
+
+.generation_gallery_div--carousel {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    padding-bottom: 10px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.generation_gallery_div--carousel >>> .gallery_pane {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+    margin: 15px 0;
+    width: calc(100% - 30px);
 }
 
 .generation_gallery_div--compact >>> .gallery_pane {

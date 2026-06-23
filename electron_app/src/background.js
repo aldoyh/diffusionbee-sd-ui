@@ -5,7 +5,6 @@ import { app, protocol, BrowserWindow, nativeTheme, Menu} from 'electron'
 import createProtocol from 'vue-cli-plugin-electron-builder/lib/createProtocol'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
-const electronLocalshortcut = require('electron-localshortcut')
 import settings from 'electron-settings';
 
 
@@ -35,17 +34,6 @@ function save_window_size() {
 	settings.set('windowPosState', windowState);
 }
 
-function installContextMenu() {
-	try {
-		const contextMenu = require('electron-context-menu')
-		contextMenu({
-			showSaveImageAs: true
-		})
-	} catch (e) {
-		console.warn('Context menu helper unavailable:', e.toString())
-	}
-}
-
 async function createWindow() {
 	// Create the browser window.
 	win = new BrowserWindow({
@@ -71,9 +59,14 @@ async function createWindow() {
 
 	win.removeMenu(); // remove the menu ( works for windows! )
 
-	electronLocalshortcut.register(win, ['CommandOrControl+R','CommandOrControl+Shift+R', 'F5'], () => {}) //  make the refresh shortcuts blank
-
-	
+	win.webContents.on('before-input-event', (event, input) => {
+		if (input.type !== 'keyDown') return;
+		const blockRefresh =
+			input.key === 'F5' ||
+			(input.key === 'r' && (input.meta || input.control)) ||
+			(input.key === 'R' && (input.meta || input.control) && input.shift);
+		if (blockRefresh) event.preventDefault();
+	});
 	win.setSize(770, 550);
 	// win.setResizable(false);
 	win.setMaximizable(false);
@@ -139,8 +132,6 @@ app.on('activate', () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', async () => {
-	installContextMenu()
-
 	const [{ start_bridge, bind_window_bridge }, { bind_window_native_functions }] = await Promise.all([
 		import('./bridge.js'),
 		import('./native_functions.js')

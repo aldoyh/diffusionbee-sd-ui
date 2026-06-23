@@ -11,7 +11,7 @@
     >   
         
         <template v-slot:input_buttons>
-            <div @click="randomPromptAndGenerate" class="l_button button_medium" style="float:right; margin-right:6px;" :title="(app && app.app_state && app.app_state.isArabic) ? 'توليد موجه عشوائي' : 'Generate a random creative prompt and auto-generate'">{{ (app && app.app_state && app.app_state.isArabic) ? '🎲 عشوائي' : '🎲 Random' }}</div>
+            <div @click="randomPromptAndGenerate" class="l_button button_medium" style="float:right; margin-right:6px;" :class="{ 'disabled-action': is_random_prompt_generating }" :title="is_random_prompt_generating ? ((app && app.app_state && app.app_state.isArabic) ? 'جارٍ إنشاء موجه...' : 'Generating prompt...') : ((app && app.app_state && app.app_state.isArabic) ? 'توليد موجه عشوائي' : 'Generate a random creative prompt and auto-generate')">{{ is_random_prompt_generating ? ((app && app.app_state && app.app_state.isArabic) ? '⏳' : '⏳') : ((app && app.app_state && app.app_state.isArabic) ? '🎲 عشوائي' : '🎲 Random') }}</div>
 
             <div v-if="app.stable_diffusion_manager.is_ready" @click="generate" class="l_button button_colored button_medium" style="float:right">{{ (app && app.app_state && app.app_state.isArabic) ? 'توليد' : 'Generate' }}</div>
 
@@ -38,7 +38,8 @@
 import GenerationGallery from "./GenerationGallery.vue"
 import BasicSDApplet from "../components/BasicSDApplet.vue"
 import { controlnet_check_inputs , controlnet_proc_form_outputs , controlnet_required_assets } from "../utils/controlnet_frontend_utils.js"
-import { getRandomPrompt, saveUserPrompt } from "../prompt_library.js"
+import { getRandomPrompt, rememberPrompt } from "../prompt_library.js"
+const { generatePromptWithOllama, normalizeGeneratedPrompt } = require("../utils/ollama_prompt_service.js")
 import Vue from 'vue'
 
 export default {
@@ -60,6 +61,7 @@ export default {
             sd_options : {},
             is_input_changed_after_last_run : false, 
             is_mounted : false,
+            is_random_prompt_generating: false,
         };
     },
     methods: {
@@ -101,63 +103,90 @@ export default {
             this.$refs.basic_sd_applet.load_options(options)
         } , 
 
-        randomPromptAndGenerate() {
-            let prompt = getRandomPrompt();
-            console.log('🎲 Random prompt:', prompt);
+        waitForRequiredModelDownloads() {
+            return new Promise((resolve, reject) => {
+                let timer = null;
+                const cleanup = () => {
+                    if (timer) {
+                        clearInterval(timer);
+                        timer = null;
+                    }
+                };
 
-            // Save to user library (persisted in localStorage)
-            saveUserPrompt(prompt);
+                const ensureActiveDownload = () => {
+                    if (!this.$refs.basic_sd_applet || !this.app || !this.app.assets_manager) {
+                        return true;
+                    }
 
-            // Load the prompt
-            this.$refs.basic_sd_applet.load_options({ prompt: prompt });
+                    const pending = this.$refs.basic_sd_applet.to_download_left || [];
+                    if (pending.length === 0) {
+                        return true;
+                    }
 
-            // Auto-download any required models before generating
-            let that = this;
-            let model_id = that.sd_options.selected_sd_model;
-            
-            // Check if a model is selected and if it needs downloading
-            let needsDownload = model_id && 
-                that.app.is_mounted && 
-                that.app.assets_manager &&
-                !that.app.assets_manager.downloaded_assets[model_id] &&
-                that.app.assets_manager.downloading &&
-                !that.app.assets_manager.downloading[model_id];
+                    const downloading = this.app.assets_manager.downloading || {};
+                    const downloadedAssets = this.app.assets_manager.downloaded_assets || {};
+                    const selectedModelId = this.sd_options.selected_sd_model;
+                    const targetAsset = pending.find((asset) => asset.id === selectedModelId) || pending[0];
+                    if (targetAsset && !downloadedAssets[targetAsset.id] && !downloading[targetAsset.id]) {
+                        this.app.assets_manager.download_asset(targetAsset);
+                    }
 
-            if (needsDownload) {
-                // Find the model asset info from required_assets_modified
-                let toDownload = that.$refs.basic_sd_applet.required_assets_modified;
-                let assetInfo = toDownload.find(a => a.id === model_id);
-                
-                if (assetInfo) {
-                    console.log('Auto-downloading model:', model_id);
-                    that.app.assets_manager.download_asset(assetInfo);
-                    
-                    // Wait for download to finish, then generate
-                    let checkInterval = setInterval(() => {
-                        let dl = that.app.assets_manager.downloading[model_id];
-                        if (!dl) return;
-                        
-                        if (dl.status === 'done') {
-                            clearInterval(checkInterval);
-                            console.log('Model downloaded, generating...');
-                            Vue.nextTick(() => {
-                                that.generate();
-                            });
-                        } else if (dl.status === 'error') {
-                            clearInterval(checkInterval);
-                            console.warn('Model download failed:', dl.error);
-                            that.app.show_toast('Failed to auto-download model. Please download it manually.');
-                        }
-                    }, 500);
-                    
-                    return;
+                    const activeDownload = downloading[targetAsset.id];
+                    if (activeDownload && activeDownload.status === 'error') {
+                        cleanup();
+                        reject(new Error(activeDownload.error || 'Failed to download model.'));
+                        return false;
+                    }
+
+                    return pending.length === 0;
+                };
+
+                timer = setInterval(() => {
+                    if (ensureActiveDownload()) {
+                        cleanup();
+                        resolve();
+                    }
+                }, 450);
+
+                if (ensureActiveDownload()) {
+                    cleanup();
+                    resolve();
                 }
+            });
+        },
+
+        async randomPromptAndGenerate() {
+            if (this.is_random_prompt_generating) return;
+            this.is_random_prompt_generating = true;
+
+            const fallbackPrompt = getRandomPrompt();
+
+            try {
+                const generated = await generatePromptWithOllama({
+                    sourcePrompt: fallbackPrompt,
+                    locale: this.app && this.app.app_state && this.app.app_state.isArabic ? 'ar' : 'en',
+                });
+                const prompt = normalizeGeneratedPrompt(generated.prompt) || fallbackPrompt;
+                rememberPrompt(prompt);
+                this.$refs.basic_sd_applet.load_options({ prompt });
+            } catch (error) {
+                console.warn('Ollama prompt generation failed, using the local prompt library instead:', error);
+                rememberPrompt(fallbackPrompt);
+                this.$refs.basic_sd_applet.load_options({ prompt: fallbackPrompt });
             }
 
-            // Model is already available — just generate
-            Vue.nextTick(() => {
+            try {
+                await this.$nextTick();
+                await this.waitForRequiredModelDownloads();
                 this.generate();
-            });
+            } catch (error) {
+                console.warn('Model preparation failed before random generation:', error);
+                this.app.show_toast((this.app && this.app.app_state && this.app.app_state.isArabic)
+                    ? 'تعذر تجهيز النموذج للتوليد.'
+                    : 'Unable to prepare the model for generation.');
+            } finally {
+                this.is_random_prompt_generating = false;
+            }
         },
 
         generate_similar_images(options){
@@ -221,5 +250,11 @@ export default {
 <style>
 </style>
 <style scoped>
+
+.disabled-action {
+    opacity: 0.55;
+    pointer-events: none;
+    filter: saturate(0.8);
+}
 
 </style>

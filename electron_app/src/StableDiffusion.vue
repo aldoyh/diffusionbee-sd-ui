@@ -4,21 +4,11 @@
 <script>
 
 import { send_to_py } from "./py_vue_bridge.js"
-import {get_tokens} from './clip_tokeniser/clip_encoder.js'
+import {getClipTokenIds} from './prompt_utils.js'
 import {compute_time_remaining} from "./utils.js"
 const moment = require('moment')
 
 let notification_sound = new Audio(require('@/assets/notification.mp3'))
-
-function remove_non_ascii(str) {
-  
-  if ((str===null) || (str===''))
-       return false;
- else
-   str = str.toString();
-  
-  return str.replace(/[^\x20-\x7E]/g, '');
-}
 
 export default {
     name: 'StableDiffusion',
@@ -185,26 +175,14 @@ export default {
             if(!this.is_input_avail)
                 return;
             this.is_stopping = false
-            let tokens = [49406].concat((get_tokens(prompt_params.prompt))).concat([49407])
-            tokens.filter(n => n != null && n != undefined)
-            prompt_params.prompt_tokens = tokens;
+            prompt_params.prompt_tokens = getClipTokenIds(prompt_params.prompt);
 
             if(prompt_params.negative_prompt)
             {
-                let tokens2 = [49406].concat((get_tokens(prompt_params.negative_prompt))).concat([49407])
-                tokens2.filter(n => n != null && n != undefined)
-                prompt_params.negative_prompt_tokens = tokens2
+                prompt_params.negative_prompt_tokens = getClipTokenIds(prompt_params.negative_prompt)
             }
 
-            prompt_params.seed = Number(prompt_params.seed) || 0 
-
-            if(prompt_params.prompt){
-                prompt_params.prompt = remove_non_ascii(prompt_params.prompt)
-            }
-
-            if(prompt_params.negative_prompt){
-                prompt_params.negative_prompt = remove_non_ascii(prompt_params.negative_prompt)
-            }                
+            prompt_params.seed = Number(prompt_params.seed) || 0
 
             this.last_iter_t = Date.now()
             this.generated_by = generated_by;

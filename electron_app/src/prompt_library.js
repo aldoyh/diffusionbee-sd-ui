@@ -507,6 +507,14 @@ function rememberRecentRandomPrompt(prompt) {
   }
 }
 
+function clearRecentRandomPrompts() {
+  try {
+    window.localStorage.removeItem(RECENT_RANDOM_KEY);
+  } catch (e) {
+    console.warn('Failed to clear recent random prompts:', e);
+  }
+}
+
 /**
  * Get a single random prompt from the entire library (built-in + user-saved)
  */
@@ -588,6 +596,12 @@ function saveMultiplePrompts(prompts) {
   prompts.forEach(p => saveUserPrompt(p));
 }
 
+function rememberPrompt(prompt) {
+  if (!prompt) return;
+  saveUserPrompt(prompt);
+  rememberRecentRandomPrompt(prompt);
+}
+
 /**
  * Clear user-saved prompts
  */
@@ -621,6 +635,10 @@ function getWelcomeSamples() {
   return WELCOME_SAMPLES;
 }
 
+function getAllBuiltInPrompts() {
+  return Object.values(PROMPTS_BY_CATEGORY).flat();
+}
+
 // ─── Export ──────────────────────────────────────────────────────────────────
 
 export {
@@ -635,11 +653,16 @@ export {
   getRandomPromptFromCategory,
   getFreshRandomPrompt,
   getUserPrompts,
+  getRecentRandomPrompts,
   saveUserPrompt,
   saveMultiplePrompts,
   clearUserPrompts,
+  clearRecentRandomPrompts,
+  rememberRecentRandomPrompt,
+  rememberPrompt,
   getBuiltInCount,
   getDefaultPrompts,
   getInspireLines,
   getWelcomeSamples,
+  getAllBuiltInPrompts,
 };

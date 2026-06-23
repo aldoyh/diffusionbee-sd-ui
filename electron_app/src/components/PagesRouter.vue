@@ -46,6 +46,7 @@ const Logs = () => import("../pages/Logs.vue")
 const ContactUs = () => import("../pages/ContactUs.vue")
 const Settings = () => import("../pages/Settings.vue")
 const PostProcessImage = () => import("../pages/PostProcessImage.vue")
+const PromptLibrary = () => import("../pages/PromptLibrary.vue")
 
 export default {
     name: 'PagerRouter',
@@ -54,7 +55,7 @@ export default {
     },
     components: {
         Homepage, Txt2Img, Img2Img, Inpainting, AppletPage, History, ModelStore, 
-        Logs, ContactUs, Settings, PostProcessImage, Training
+        Logs, ContactUs, Settings, PostProcessImage, PromptLibrary, Training
     },
     mounted() {
         this.app.functions.switch_page = this.switch_page; 

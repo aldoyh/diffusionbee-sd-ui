@@ -11,6 +11,7 @@
     {
         "id" : "prompt",
         "component": "Textarea",
+        "icon": "sparkles",
         "placeholder" : "Enter your prompt here",
         "default_value" : ""
     },
@@ -18,6 +19,7 @@
     {
         "id" : "negative_prompt",
         "component": "Textarea",
+        "icon": "sliders",
         "placeholder" : "Enter your negative prompt here",
         "is_small" : true,
         "include_in" : ["advanced"]
@@ -26,6 +28,7 @@
     {
         "id": "is_adv_mode_desc",
         "component": "InputWithDesc",
+        "icon": "sliders",
         "title": "Advanced Options",
         "description": "",
         "children": [
@@ -41,6 +44,7 @@
     {
         "id": "selected_sd_model_desc",
         "component": "InputWithDesc",
+        "icon": "photo",
         "title": "Model",
         "description": "The Stable Diffusion model used to generate images.",
         "children": [
@@ -181,6 +185,7 @@
     {
         "id": "diffusion_acc",
         "component": "Accordian",
+        "icon": "palette",
         "title": "Diffusion",
         "include_in" : ["advanced"],
         "children": [
@@ -242,6 +247,7 @@
     {
         "id": "seed_acc",
         "component": "Accordian",
+        "icon": "seed",
         "title": "Seed",
         "include_in" : ["advanced"],
         "children": [
@@ -285,6 +291,7 @@
     {
         "id": "inpaint_options_acc",
         "component": "Accordian",
+        "icon": "wand",
         "title": "Inpainting Options",
         "include_in" : ["outpainting", "img2img" , "inpainting"],
         "include_in_AND" : ["advanced"],
@@ -325,6 +332,7 @@
     {
         "id": "controlnet_acc",
         "component": "Accordian",
+        "icon": "settings",
         "title": "ControlNet",
         "include_in" : ["advanced"],
         "exclude_in" : [ "outpainting" , "inpainting"],
@@ -391,6 +399,7 @@
     {
         "id": "misc_acc",
         "component": "Accordian",
+        "icon": "settings",
         "title": "Misc",
         "include_in" : ["advanced"],
         "children": [
