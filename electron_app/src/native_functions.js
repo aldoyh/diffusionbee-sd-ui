@@ -352,7 +352,7 @@ ipcMain.on('save_b64_image', (event, b64_str, save_to_tmp ) => {
     }
 
     if(save_to_tmp){
-        save_dir = "/tmp/"
+        save_dir = require('os').tmpdir()
     } else {
         save_dir = path.join(save_dir , "inp_images")
     }
