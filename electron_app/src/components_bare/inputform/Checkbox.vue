@@ -1,6 +1,6 @@
 <template>
 
-   <div style="margin-left: 80px; padding-bottom:10px"> 
+   <div style="margin-left: 20px; padding-bottom:10px"> 
         <!-- <input  :id="rand_id" type="checkbox"  @input="set_val()"> -->
         <label class="switch" >
             <input  :id="rand_id"  type="checkbox"  @input="set_val()" >

@@ -56,23 +56,30 @@ module.exports = {
             // Or, for multiple preload files:
             // preload: { preload: 'src/preload.js', otherPreload: 'src/preload2.js' }
             builderOptions: {
-                appId: 'com.diffusionbee.gui',
-                artifactName: "DiffusionBee"+(build_config.build_name||"")+"-${version}.${ext}",
+                appId: 'net.aldoy.diffusion-sd-ui',
+                artifactName: "diffusion-sd-ui"+(build_config.build_name||"")+"-${version}.${ext}",
 
                 afterSign: "./afterSignHook.js",
-                "extraResources": [{
-                    "from": process.env.BACKEND_BUILD_PATH || "../electron_app/.packaged-backend",
-                    "to": "core",
-                    "filter": [
-                        "**/*",
-                        "!**/venv/**",
-                        "!**/venv311/**",
-                        "!**/.venv/**",
-                        "!**/__pycache__/**",
-                        "!**/*.pyc",
-                        "!**/.DS_Store"
-                    ]
-                }], // access via path.join(path.dirname(__dirname), 'core' );
+                "extraResources": [
+                    {
+                        "from": process.env.BACKEND_BUILD_PATH || "../electron_app/.packaged-backend",
+                        "to": "core",
+                        "filter": [
+                            "**/*",
+                            "!**/venv/**",
+                            "!**/venv311/**",
+                            "!**/.venv/**",
+                            "!**/__pycache__/**",
+                            "!**/*.pyc",
+                            "!**/.DS_Store"
+                        ]
+                    },
+                    {
+                        "from": "../electron_app/.bundled-models",
+                        "to": "bundled_models",
+                        "filter": ["**/*"]
+                    }
+                ], // access via path.join(path.dirname(__dirname), 'core' );
 
                 "mac": {
                     "icon" : "build/Icon-1024.png" , 
@@ -87,7 +94,7 @@ module.exports = {
                     "target": {
                         "target": "dmg",
                         "arch": [
-                            process.env.BUILD_ARCH  //'arm64' , 'x64'
+                            process.env.BUILD_ARCH || process.arch || 'arm64'
                         ]
                     }
                 },
@@ -97,9 +104,19 @@ module.exports = {
                     "target": {
                         "target": "NSIS",
                         "arch": [
-                            process.env.BUILD_ARCH || process.arch || 'x64'
+                            process.env.BUILD_ARCH || "x64"
                         ]
                     }
+                },
+
+                "nsis": {
+                    "oneClick": true,
+                    "allowToChangeInstallationDirectory": false,
+                    "createDesktopShortcut": true,
+                    "createStartMenuShortcut": true,
+                    "runAfterFinish": true,
+                    "deleteAppDataOnUninstall": false,
+                    "differentialPackage": false
                 }
             }
 

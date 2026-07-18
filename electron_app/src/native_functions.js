@@ -1,4 +1,5 @@
 const { ipcMain, dialog, clipboard, app, screen } = require('electron')
+const { seedBundledModels } = require('./seed_bundled_models');
 import settings from 'electron-settings';
 
 var win;
@@ -637,6 +638,16 @@ ipcMain.on('scan_disk_for_models', (event) => {
 });
 
 
+ipcMain.on('seed_bundled_models', (event) => {
+    try {
+        event.returnValue = seedBundledModels();
+    } catch (err) {
+        console.error('[seed-bundled] Error seeding bundled models:', err);
+        event.returnValue = [];
+    }
+});
+
+
 ipcMain.on('get_homedir', (event) => {
     const homedir = require('os').homedir();
     event.returnValue = homedir;
@@ -651,6 +662,22 @@ ipcMain.on('file_exists', (event, fpath) => {
     }
 });
 
+ipcMain.handle('read_file_base64', async (event, fpath) => {
+    const fs = require('fs');
+    if (!fpath) return '';
+    let cleanPath = fpath;
+    if (cleanPath.startsWith('file://')) {
+        cleanPath = cleanPath.slice(7);
+    }
+    try {
+        const data = fs.readFileSync(cleanPath);
+        return data.toString('base64');
+    } catch (err) {
+        console.error('read_file_base64 error:', err);
+        return '';
+    }
+});
+
 ipcMain.on('to_file_url', (event, fpath) => {
     const { pathToFileURL } = require('url');
     try {
@@ -660,6 +687,27 @@ ipcMain.on('to_file_url', (event, fpath) => {
     }
 });
 
+
+function resolve_hf_token() {
+    const candidates = [
+        process.env.HF_TOKEN,
+        process.env.HUGGINGFACE_API_KEY,
+        process.env.HF_API_KEY,
+    ];
+
+    for (const value of candidates) {
+        const token = String(value || '').trim();
+        if (token) {
+            return token;
+        }
+    }
+
+    return '';
+}
+
+ipcMain.on('get_hf_token', (event) => {
+    event.returnValue = resolve_hf_token();
+});
 
 ipcMain.on('get_assets_dir', (event) => {
     const path = require('path');
@@ -676,7 +724,7 @@ ipcMain.on('get_assets_dir', (event) => {
 
 
 
-ipcMain.on('download-file', (event, url, dest, downloadId) => {
+ipcMain.on('download-file', (event, url, dest, downloadId, options) => {
 
   const fs = require('fs');
 
@@ -686,12 +734,26 @@ ipcMain.on('download-file', (event, url, dest, downloadId) => {
   const crypto = require('crypto');
 
   let hash = crypto.createHash('md5');
+  const downloadOptions = options && typeof options === 'object' ? options : {};
+  const requestHeaders = { ...(downloadOptions.headers || {}) };
+
+  if (downloadOptions.hf_auth && !requestHeaders.Authorization) {
+    const hfToken = resolve_hf_token();
+    if (hfToken) {
+      requestHeaders.Authorization = `Bearer ${hfToken}`;
+    }
+  }
+
+  const timeoutMs = Number.isFinite(downloadOptions.timeout_ms)
+    ? Number(downloadOptions.timeout_ms)
+    : (downloadOptions.hf_auth ? 0 : 20000);
 
   request.get({
       url,
+      headers: requestHeaders,
       followRedirect: true,
       rejectUnauthorized: false, // ignore SSL certificate errors,
-      timeout: 20000 , //20s
+      timeout: timeoutMs,
     })
     .on('response', response => {
       const totalBytes = parseInt(response.headers['content-length'], 10);

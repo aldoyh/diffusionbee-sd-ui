@@ -24,22 +24,6 @@
         "is_small" : true,
         "include_in" : ["advanced"]
     },
-    
-    {
-        "id": "is_adv_mode_desc",
-        "component": "InputWithDesc",
-        "icon": "sliders",
-        "title": "Advanced Options",
-        "description": "",
-        "children": [
-            {
-                "id": "is_adv_mode",
-                "component": "Checkbox",
-                "default_value" : false,
-                "is_persistant" : true
-            }
-        ]
-    },
 
     {
         "id": "selected_sd_model_desc",
@@ -55,6 +39,22 @@
                 "icon": "photo",
                 "output_type" : "str",
                 "default_value" : "Default_SD1.5",
+                "is_persistant" : true
+            }
+        ]
+    },
+    
+    {
+        "id": "is_adv_mode_desc",
+        "component": "InputWithDesc",
+        "icon": "sliders",
+        "title": "Advanced Options",
+        "description": "",
+        "children": [
+            {
+                "id": "is_adv_mode",
+                "component": "Checkbox",
+                "default_value" : false,
                 "is_persistant" : true
             }
         ]

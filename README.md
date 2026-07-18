@@ -254,6 +254,61 @@ Screenshots are saved to `docs/screenshots/`. Requires [cliclick](https://www.fl
 
 ---
 
+## Building the Windows installer
+
+The Windows NSIS installer is built on a Windows host (or in CI) because
+PyInstaller cannot cross-compile the Python backend executable from macOS.
+
+### Option 1: GitHub Actions (recommended)
+
+Push to `master` and the `.github/workflows/windows-build.yml` job will:
+
+1. Set up Python 3.11 and install backend dependencies.
+2. Build `diffusionbee_backend.exe` with PyInstaller.
+3. Download the Real-ESRGAN Windows binary.
+4. Bundle the default Stable Diffusion 1.5 model (so the app is ready to generate).
+5. Build the Vue frontend and produce an NSIS `.exe` installer.
+6. Upload the installer as a workflow artifact named `windows-installer`.
+
+### Option 2: Local Windows build
+
+On a Windows machine with Node.js 20+, Python 3.11, and PyInstaller installed:
+
+```bash
+# Full pipeline (downloads the default model if not cached)
+node scripts/build-windows.js
+
+# Skip bundling the default model for a smaller installer
+node scripts/build-windows.js --no-models
+```
+
+The resulting installer is written to `electron_app/dist_electron/*.exe`.
+
+### Option 3: Manual steps
+
+```bash
+# 1. Install backend dependencies
+pip install -r backends/stable_diffusion/requirements.txt
+
+# 2. Build backend executable
+cd backends/stable_diffusion
+pyinstaller diffusionbee_backend.spec
+
+# 3. Download Real-ESRGAN Windows release into backends/stable_diffusion/realesrgan-release
+
+# 4. Stage backend + Real-ESRGAN
+cd ../..
+npm run prepare:backend:win
+
+# 5. Bundle default model
+npm run bundle:models -- --download
+
+# 6. Build installer
+npm run build:win
+```
+
+---
+
 ## License
 
 Stable Diffusion is released under the [CreativeML OpenRAIL-M license](https://github.com/CompVis/stable-diffusion/blob/main/LICENSE). DiffusionBee is a GUI wrapper on top of Stable Diffusion, so the same terms apply to outputs.
@@ -265,3 +320,7 @@ Stable Diffusion is released under the [CreativeML OpenRAIL-M license](https://g
 3. [divamgupta/stable-diffusion-tensorflow](https://github.com/divamgupta/stable-diffusion-tensorflow)
 4. [liuliu/swift-diffusion](https://github.com/liuliu/swift-diffusion) (big thanks to Liu Liu)
 5. [huggingface/diffusers](https://github.com/huggingface/diffusers)
+
+===
+  <small>DESIGNED & DEVELOPED WITH LOVE ❤️ IN BAHRAIN 🇧🇭 BY HASAN ALDOY @aldoyh - <a href="https://doy.tech">doy.tech</a></small>
+===

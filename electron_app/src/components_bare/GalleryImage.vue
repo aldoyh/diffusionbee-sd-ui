@@ -11,7 +11,7 @@
 
                 <img class="aux_img" v-if="aux_img_url" :src="toFileUrl(aux_img_url)"  style="position:absolute; opacity:0.8; top:0 ; left:0; width:30% ; height:30%; object-fit: cover;   ">
                 
-                <div v-if="description && image_url" @click="on_image_click(self)" class="gall_top_right_btn_container " style="position:absolute; bottom:5px ; left:5px ; right:0px; padding:20px; background: linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0)); color:white ; font-size: 12px;margin-right: 5px ; padding-top:20px">
+                <div v-if="description && image_url" @click="on_image_click(self)" class="gall_top_right_btn_container gall_description_overlay" style="position:absolute; bottom:5px ; left:5px ; right:5px; padding:14px 16px; background: linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0)); color:white ; font-size: 12px; line-height: 1.3;">
                     {{description}}
                 </div>
 
@@ -37,7 +37,7 @@
 
                 
                 <img @click="on_image_click(self)" v-if="image_url"   style="  width:100% ; height:100%; object-fit: cover;  object-position:0px 0px; " :src="toFileUrl(image_url)">
-                <img  v-bind:class="{ 'animate-flicker': (done_percentage == undefined) }" class="animate-flicker"   v-else :width="img_w" :height="img_h"  style="width:100% ; height:100%;   object-position:0px 0px;  border-style: solid ; border-color: var(--border-color-invert); border-width: 1px;   " src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==">
+                <img  v-bind:class="{ 'animate-flicker': (done_percentage == undefined) }"   v-else :width="img_w" :height="img_h"  style="width:100% ; height:100%;   object-position:0px 0px;  border-style: solid ; border-color: var(--border-color-invert); border-width: 1px;   " src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==">
 
 
                 
@@ -136,6 +136,15 @@ export default {
 .gal_item_inner:hover > div > .aux_img{
     display: none;
     /*opacity: 0.1;*/
+}
+
+.gall_description_overlay {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 52px;
 }
 
 

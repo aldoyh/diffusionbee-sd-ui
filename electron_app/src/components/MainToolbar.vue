@@ -1,10 +1,7 @@
 <template>
     <div> 
         
-        <MoonLoader v-if="is_sd_busy" class="moonloader1" color="var(--title-icon_color)" size="20px" style="position:fixed; margin-left:18px; margin-top:5px; z-index:20 ; pointer-events: none;"></MoonLoader>
-
-        
-        <b-dropdown right variant="link" offset="40"  size="sm" toggle-class="text-decoration-none" no-caret style="margin-right: -11px ;">
+        <b-dropdown right variant="link" offset="40"  size="sm" toggle-class="text-decoration-none" no-caret>
             <template #button-content>
                <span class="title_bar_icon" > 
                    <!--  <svg width="16" height="20" viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg" style=" margin-top:-2px ">
@@ -75,13 +72,12 @@
 <script>
 
 import { icon_library } from "../components_bare/icon_library.js"
-import MoonLoader from 'vue-spinner/src/MoonLoader.vue'
 
 
 export default {
     name: 'MainToolbar',
     props: { app:Object , asset_details:Object },
-    components: {MoonLoader},
+    components: {},
     mounted() {
 
     },

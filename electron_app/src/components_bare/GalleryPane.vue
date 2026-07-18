@@ -52,7 +52,7 @@ export default {
 
             let extra = [];
             for(let i=0; i< this.n_imgs - this.image_data.length ; i ++ ){
-                extra.push({})
+                extra.push({job_id: 'placeholder-' + i})
             }
 
             return this.image_data.concat(extra)
@@ -77,13 +77,24 @@ export default {
     },
 
     watch: {
-        'image_data': {
-            handler: function() {
-                this.on_resize()
-            },
-            deep: false
-        } , 
-    }, 
+        // Recompute layout only when the things that actually affect it change
+        // (slot count / image dimensions). `image_data` itself is replaced with
+        // a new array reference on every generation-progress tick (see
+        // GenerationGallery.update_group), so watching it directly used to
+        // re-run this imperative layout write dozens of times per second while
+        // an image was mid-generation, competing with CSS transitions and
+        // causing visible jank. The pane's own size is already covered by the
+        // ResizeObserver set up in mounted().
+        n_imgs() {
+            this.on_resize()
+        },
+        img_w() {
+            this.on_resize()
+        },
+        img_h() {
+            this.on_resize()
+        },
+    },
 
     methods: {
         on_resize(){

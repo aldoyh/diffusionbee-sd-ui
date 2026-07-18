@@ -26,6 +26,9 @@ export default {
             model_loading_msg : "",
             model_loading_title : "",
             loading_percentage : -1 , 
+            generation_progress : -1,
+            generation_current_step : 0,
+            generation_total_steps : 0,
             generation_state_msg : "",
             remaining_times: "",
             attached_cbs : undefined,
@@ -36,6 +39,32 @@ export default {
         };
     },
     methods: {
+        reset_generation_progress() {
+            this.generation_progress = -1;
+            this.generation_current_step = 0;
+            this.generation_total_steps = 0;
+            this.generation_state_msg = '';
+            this.remaining_times = '';
+            this.iter_times = [];
+            if (this.generation_loop) {
+                clearInterval(this.generation_loop);
+                this.generation_loop = undefined;
+            }
+        },
+        compute_generation_step(progress) {
+            const total = Number(this.nb_its) || 0;
+            if (total <= 0) return 0;
+            const pct = Math.min(Math.max(Number(progress) || 0, 0), 100);
+            return Math.max(1, Math.min(total, Math.ceil((pct / 100) * total)));
+        },
+        format_generation_step_label() {
+            const step = this.generation_current_step;
+            const total = this.generation_total_steps;
+            if (step > 0 && total > 0) {
+                return `Step ${step} of ${total}`;
+            }
+            return '';
+        },
         state_msg(msg){
             let msg_code = msg.substring(0, 4);
             if(msg_code == "mdld"){
@@ -47,10 +76,13 @@ export default {
             if(msg_code == "inrd"){
                 console.log("cps unset inrd ")
                 this.is_stopping = false
+                this.reset_generation_progress()
                 this.is_input_avail = true; // note : is_input_avail can be watched so set this at last pls
             }
             if(msg_code == "inwk"){
                 this.is_input_avail = false;
+                this.generation_progress = 0;
+                this.generation_current_step = 0;
             }
 
             if(msg_code == "nwim"){
@@ -81,7 +113,9 @@ export default {
             }
             if(msg_code == "gnms"){
                 let p = (msg.substring(5).trim());
-                this.generation_state_msg = p;
+                if (p && p !== "Generating") {
+                    this.generation_state_msg = p;
+                }
             }
 
             if(msg_code == "mltl"){
@@ -108,12 +142,18 @@ export default {
             if(msg_code == "dnpr"){
                 this.is_model_downloading = false;
                 let p = Number(msg.substring(5).trim());
+                // Guard against NaN (e.g. backend sends no progress yet)
+                if (Number.isNaN(p)) { p = -1; }
                 let iter_time =  Date.now()  -this.last_iter_t;
                 this.last_iter_t  = Date.now();
                 if(this.attached_cbs){
                     if(this.attached_cbs.on_progress){
                         if(p >= 0 ){
-                            this.generation_state_msg = iter_time/1000 + " s/it";
+                            this.generation_progress = Math.round(p);
+                            this.generation_total_steps = this.nb_its || 0;
+                            this.generation_current_step = this.compute_generation_step(p);
+                            this.generation_state_msg = this.format_generation_step_label();
+
                             this.iter_times.push(iter_time);
                             let median = this.iter_times.sort((a, b) => a - b)[Math.floor(this.iter_times.length / 2)];
                             let time_remaining = moment.duration(median*((100-p)*this.nb_its/100));
@@ -128,6 +168,8 @@ export default {
                                 this.remaining_times = compute_time_remaining(time_remaining);
                             }, 1000);
     
+                        } else if (!this.is_input_avail) {
+                            this.generation_progress = Math.max(this.generation_progress, 0);
                         }
                         this.attached_cbs.on_progress(p, iter_time);
                     }
@@ -146,6 +188,7 @@ export default {
             console.log("cps unset st ")
             this.is_stopping = true
             this.attached_cbs = undefined;
+            this.reset_generation_progress();
         },
 
         is_ready(){
@@ -188,6 +231,9 @@ export default {
             this.generated_by = generated_by;
             this.attached_cbs = callbacks;
             console.log("cps set ")
+            this.generation_progress = 0;
+            this.generation_current_step = 0;
+            this.generation_total_steps = prompt_params.ddim_steps || 25;
             this.generation_state_msg = ""
             this.remaining_times = ""
             this.iter_times = []

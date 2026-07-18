@@ -12,14 +12,15 @@ import Vue from 'vue'
 // contextBridge.exposeInMainWorld('ipcRenderer_on', ipcRenderer.on)
 
 
-function download_file(url, dest, md5_hash , onProgress, onSuccess, onError) {
+function download_file(url, dest, md5_hash , onProgress, onSuccess, onError, downloadOptions) {
     const downloadId = Date.now().toString() + Math.random().toString().substr(2);
+    const skipChecksum = Boolean(downloadOptions && downloadOptions.skip_checksum);
     window.bind_ipc_download_on(downloadId, function(m){
         // progresss
         onProgress(m);
     }, function(file_hash){
         // sucdesss 
-        if(md5_hash == file_hash){
+        if(skipChecksum || !md5_hash || md5_hash == file_hash){
             onSuccess(file_hash)
         } else{
             onError("failed to match checksum")
@@ -31,7 +32,7 @@ function download_file(url, dest, md5_hash , onProgress, onSuccess, onError) {
         window.unbind_ipc_download_on(downloadId)
         onError(m)
     } )
-    window.ipcRenderer.send('download-file', url, dest, downloadId);
+    window.ipcRenderer.send('download-file', url, dest, downloadId, downloadOptions || null);
 }
 
 
@@ -254,7 +255,13 @@ export default {
             Vue.set( that.downloading  , asset_id , asset_details)
             Vue.set( that.downloading[asset_id] , 'status' , 'downloading')
 
-            download_file( asset_details.url , dest_path , asset_hash  , on_progress , on_success ,  on_error )
+            const downloadOptions = {
+                skip_checksum: Boolean(asset_details.skip_checksum),
+                hf_auth: Boolean(asset_details.hf_auth_required || asset_details.download_source === 'huggingface'),
+                timeout_ms: asset_details.download_source === 'huggingface' ? 0 : 20000,
+            };
+
+            download_file( asset_details.url , dest_path , asset_hash  , on_progress , on_success ,  on_error , downloadOptions )
 
         }
             

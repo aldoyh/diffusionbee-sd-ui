@@ -1,12 +1,17 @@
 {
-  "name": "diffusionbee-gui",
+  "name": "diffusion-sd-ui",
   "version": "2.4.0",
   "build_number": "0029",
   "website": "https://diffusionbee.com",
-  "description": "DiffusionBee GUI - Stable Diffusion App.",
+  "description": "Diffusion SD UI - Stable Diffusion App.",
   "author": "Hasan AlDoy <hasan@aldoy.net>",
   "is_dev": false,
   "private": true,
+  "pnpm": {
+    "shamefullyHoist": true,
+    "publicHoistPattern": ["*"],
+    "nodeLinker": "hoisted"
+  },
   "engines": {
     "node": ">=26.0.0",
     "npm": ">=10.0.0"
@@ -30,7 +35,7 @@
     "@codekraft-studio/vue-record": "^0.0.3",
     "@fortawesome/fontawesome-svg-core": "^6.5.1",
     "@fortawesome/free-solid-svg-icons": "^6.5.1",
-    "@fortawesome/vue-fontawesome": "^3.0.7",
+    "@fortawesome/vue-fontawesome": "^2.0.10",
     "apexcharts": "^3.45.1",
     "bootstrap": "^5.3.2",
     "bootstrap-vue": "^2.23.1",

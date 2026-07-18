@@ -18,7 +18,9 @@
     "test:setup:full": "bash scripts/run_setup_and_tests.sh full",
     "test:installed-ui": "bash scripts/verify_installed_app_ui.sh",
     "prepare:backend:win": "node scripts/prepare_backend_for_packaging.js --source backends/stable_diffusion/dist/diffusionbee_backend --realesrgan realesrgan-release",
-    "build:win": "npm run prepare:backend:win && cd electron_app && cross-env BACKEND_BUILD_PATH=../electron_app/.packaged-backend npm run electron:build -- --win"
+    "bundle:models": "node scripts/bundle_default_models.js",
+    "build:win": "npm run prepare:backend:win && cd electron_app && cross-env BACKEND_BUILD_PATH=../electron_app/.packaged-backend npm run electron:build -- --win",
+    "build:win:full": "npm run bundle:models && npm run build:win"
   },
   "devDependencies": {
     "cross-env": "^10.1.0"

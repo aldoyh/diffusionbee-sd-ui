@@ -155,6 +155,9 @@ export default {
 
             this.clear_old_groups( this.n_to_keep || 10)
 
+            this.$nextTick(() => {
+                this.scroll_to_top()
+            })
         }, 
 
         clear_old_groups(n_to_keep){

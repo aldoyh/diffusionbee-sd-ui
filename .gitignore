@@ -191,3 +191,5 @@ pretrained_weights/
 electron_app/
 .packaged-backend
 .superpowers/
+node_modules/
+package-lock.json

@@ -1,4 +1,6 @@
 
+import { uploadToImgbb, getImgbbApiKey } from "../utils/imgbb_upload.js"
+
 let image_manu_functions = {}
 
 image_manu_functions['save_image'] =  function (app, image_item_data){
@@ -111,6 +113,36 @@ image_manu_functions['generate_similar_images'] =  function (app, image_item_dat
 }
 image_manu_functions['generate_similar_images'].text = "Generate similar images"
 
+image_manu_functions['upload_imgbb'] =  async function (app, image_item_data){
+	if(!image_item_data.image_url)
+        return;
+
+    const apiKey = getImgbbApiKey(app);
+    if (!apiKey) {
+        app.show_toast(app.app_state && app.app_state.isArabic
+            ? 'يرجى إضافة مفتاح API لـ imgbb في الإعدادات أولاً.'
+            : 'Please add an imgbb API key in Settings first.');
+        return;
+    }
+
+    let im_path = image_item_data.image_url.split("?")[0];
+
+    try {
+        const result = await uploadToImgbb(im_path, apiKey);
+        if (result.url) {
+            window.ipcRenderer.sendSync('copy_to_clipboard', result.url);
+            app.show_toast(app.app_state && app.app_state.isArabic
+                ? 'تم رفع الصورة إلى imgbb ونسخ الرابط إلى الحافظة!'
+                : 'Image uploaded to imgbb — URL copied to clipboard!');
+        }
+    } catch (error) {
+        console.error('imgbb upload failed:', error);
+        app.show_toast(app.app_state && app.app_state.isArabic
+            ? 'فشل رفع الصورة إلى imgbb: ' + (error.message || 'خطأ غير معروف')
+            : 'Failed to upload image to imgbb: ' + (error.message || 'Unknown error'));
+    }
+}
+image_manu_functions['upload_imgbb'].text = "Upload to imgbb.com"
 
 
 export {image_manu_functions}

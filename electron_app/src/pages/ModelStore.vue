@@ -36,8 +36,8 @@
                     <h2> {{model.title || model.id}} </h2> 
                     <p> {{model.description}} </p> 
                     <p style="zoom:0.7"> {{ model_metadata_to_str(model) }}</p>
-                    <DownloadButton v-if="!(model.min_version) || model.min_version <= app.current_build_number" :app=app  :asset_details="model"> </DownloadButton>
-                    <p  style="color:red" v-if="model.min_version && model.min_version > app.current_build_number">{{ app.app_state.isArabic ? 'تحتاج إلى تحديث DiffusionBee لاستخدام هذا النموذج' : 'You need to update DiffusionBee to use this model' }}</p>
+                    <DownloadButton v-if="canDownloadModel(model)" :app=app  :asset_details="model"> </DownloadButton>
+                    <p v-if="!canDownloadModel(model)" class="model-unavailable-msg">{{ modelDownloadBlockMessage(model) }}</p>
                 </div> 
             </div>
 
@@ -56,6 +56,9 @@ import Vue from 'vue'
 
 import DownloadButton from "../components/DownloadButton.vue"
 import MoonLoader from 'vue-spinner/src/MoonLoader.vue'
+const { isModelDownloadAllowed, getModelDownloadBlockMessage } = require("../utils/app_version.js")
+const { mergeFlux2IntoCatalog } = require("../utils/flux2_catalog.js")
+const { getHfTokenSync } = require("../utils/hf_auth.js")
 
 const ModelStore ={
     name: 'ModelStore',
@@ -89,6 +92,12 @@ const ModelStore ={
         }
     },
     methods: {
+        canDownloadModel(model) {
+            return isModelDownloadAllowed(model);
+        },
+        modelDownloadBlockMessage(model) {
+            return getModelDownloadBlockMessage(model, this.app.app_state.isArabic);
+        },
         load_models_list_from_web(){
             let that = this;
 
@@ -97,6 +106,7 @@ const ModelStore ={
             
             fetch(models_url, {cache: "no-store"})
                 .then(response => response.json())
+                .then(data => mergeFlux2IntoCatalog(data || [], getHfTokenSync()))
                 .then(data =>  that.models_list = (data || that.models_list) )
                 .then(() => console.log(that.models_list))
                 .then(() =>  that.save_models_list_local_storage() )
@@ -255,6 +265,12 @@ ModelStore.sidebar_show = "always"
 
 .card_desc > p{
     margin-bottom: 3px;
+}
+
+.model-unavailable-msg {
+    color: rgba(255, 180, 120, 0.95);
+    font-size: 0.78rem;
+    margin-top: 4px;
 }
 
 

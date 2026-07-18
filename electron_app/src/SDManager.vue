@@ -24,7 +24,8 @@ export default {
             worker_state : "idle",
             stable_diffusion: null,
             current_job_index : undefined , 
-            current_group_id : undefined 
+            current_group_id : undefined ,
+            done_percentage : -1,
         };
     },
 
@@ -83,10 +84,9 @@ export default {
             this.group_gallery_mapping[gen_options.group_id] = gallery_component;
             let imgs = []
             for(let i=0 ; i <gen_options.jobs.length ; i++ ){
-                imgs.push({})
+                imgs.push({job_id: gen_options.jobs[i].job_id})
             }
             gallery_component.add_group({group_id: gen_options.group_id , num_imgs : gen_options.jobs.length, imgs: imgs , img_width:gen_options.jobs[0].img_width , img_height: gen_options.jobs[0].img_height})
-            gallery_component.scroll_to_top()
             if(this.stable_diffusion.is_input_avail){
                 this.get_and_do_job()
             }
@@ -218,8 +218,10 @@ export default {
                     if(that.current_job_index == undefined)
                         return
 
+                    if (p >= 0) {
+                        that.done_percentage = Math.round(p);
+                    }
                     that.queue.current_group.jobs[that.current_job_index].done_percentage = p ;
-                    that.done_percentage = p;
                     
                     let gallery = that.group_gallery_mapping[that.current_group_id]
                     let gallery_group = gallery.get_group( that.current_group_id )

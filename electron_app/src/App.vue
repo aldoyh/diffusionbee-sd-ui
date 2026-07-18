@@ -32,6 +32,18 @@
 
         <LoaderModal v-if="app_state.global_loader_modal_msg" :loading_percentage="-1"  :loading_title="app_state.global_loader_modal_msg"> </LoaderModal>
 
+        <LoaderModal
+            v-if="is_generating && !app_state.global_loader_modal_msg && !app_state.is_start_screen"
+            mode="generation"
+            :loading_percentage="generationModalProgress"
+            :current_step="stable_diffusion && stable_diffusion.generation_current_step"
+            :total_steps="stable_diffusion && stable_diffusion.generation_total_steps"
+            :loading_title="generationModalTitle"
+            :remaining_times="stable_diffusion && stable_diffusion.remaining_times"
+            :appState="app_state"
+            @cancel="cancelGeneration"
+        />
+
         <!-- First-run Model Setup Dialog -->
         <div v-if="show_model_setup" class="model-setup-overlay">
             <div class="model-setup-dialog">
@@ -50,7 +62,7 @@
                 <div v-else-if="model_to_download && !is_downloading_model && !model_download_completed" class="model-setup-body">
                     <div class="model-card-setup">
                         <h3>{{ model_to_download.title || model_to_download.id }}</h3>
-                        <p class="model-desc">{{ model_to_download.description || 'A Stable Diffusion model for image generation.' }}</p>
+                        <p class="model-desc">{{ model_to_download.description || 'An image generation model for DiffusionBee.' }}</p>
                         <p class="model-meta">{{ format_model_meta(model_to_download) }}</p>
                     </div>
                     <button @click="start_model_download" class="download-btn">
@@ -108,7 +120,9 @@ import LoaderModal from './components_bare/LoaderModal.vue'
 import Vue from "vue"
 import { setLocale, getLocale } from "./i18n.js"
 import { bindHistoryToApp } from "./history_service.js"
-const { getMachineProfile, pickOptimalStableDiffusionModel, isSelectableStableDiffusionModel } = require("./utils/model_selection.js")
+const { getMachineProfile, pickOptimalOnboardingModel, isSelectableOnboardingModel } = require("./utils/model_selection.js")
+const { mergeFlux2IntoCatalog } = require("./utils/flux2_catalog.js")
+const { getHfTokenSync } = require("./utils/hf_auth.js")
 
 native_alert;
 
@@ -193,8 +207,19 @@ export default
             }
         }, 500);
 
-        // On first run, check for models and automatically prompt download if none found
+        // Seed bundled default models (Windows installer ships one so it's ready to generate).
+        // Then check for models and automatically prompt download if none found.
         // Run immediately after scan and also re-attempt once the start screen finishes
+        try {
+            let seeded = window.ipcRenderer.sendSync('seed_bundled_models');
+            if (seeded && seeded.length > 0) {
+                console.log('Seeded bundled models:', seeded);
+                // Reload persisted model registry so the onboarding check sees them.
+                this.assets_manager.downloaded_assets = window.ipcRenderer.sendSync('load_data', 'downloaded_assets.json');
+            }
+        } catch (e) {
+            console.warn('Failed to seed bundled models:', e);
+        }
         this.check_and_prompt_model_download();
         this.modelSetupRetryTimer = setTimeout(() => {
             this.check_and_prompt_model_download();
@@ -272,6 +297,59 @@ export default
                 return false
             return this.$refs.stable_diffusion.is_input_avail 
         },
+        is_generating() {
+            if (!this.is_mounted || !this.stable_diffusion) return false;
+            if (this.app_state.is_start_screen) return false;
+
+            const sd = this.stable_diffusion;
+            if (!sd.is_backend_loaded || sd.is_input_avail) return false;
+
+            // Backend warmup sets is_input_avail false before any job exists — don't treat that as generation.
+            if (sd.attached_cbs) return true;
+            if (typeof sd.generation_progress === 'number' && sd.generation_progress >= 0) return true;
+            if (this.generationQueueCount > 0) return true;
+            return false;
+        },
+        generationModalProgress() {
+            if (!this.is_mounted) return 0;
+
+            if (this.stable_diffusion && typeof this.stable_diffusion.generation_progress === 'number' && this.stable_diffusion.generation_progress >= 0) {
+                return this.stable_diffusion.generation_progress;
+            }
+
+            if (this.stable_diffusion_manager && typeof this.stable_diffusion_manager.done_percentage === 'number' && this.stable_diffusion_manager.done_percentage >= 0) {
+                return this.stable_diffusion_manager.done_percentage;
+            }
+
+            return 0;
+        },
+        generationModalTitle() {
+            const queueCount = this.generationQueueCount;
+            if (this.app_state.isArabic) {
+                return queueCount > 1
+                    ? `جارٍ توليد الصور (${queueCount} متبقية)`
+                    : 'جارٍ توليد الصورة';
+            }
+            return queueCount > 1
+                ? `Generating images (${queueCount} remaining)`
+                : 'Generating image';
+        },
+        generationQueueCount() {
+            if (!this.stable_diffusion_manager || !this.stable_diffusion_manager.queue) return 0;
+            let count = 0;
+            const current = this.stable_diffusion_manager.queue.current_group;
+            if (current && current.jobs) {
+                for (const job of current.jobs) {
+                    if (job.job_state !== 'done') count += 1;
+                }
+            }
+            if (this.stable_diffusion_manager.queue.groups_todo) {
+                for (const group of this.stable_diffusion_manager.queue.groups_todo) {
+                    count += (group.jobs || []).length;
+                }
+            }
+            return count;
+        },
         appVersionLabel(){
             try {
                 let pkg = require('../package.json');
@@ -292,6 +370,13 @@ export default
 
         main_screen() {
 
+        },
+
+        cancelGeneration() {
+            console.log('Generation cancelled by user');
+            if (this.stable_diffusion) {
+                this.stable_diffusion.interupt();
+            }
         },
 
         show_toast(msg){
@@ -366,11 +451,7 @@ export default
                 return;
             }
 
-            console.log('No models found — prompting first-run model download.');
-            this.show_model_setup = true;
-
-            // Fetch model list from server (fire-and-forget async)
-            this.fetch_models_list();
+            console.log('No models found — onboarding is available from the Home screen.');
         },
 
         async fetch_models_list() {
@@ -387,18 +468,22 @@ export default
                 }
 
                 const machineProfile = getMachineProfile();
-                const downloadableModels = models.filter((model) => model && model.id && model.url && isSelectableStableDiffusionModel(model));
-                let default_model = pickOptimalStableDiffusionModel(downloadableModels, machineProfile);
+                const hfToken = getHfTokenSync();
+                const mergedModels = mergeFlux2IntoCatalog(models, hfToken);
+                const downloadableModels = mergedModels.filter((model) => model && model.id && model.url && isSelectableOnboardingModel(model, {
+                    profile: machineProfile,
+                    hasHfToken: Boolean(hfToken),
+                }));
+                let default_model = pickOptimalOnboardingModel(downloadableModels, machineProfile, {
+                    hasHfToken: Boolean(hfToken),
+                    preferFlux2: true,
+                });
                 if (!default_model) {
-                    default_model = downloadableModels[0] || models.find(m => m && m.id && m.url) || models[0];
+                    default_model = downloadableModels[0] || mergedModels.find(m => m && m.id && m.url) || mergedModels[0];
                 }
 
                 console.log('Found default model:', default_model ? default_model.id : 'none');
                 this.model_to_download = default_model;
-
-                if (this.show_model_setup && this.model_to_download && !this.is_downloading_model && !this.model_download_completed) {
-                    this.start_model_download();
-                }
             } catch (e) {
                 console.error('Failed to fetch model list:', e);
                 this.model_download_error = 'Could not reach the model server. Check your internet connection.';
@@ -427,6 +512,7 @@ export default
                 if (dl.status === 'done') {
                     this.model_download_completed = true;
                     this.is_downloading_model = false;
+                    this.completeOnboarding();
                     clearInterval(this.modelDownloadInterval);
                     this.modelDownloadInterval = null;
 
@@ -443,10 +529,40 @@ export default
             }, 300);
         },
 
+        launchOnboarding(force = false) {
+            if (!this.assets_manager || !this.assets_manager.all_avail_assets) {
+                console.log('assets_manager not ready for onboarding.');
+                return;
+            }
+
+            let existing = Object.keys(this.assets_manager.all_avail_assets);
+            if (!force && existing.length > 0) {
+                console.log('Models already available, onboarding not required.');
+                return;
+            }
+
+            this.show_model_setup = true;
+            this.model_download_error = '';
+            this.model_download_completed = false;
+            this.is_downloading_model = false;
+
+            if (!this.model_to_download) {
+                this.fetch_models_list();
+            }
+        },
+
+        completeOnboarding() {
+            if (!this.app_state.app_data.settings) {
+                Vue.set(this.app_state.app_data, 'settings', {});
+            }
+            Vue.set(this.app_state.app_data.settings, 'onboarding_completed', true);
+        },
+
         dismiss_model_setup() {
             console.log('User dismissed model setup.');
             this.show_model_setup = false;
             this.model_download_error = '';
+            this.completeOnboarding();
             if (this.modelDownloadInterval) {
                 clearInterval(this.modelDownloadInterval);
                 this.modelDownloadInterval = null;
@@ -503,7 +619,7 @@ export default
         };
 
         return {
-            current_build_number : Number(require('../package.json').build_number), 
+            current_build_number : require('./utils/app_version.js').getAppBuildNumber(),
             all_pages_ready: false, // set to true by PagesRouter
             is_mounted : false, // set when app is mounted
             functions: {},

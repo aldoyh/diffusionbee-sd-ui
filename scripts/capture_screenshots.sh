@@ -125,7 +125,7 @@ end tell
 APPLESCRIPT
 }
 
-echo "Waiting for DiffusionBee (Electron) window..."
+echo "Waiting for Diffusion SD UI (Electron) window..."
 for i in $(seq 1 90); do
   if osascript -e 'tell application "System Events" to return (exists process "Electron")' 2>/dev/null | grep -q true; then
     if get_bounds >/dev/null 2>&1; then

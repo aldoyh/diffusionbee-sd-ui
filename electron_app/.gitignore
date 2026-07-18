@@ -25,5 +25,8 @@ pnpm-debug.log*
 *.sln
 *.sw?
 
+.bundled-models
+.packaged-backend
+
 #Electron-builder output
 /dist_electron

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Launch the installed diffusionbee-gui.app, verify the modern homepage UI,
+# Launch the installed diffusion-sd-ui.app, verify the modern homepage UI,
 # submit an Arabic prompt, wait for generation, and capture proof screenshots.
 set -euo pipefail
 
-APP_PATH="/Applications/diffusionbee-gui.app"
-PROCESS_NAME="diffusionbee-gui"
+APP_PATH="/Applications/diffusion-sd-ui.app"
+PROCESS_NAME="diffusion-sd-ui"
 OUT_DIR="${1:-$(cd "$(dirname "$0")/.." && pwd)/docs/screenshots/verify-run-$(date +%Y%m%d-%H%M%S)}"
 PROMPT_AR="منظر جميل لإطلالة على البحر"
 IMAGES_DIR="${HOME}/.diffusionbee/images"
@@ -142,7 +142,7 @@ home_ready=0
 for _ in $(seq 1 30); do
   window_title="$(osascript <<'APPLESCRIPT'
 tell application "System Events"
-  tell process "diffusionbee-gui"
+  tell process "diffusion-sd-ui"
     return name of window 1
   end tell
 end tell
@@ -159,7 +159,7 @@ done
 log "Verifying modern homepage UI markers..."
 window_title="$(osascript <<'APPLESCRIPT'
 tell application "System Events"
-  tell process "diffusionbee-gui"
+  tell process "diffusion-sd-ui"
     return name of window 1
   end tell
 end tell
@@ -169,7 +169,7 @@ echo "$window_title" > "$OUT_DIR/window-title.txt"
 
 ui_dump="$(osascript <<'APPLESCRIPT'
 tell application "System Events"
-  tell process "diffusionbee-gui"
+  tell process "diffusion-sd-ui"
     set namesList to {}
     repeat with el in (entire contents of window 1)
       try
@@ -185,7 +185,7 @@ echo "$ui_dump" > "$OUT_DIR/ui-accessibility-names.txt"
 
 has_home_window=0
 has_old_txt2img=0
-if echo "$window_title" | rg -qi "Home|DiffusionBee GUI"; then
+if echo "$window_title" | rg -qi "Home|Diffusion SD UI"; then
   has_home_window=1
 fi
 if echo "$ui_dump" | rg -q "Reset to default|Negative Prompt|Add to Queue"; then
@@ -210,7 +210,9 @@ cliclick "c:${lang_x},${lang_y}"
 sleep 1.5
 capture "02-arabic-homepage.png"
 
-log "Submitting Arabic prompt via chat input..."
+log "Submitting Arabic prompt via clipboard+paste (handles any Unicode)..."
+# Use pbcopy for reliable Unicode text input, then Cmd+V to paste
+printf '%s' "$PROMPT_AR" | pbcopy
 bounds="$(get_bounds)"
 x="$(echo "$bounds" | cut -d, -f1)"
 y="$(echo "$bounds" | cut -d, -f2)"
@@ -220,11 +222,21 @@ click_y=$((y + 520))
 focus_app
 cliclick "c:${click_x},${click_y}"
 sleep 0.4
-cliclick "t:${PROMPT_AR}"
-sleep 0.5
-osascript <<'APPLESCRIPT'
+# Paste from clipboard via AppleScript (handles all Unicode correctly)
+osascript <<APPLESCRIPT
 tell application "System Events"
-  tell process "diffusionbee-gui"
+  tell process "$PROCESS_NAME"
+    set frontmost to true
+    delay 0.2
+    keystroke "v" using command down
+  end tell
+end tell
+APPLESCRIPT
+sleep 0.5
+# Submit the prompt
+osascript <<APPLESCRIPT
+tell application "System Events"
+  tell process "$PROCESS_NAME"
     key code 36
   end tell
 end tell
@@ -272,7 +284,7 @@ fi
 log "Checking final UI does not show token-length error..."
 if osascript <<'APPLESCRIPT' 2>/dev/null | rg -qi "too long|340 token|Error"
 tell application "System Events"
-  tell process "diffusionbee-gui"
+  tell process "diffusion-sd-ui"
     set namesList to {}
     repeat with el in (entire contents of window 1)
       try

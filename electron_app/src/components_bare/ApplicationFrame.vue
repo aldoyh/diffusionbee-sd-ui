@@ -4,8 +4,17 @@
 
         <div class="sidebar" v-show="is_sidebar_open">
            <div class="sidebar_drag"> 
-                 <span class="title_bar_icon" style="float:right; margin-top: 15px; margin-right:10px; padding:0; padding-left: 13px; padding-top:2px ;" @click="is_sidebar_open = !is_sidebar_open" v-html="icon_library['sidebar_collapse']">
-                </span>
+                 <button
+                    type="button"
+                    class="sidebar-toggle-btn sidebar-toggle-btn--in-sidebar"
+                    @click="toggle_sidebar"
+                    :title="sidebarToggleTitle"
+                    :aria-label="sidebarToggleTitle"
+                 >
+                    <transition name="icon-fade" mode="out-in">
+                        <svg :key="sidebarToggleIcon" class="sidebar-toggle-icon" width="100%" height="100%" v-html="icon_library[sidebarToggleIcon]"></svg>
+                    </transition>
+                 </button>
 
            </div>
 
@@ -25,12 +34,21 @@
 
         <div class="title_bar">
             <div class="app_title_sidebar_collapsed" v-if="(!is_sidebar_open)"  v-bind:class="{'app_title_sidebar_collapsed_mac':is_mac}"> 
-                 <span class="title_bar_icon" style=" margin-right: -10px ; margin-left: 10px;" @click="is_sidebar_open = !is_sidebar_open" v-html="icon_library['sidebar_collapse']">
-                 </span>
+                 <button
+                    type="button"
+                    class="sidebar-toggle-btn"
+                    @click="toggle_sidebar"
+                    :title="sidebarToggleTitle"
+                    :aria-label="sidebarToggleTitle"
+                 >
+                    <transition name="icon-fade" mode="out-in">
+                        <svg :key="sidebarToggleIcon" class="sidebar-toggle-icon" width="100%" height="100%" v-html="icon_library[sidebarToggleIcon]"></svg>
+                    </transition>
+                 </button>
 
-                 <span class="title_bar_icon" style=" margin-right: -10px ; margin-left: 10px;" @click="on_home_click" > 
-                   <font-awesome-icon   icon="home" style="zoom:1.15; margin-bottom: -2px;"  />
-                 </span>
+                 <button type="button" class="title_bar_icon-btn" @click="on_home_click" :title="'Home'" aria-label="Home">
+                   <font-awesome-icon icon="home" style="zoom:1.15; margin-bottom: -2px;" />
+                 </button>
 
             </div>
             <div class="app_title" >
@@ -112,10 +130,19 @@ export default {
     computed: {
         is_mac(){
             return !(this.detect_windows_os())
-        }
+        },
+        sidebarToggleTitle() {
+            return this.is_sidebar_open ? 'Hide sidebar' : 'Show sidebar';
+        },
+        sidebarToggleIcon() {
+            return this.is_sidebar_open ? 'sidebar_collapse' : 'sidebar_expand';
+        },
     },
 
     methods: {
+        toggle_sidebar() {
+            this.is_sidebar_open = !this.is_sidebar_open;
+        },
         sync_sidebar_width(is_open){
             document.querySelector(':root').style.setProperty("--sidebar-width" , is_open ? "200px" : "0px")
         },
@@ -389,16 +416,17 @@ img {
 
 .title_bar_icon{
     color : var(--title-icon_color);
-    padding : 8px;
-    padding-right: 8px;
-    padding-left: 8px;
+    padding : 8px 6px;
 
-    margin-right: 2px;
-    margin-left: 2px;
+    margin-right: 1px;
+    margin-left: 1px;
     
     height: calc(100% - 24px);
-    width:50px;
+    min-width: 32px;
     border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 
 /*    background: rgba(0, 0, 0, 0.05);*/
     -webkit-app-region: none;
@@ -468,7 +496,81 @@ img {
     float:left;
     height: var(--titlebar-height);
     margin-top: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding-left: 8px;
+}
 
+.sidebar-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--title-icon_color, rgba(255, 255, 255, 0.85));
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.sidebar-toggle-btn:hover {
+    background: rgba(62, 123, 250, 0.14);
+    border-color: rgba(62, 123, 250, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+
+.sidebar-toggle-btn:active {
+    transform: translateY(0);
+}
+
+.sidebar-toggle-btn--in-sidebar {
+    float: right;
+    margin-top: 11px;
+    margin-right: 10px;
+}
+
+.sidebar-toggle-icon {
+    width: 17px;
+    height: 17px;
+    display: block;
+    opacity: 0.92;
+}
+
+.icon-fade-enter-active,
+.icon-fade-leave-active {
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.icon-fade-enter,
+.icon-fade-leave-to {
+    opacity: 0;
+    transform: scale(0.75) rotate(-8deg);
+}
+
+.title_bar_icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--title-icon_color, rgba(255, 255, 255, 0.85));
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+    transition: background 0.2s ease;
+}
+
+.title_bar_icon-btn:hover {
+    background: var(--button-highlight-one);
 }
 
 .app_title_sidebar_collapsed_mac{
