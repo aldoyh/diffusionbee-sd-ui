@@ -1,0 +1,53 @@
+# AppVeyor Windows build — alternative while GitHub Actions is unavailable.
+# Enable at: https://ci.appveyor.com/projects/new (sign in with GitHub, select this repo)
+
+image: Visual Studio 2022
+
+cache:
+  - electron_app\.bundled-models -> scripts\bundle_default_models.js
+
+environment:
+  nodejs_version: "20"
+
+install:
+  - ps: Install-Product node $env:nodejs_version x64
+  - ps: |
+      npm install -g pnpm
+      python --version
+      python -m pip install --upgrade pip
+      python -m pip install pyinstaller
+  - ps: |
+      python -m pip install -r backends/stable_diffusion/requirements.txt
+
+build_script:
+  - ps: |
+      # Build Windows backend executable
+      Set-Location backends/stable_diffusion
+      pyinstaller diffusionbee_backend.spec
+      Set-Location ..\..
+  - ps: |
+      # Download Real-ESRGAN Windows release
+      Set-Location backends/stable_diffusion
+      $url = "https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan/releases/latest/download/realesrgan-ncnn-vulkan-windows.zip"
+      Invoke-WebRequest -Uri $url -OutFile realesrgan.zip
+      Expand-Archive -Path realesrgan.zip -DestinationPath realesrgan-release -Force
+      Set-Location ..\..
+  - ps: |
+      # Install Node dependencies
+      npm install
+      Set-Location electron_app
+      pnpm install
+      Set-Location ..
+  - ps: |
+      # Stage backend and bundle default model
+      npm run prepare:backend:win
+      npm run bundle:models -- --download
+  - ps: |
+      # Build NSIS installer
+      npm run build:win
+
+artifacts:
+  - path: electron_app\dist_electron\*.exe
+    name: windows-installer
+
+deploy: off

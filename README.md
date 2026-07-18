@@ -270,7 +270,16 @@ Push to `master` and the `.github/workflows/windows-build.yml` job will:
 5. Build the Vue frontend and produce an NSIS `.exe` installer.
 6. Upload the installer as a workflow artifact named `windows-installer`.
 
-### Option 2: Local Windows build
+### Option 2: AppVeyor (no Windows machine or GitHub billing needed)
+
+If GitHub Actions is unavailable, use the included `appveyor.yml`:
+
+1. Go to https://ci.appveyor.com/projects/new and sign in with GitHub.
+2. Select the `aldoyh/diffusionbee-sd-ui` repository.
+3. AppVeyor will automatically pick up `appveyor.yml` and build the NSIS installer on every push to `master`.
+4. Download the `.exe` from the build artifacts.
+
+### Option 3: Local Windows build
 
 On a Windows machine with Node.js 20+, Python 3.11, and PyInstaller installed:
 
@@ -284,7 +293,7 @@ node scripts/build-windows.js --no-models
 
 The resulting installer is written to `electron_app/dist_electron/*.exe`.
 
-### Option 3: Manual steps
+### Option 4: Manual steps
 
 ```bash
 # 1. Install backend dependencies
