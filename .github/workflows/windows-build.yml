@@ -25,9 +25,10 @@ jobs:
 
       - name: Download RealESRGAN Windows release
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          $url = "https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan/releases/latest/download/realesrgan-ncnn-vulkan-windows.zip"
-          Invoke-WebRequest -Uri $url -OutFile realesrgan.zip
+          gh release download --repo xinntao/Real-ESRGAN-ncnn-vulkan --pattern "*windows*" --output realesrgan.zip
           Expand-Archive -Path realesrgan.zip -DestinationPath realesrgan-release
 
       - name: Set up Node
