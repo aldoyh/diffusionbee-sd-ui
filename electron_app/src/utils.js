@@ -32,6 +32,10 @@ function toFileUrl(path) {
     if (path.startsWith('file://') || path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:') || path.startsWith('blob:')) {
         return path;
     }
+    // Windows drive-letter absolute path, e.g. C:\Users\... or C:/Users/...
+    if (/^[a-zA-Z]:[\\/]/.test(path)) {
+        return 'file:///' + path.replace(/\\/g, '/');
+    }
     if (path.startsWith('/')) {
         return 'file://' + path;
     }
