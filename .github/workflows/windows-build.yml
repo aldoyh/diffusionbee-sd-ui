@@ -1,0 +1,59 @@
+name: Windows Build
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install backend Python dependencies
+        run: pip install -r backends/stable_diffusion/requirements.txt
+
+      - name: Build backend with PyInstaller
+        working-directory: backends/stable_diffusion
+        run: pyinstaller diffusionbee_backend.spec
+
+      - name: Download RealESRGAN Windows release
+        shell: pwsh
+        run: |
+          $url = "https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan/releases/latest/download/realesrgan-ncnn-vulkan-windows.zip"
+          Invoke-WebRequest -Uri $url -OutFile realesrgan.zip
+          Expand-Archive -Path realesrgan.zip -DestinationPath realesrgan-release
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Install electron_app dependencies
+        working-directory: electron_app
+        run: pnpm install
+
+      - name: Stage backend for packaging
+        run: npm run prepare:backend:win
+
+      - name: Build Windows installer
+        run: npm run build:win
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: electron_app/dist_electron/*.exe
+          if-no-files-found: error
