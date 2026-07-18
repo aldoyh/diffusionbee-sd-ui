@@ -93,11 +93,11 @@ module.exports = {
                 },
 
                 "win": {
-                    "icon" : "build/Icon-1024.png" , 
+                    "icon" : "build/Icon.ico" ,
                     "target": {
                         "target": "NSIS",
                         "arch": [
-                            process.arch   
+                            process.env.BUILD_ARCH || process.arch || 'x64'
                         ]
                     }
                 }
