@@ -442,10 +442,12 @@ ipcMain.on('delete_file', (event, fpath) => {
 
 function run_realesrgan(input_path , cb ){
     const path = require('path');
-    let out_path = "/tmp/"+Math.random()+".png";
+    const os = require('os');
+    let out_path = path.join(os.tmpdir(), Math.random()+".png");
     const fs = require('fs');
-    let bin_path =  process.env.REALESRGAN_BIN || path.join(path.dirname(__dirname), 'core' , 'realesrgan_ncnn_macos' );
-    let weights_path = bin_path.replaceAll("realesrgan_ncnn_macos" , "models") + "/";
+    let default_bin_name = process.platform === 'win32' ? 'realesrgan_ncnn_windows.exe' : 'realesrgan_ncnn_macos';
+    let bin_path =  process.env.REALESRGAN_BIN || path.join(path.dirname(__dirname), 'core' , default_bin_name );
+    let weights_path = path.join(path.dirname(bin_path), 'models');
     let proc = require('child_process').spawn( bin_path  , ['-m' , weights_path , '-i' , input_path , '-o' , out_path ]);
 
     console.log([bin_path , '-m' , weights_path , '-i' , input_path , '-o' , out_path ])
