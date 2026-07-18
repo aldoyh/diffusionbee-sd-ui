@@ -190,3 +190,4 @@ Temporary Items
 pretrained_weights/
 electron_app/
 .packaged-backend
+.superpowers/
