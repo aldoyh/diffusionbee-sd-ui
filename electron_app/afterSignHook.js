@@ -1,4 +1,4 @@
 module.exports = async function () {
-    console.log('DiffusionBee GUI afterSign hook');
+    console.log('Diffusion SD UI afterSign hook');
     // Add notarization logic here if needed
 };

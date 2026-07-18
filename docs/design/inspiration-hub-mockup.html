@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>DiffusionBee - Inspiration Hub</title>
+</head>
+<body class="bg-[#0a0a0a] text-white font-['Inter']">
+    <!-- Main Container -->
+    <div class="flex h-screen">
+        
+        <!-- Sidebar -->
+        <aside class="w-60 bg-[#141414] border-r border-[#262626] flex flex-col">
+            <!-- Logo -->
+            <div class="px-6 py-5 border-b border-[#262626]">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-[#3E7BFA] flex items-center justify-center text-sm font-semibold tracking-tight">DB</div>
+                    <span class="text-[15px] font-semibold tracking-tight">DiffusionBee</span>
+                </div>
+            </div>
+            
+            <!-- Navigation -->
+            <nav class="flex-1 px-3 py-4 space-y-1">
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[#1f1f1f] text-white text-[14px] font-medium">
+                    <i data-lucide="home" class="w-4 h-4" stroke-width="1.5"></i>
+                    Home
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#a3a3a3] hover:bg-[#1f1f1f] hover:text-white text-[14px] font-medium transition-colors">
+                    <i data-lucide="image" class="w-4 h-4" stroke-width="1.5"></i>
+                    Text to Image
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#a3a3a3] hover:bg-[#1f1f1f] hover:text-white text-[14px] font-medium transition-colors">
+                    <i data-lucide="upload" class="w-4 h-4" stroke-width="1.5"></i>
+                    Image to Image
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#a3a3a3] hover:bg-[#1f1f1f] hover:text-white text-[14px] font-medium transition-colors">
+                    <i data-lucide="brush" class="w-4 h-4" stroke-width="1.5"></i>
+                    Inpainting
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#a3a3a3] hover:bg-[#1f1f1f] hover:text-white text-[14px] font-medium transition-colors">
+                    <i data-lucide="layers" class="w-4 h-4" stroke-width="1.5"></i>
+                    Models
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#a3a3a3] hover:bg-[#1f1f1f] hover:text-white text-[14px] font-medium transition-colors">
+                    <i data-lucide="history" class="w-4 h-4" stroke-width="1.5"></i>
+                    History
+                </a>
+            </nav>
+            
+            <!-- Settings at bottom -->
+            <div class="px-3 py-4 border-t border-[#262626]">
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#a3a3a3] hover:bg-[#1f1f1f] hover:text-white text-[14px] font-medium transition-colors">
+                    <i data-lucide="settings" class="w-4 h-4" stroke-width="1.5"></i>
+                    Settings
+                </a>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Bar -->
+            <header class="h-14 border-b border-[#262626] flex items-center justify-between px-6">
+                <h1 class="text-[15px] font-semibold tracking-tight">What will you create today?</h1>
+                <div class="flex items-center gap-3">
+                    <button class="w-9 h-9 rounded-lg border border-[#262626] flex items-center justify-center text-[#a3a3a3] hover:text-white hover:border-[#404040] transition-colors">
+                        <i data-lucide="sun" class="w-4 h-4" stroke-width="1.5"></i>
+                    </button>
+                    <button class="w-9 h-9 rounded-lg border border-[#262626] flex items-center justify-center text-[#a3a3a3] hover:text-white hover:border-[#404040] transition-colors">
+                        <i data-lucide="bell" class="w-4 h-4" stroke-width="1.5"></i>
+                    </button>
+                </div>
+            </header>
+            
+            <!-- Content Area -->
+            <div class="flex-1 overflow-y-auto">
+                <div class="max-w-6xl mx-auto px-6 py-8">
+                    
+                    <!-- Onboarding Banner -->
+                    <div class="mb-8 rounded-xl border border-[#262626] bg-gradient-to-r from-[#1a1a1a] to-[#141414] p-6 flex items-center justify-between">
+                        <div>
+                            <p class="text-[12px] text-[#737373] font-medium mb-1">FIRST-TIME SETUP</p>
+                            <h2 class="text-[20px] font-semibold tracking-tight mb-1">Install one model to start generating</h2>
+                            <p class="text-[14px] text-[#a3a3a3]">We'll pick the best model for your machine and download it from Hugging Face.</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <button class="px-4 py-2.5 rounded-lg bg-[#3E7BFA] text-white text-[14px] font-medium hover:bg-[#2d6ae8] transition-colors">
+                                Set up automatically
+                            </button>
+                            <button class="px-4 py-2.5 rounded-lg border border-[#262626] text-[#a3a3a3] text-[14px] font-medium hover:text-white hover:border-[#404040] transition-colors">
+                                Choose manually
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Mode Switcher -->
+                    <div class="flex gap-3 mb-8">
+                        <button class="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border border-[#262626] bg-[#141414] hover:border-[#404040] transition-colors text-left">
+                            <div class="w-8 h-8 rounded-lg bg-[#1f1f1f] flex items-center justify-center">
+                                <i data-lucide="type" class="w-4 h-4 text-[#3E7BFA]" stroke-width="1.5"></i>
+                            </div>
+                            <div>
+                                <div class="text-[14px] font-medium">Text to Image</div>
+                                <div class="text-[12px] text-[#737373]">Generate from prompts</div>
+                            </div>
+                        </button>
+                        <button class="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border border-[#262626] bg-[#141414] hover:border-[#404040] transition-colors text-left">
+                            <div class="w-8 h-8 rounded-lg bg-[#1f1f1f] flex items-center justify-center">
+                                <i data-lucide="image-up" class="w-4 h-4 text-[#6c5ce7]" stroke-width="1.5"></i>
+                            </div>
+                            <div>
+                                <div class="text-[14px] font-medium">Image to Image</div>
+                                <div class="text-[12px] text-[#737373]">Transform existing images</div>
+                            </div>
+                        </button>
+                        <button class="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border border-[#262626] bg-[#141414] hover:border-[#404040] transition-colors text-left">
+                            <div class="w-8 h-8 rounded-lg bg-[#1f1f1f] flex items-center justify-center">
+                                <i data-lucide="wand-2" class="w-4 h-4 text-[#34c759]" stroke-width="1.5"></i>
+                            </div>
+                            <div>
+                                <div class="text-[14px] font-medium">Inpainting</div>
+                                <div class="text-[12px] text-[#737373]">Edit specific regions</div>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <!-- Prompt Input -->
+                    <div class="mb-8">
+                        <div class="rounded-xl border border-[#262626] bg-[#141414] p-4 focus-within:border-[#404040] transition-colors">
+                            <textarea 
+                                class="w-full bg-transparent text-[15px] text-white placeholder-[#525252] resize-none outline-none min-h-[60px]" 
+                                placeholder="Describe what you want to see..."></textarea>
+                            <div class="flex items-center justify-between mt-3 pt-3 border-t border-[#262626]">
+                                <div class="flex items-center gap-2">
+                                    <button class="w-8 h-8 rounded-lg border border-[#262626] flex items-center justify-center text-[#a3a3a3] hover:text-white hover:border-[#404040] transition-colors">
+                                        <i data-lucide="circle-slash" class="w-4 h-4" stroke-width="1.5"></i>
+                                    </button>
+                                    <button class="w-8 h-8 rounded-lg border border-[#262626] flex items-center justify-center text-[#a3a3a3] hover:text-white hover:border-[#404040] transition-colors">
+                                        <i data-lucide="shuffle" class="w-4 h-4" stroke-width="1.5"></i>
+                                    </button>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-[12px] text-[#737373]">0/75</span>
+                                    <button class="px-4 py-2 rounded-lg bg-[#3E7BFA] text-white text-[14px] font-medium hover:bg-[#2d6ae8] transition-colors flex items-center gap-2">
+                                        <i data-lucide="arrow-up" class="w-4 h-4" stroke-width="1.5"></i>
+                                        Generate
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Inspiration Samples -->
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-[16px] font-semibold tracking-tight">Inspiration samples</h3>
+                            <span class="px-2 py-1 rounded-full bg-[#1f1f1f] text-[12px] text-[#a3a3a3]">12</span>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            <div class="aspect-square rounded-xl overflow-hidden border border-[#262626] hover:border-[#404040] transition-colors cursor-pointer group relative">
+                                <img src="https://images.unsplash.com/photo-1635776062127-d379bfcba9f8?w=400&q=80" alt="Sample" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                                    <span class="text-[12px] text-white font-medium line-clamp-2">Ethereal forest spirit with glowing particles</span>
+                                </div>
+                            </div>
+                            <div class="aspect-square rounded-xl overflow-hidden border border-[#262626] hover:border-[#404040] transition-colors cursor-pointer group relative">
+                                <img src="https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=400&q=80" alt="Sample" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                                    <span class="text-[12px] text-white font-medium line-clamp-2">Cyberpunk cityscape with neon reflections</span>
+                                </div>
+                            </div>
+                            <div class="aspect-square rounded-xl overflow-hidden border border-[#262626] hover:border-[#404040] transition-colors cursor-pointer group relative">
+                                <img src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&q=80" alt="Sample" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                                    <span class="text-[12px] text-white font-medium line-clamp-2">Abstract fluid art with gold accents</span>
+                                </div>
+                            </div>
+                            <div class="aspect-square rounded-xl overflow-hidden border border-[#262626] hover:border-[#404040] transition-colors cursor-pointer group relative">
+                                <img src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&q=80" alt="Sample" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                                    <span class="text-[12px] text-white font-medium line-clamp-2">Surreal architecture with floating elements</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
