@@ -2,7 +2,7 @@
 
 
 
-let isMac = true;
+let isMac = process.platform === 'darwin';
 
 const menu_template = [
   // { role: 'appMenu' }
