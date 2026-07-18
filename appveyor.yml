@@ -1,5 +1,11 @@
 # AppVeyor Windows build — alternative while GitHub Actions is unavailable.
 # Enable at: https://ci.appveyor.com/projects/new (sign in with GitHub, select this repo)
+#
+# To publish to GitHub Releases automatically:
+# 1. Create a GitHub personal access token with `repo` scope.
+# 2. Encrypt it at https://ci.appveyor.com/tools/encrypt (while signed into your AppVeyor account).
+# 3. Replace REPLACE_WITH_ENCRYPTED_TOKEN below with the encrypted string.
+# 4. Push a tag like `v2.4.0-win`; AppVeyor will build the installer and attach it to the release.
 
 image: Visual Studio 2022
 
@@ -47,4 +53,12 @@ artifacts:
   - path: electron_app\dist_electron\*.exe
     name: windows-installer
 
-deploy: off
+deploy:
+  - provider: GitHub
+    auth_token:
+      secure: REPLACE_WITH_ENCRYPTED_TOKEN
+    artifact: windows-installer
+    draft: false
+    prerelease: false
+    on:
+      appveyor_repo_tag: true
