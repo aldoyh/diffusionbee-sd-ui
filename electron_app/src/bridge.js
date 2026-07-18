@@ -18,7 +18,12 @@ function start_bridge() {
 
     // Helper: if a .venv or venv dir exists next to a Python script, use its Python binary
     function resolvePythonBin(scriptDir) {
-        let venvCandidates = [
+        let isWin = process.platform === 'win32';
+        let venvCandidates = isWin ? [
+            path.join(scriptDir, 'venv311', 'Scripts', 'python.exe'),
+            path.join(scriptDir, 'venv', 'Scripts', 'python.exe'),
+            path.join(scriptDir, '.venv', 'Scripts', 'python.exe'),
+        ] : [
             path.join(scriptDir, 'venv311', 'bin', 'python3'),
             path.join(scriptDir, 'venv', 'bin', 'python3'),
             path.join(scriptDir, '.venv', 'bin', 'python3'),
@@ -29,13 +34,17 @@ function start_bridge() {
                 return candidate;
             }
         }
-        return 'python3'; // fallback to system python3
+        return isWin ? 'python' : 'python3'; // fallback to system interpreter
     }
 
     let bin_path = process.env.BIN_PATH;
     let core_root = path.join(path.dirname(__dirname), 'core');
-    let backend_path = path.join(core_root, 'diffusionbee_backend');
-    let backend_path_nested = path.join(core_root, 'stable_diffusion', 'diffusionbee_backend');
+    let isWin = process.platform === 'win32';
+    let backend_names = isWin ? ['diffusionbee_backend.exe', 'diffusionbee_backend'] : ['diffusionbee_backend'];
+    let backend_path = backend_names.map(n => path.join(core_root, n)).find(p => fs.existsSync(p))
+        || path.join(core_root, backend_names[0]);
+    let backend_path_nested = backend_names.map(n => path.join(core_root, 'stable_diffusion', n)).find(p => fs.existsSync(p))
+        || path.join(core_root, 'stable_diffusion', backend_names[0]);
     let backend_script_path = path.join(core_root, 'stable_diffusion', 'diffusionbee_backend.py');
     let dev_script_path = process.env.PY_SCRIPT
         || path.resolve(__dirname, '..', '..', 'backends', 'stable_diffusion', 'diffusionbee_backend.py');
