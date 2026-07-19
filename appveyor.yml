@@ -23,6 +23,8 @@ install:
       & $env:PYTHON_EXE -m pip install pyinstaller --no-warn-script-location 2>&1 | Out-String
   - ps: |
       $ErrorActionPreference = 'Continue'
+      # TensorFlow 2.10.0 predates NumPy 2.x; pin a compatible stack first.
+      & $env:PYTHON_EXE -m pip install "numpy<2" "scipy<1.14" --no-warn-script-location 2>&1 | Out-String
       & $env:PYTHON_EXE -m pip install -r backends/stable_diffusion/requirements.txt --no-warn-script-location 2>&1 | Out-String
 
 build_script:
