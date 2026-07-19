@@ -277,7 +277,10 @@ If GitHub Actions is unavailable, use the included `appveyor.yml`:
 1. Go to https://ci.appveyor.com/projects/new and sign in with GitHub.
 2. Select the `aldoyh/diffusionbee-sd-ui` repository.
 3. AppVeyor will automatically pick up `appveyor.yml` and build the NSIS installer on every push to `master`.
-4. Download the `.exe` from the build artifacts.
+4. Optional: encrypt a GitHub token in `appveyor.yml` (replace `REPLACE_WITH_ENCRYPTED_TOKEN`) so AppVeyer can attach the `.exe` directly to GitHub Releases when you push a tag like `v2.4.0-win`.
+5. Download the `.exe` from the build artifacts or the GitHub Release page.
+
+> The Windows installer ships with Stable Diffusion 1.5 bundled so the app is ready to generate immediately. After first launch, users are optionally asked if they want to download additional curated models (e.g. DreamShaper, CyberRealistic, Juggernaut XL, FLUX.2 Klein 4B).
 
 ### Option 3: Local Windows build
 

@@ -48,8 +48,8 @@
         <div v-if="show_model_setup" class="model-setup-overlay">
             <div class="model-setup-dialog">
                 <div class="model-setup-header">
-                    <h2>{{ app_state.isArabic ? 'مرحبًا بك في واجهة DiffusionBee!' : 'Welcome to DiffusionBee GUI!' }}</h2>
-                    <p>{{ app_state.isArabic ? 'دعنا نثبت نموذجًا حتى تتمكن من البدء في الإنشاء.' : "Let's get a model installed so you can start creating." }}</p>
+                    <h2>{{ setupHeaderTitle }}</h2>
+                    <p>{{ setupHeaderSubtitle }}</p>
                 </div>
 
                 <div v-if="!model_to_download && !is_downloading_model && !model_download_completed" class="model-setup-body">
@@ -86,6 +86,56 @@
                         <div class="success-checkmark">✓</div>
                         <h3>{{ app_state.isArabic ? 'النموذج جاهز!' : 'Model ready!' }}</h3>
                         <p>{{ app_state.isArabic ? 'أنت جاهز تمامًا لبدء توليد الصور.' : "You're all set to start generating images." }}</p>
+                        <button v-if="!show_optional_model_downloads && !optional_downloads_in_progress && !optional_downloads_completed" @click="offerOptionalDownloads" class="download-btn small" style="margin-top: 16px;">
+                            {{ app_state.isArabic ? 'تحميل نماذج إضافية (اختياري)' : 'Get more models (optional)' }}
+                        </button>
+                        <button v-if="!show_optional_model_downloads && !optional_downloads_in_progress && !optional_downloads_completed" @click="dismiss_model_setup" class="skip-btn" style="margin-top: 12px;">
+                            {{ app_state.isArabic ? 'ابدأ الآن' : 'Start creating' }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Optional additional model downloads -->
+                <div v-if="show_optional_model_downloads" class="model-setup-body optional-downloads-body">
+                    <h3>{{ app_state.isArabic ? 'نماذج إضافية اختيارية' : 'Optional additional models' }}</h3>
+                    <p class="optional-downloads-subtitle">
+                        {{ app_state.isArabic ? 'اختر النماذج التي تريد تنزيلها. يمكنك دائمًا تنزيلها لاحقًا من متجر النماذج.' : 'Choose models to download now. You can always get more later from the Model Store.' }}
+                    </p>
+
+                    <div v-if="!optional_models.length && !optional_download_error" class="model-setup-loading" style="margin: 20px 0;">
+                        <div class="loading-spinner"></div>
+                        <p>{{ app_state.isArabic ? 'جارٍ تحميل القائمة...' : 'Loading model list...' }}</p>
+                    </div>
+
+                    <div v-else class="optional-model-list">
+                        <label v-for="model in optional_models" :key="model.id" class="optional-model-item" :class="{ disabled: optional_downloads_in_progress }">
+                            <input type="checkbox" v-model="selected_optional_models[model.id]" :disabled="optional_downloads_in_progress">
+                            <div class="optional-model-info">
+                                <div class="optional-model-title">{{ model.title || model.id }}</div>
+                                <div class="optional-model-desc">{{ model.description || 'Image generation model' }}</div>
+                                <div class="optional-model-meta">{{ format_model_meta(model) }} · {{ formatBytes(model.size_bytes || 0) }}</div>
+                                <div v-if="optional_downloads_in_progress && optional_download_progress[model.id] !== undefined" class="optional-model-progress">
+                                    <div class="progress-bar-track" style="height: 4px; margin: 6px 0 4px;">
+                                        <div class="progress-bar-fill" :style="{ width: Math.min(optional_download_progress[model.id], 100) + '%' }"></div>
+                                    </div>
+                                    <span class="progress-text" style="font-size: 0.75rem;">{{ Math.round(optional_download_progress[model.id]) }}%</span>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div v-if="optional_download_error" class="error-text" style="margin: 12px 0;">⚠ {{ optional_download_error }}</div>
+
+                    <div class="btn-row" style="margin-top: 20px;">
+                        <button v-if="!optional_downloads_in_progress && !optional_downloads_completed" @click="startOptionalDownloads" :disabled="!hasSelectedOptionalModels" class="download-btn small">
+                            {{ app_state.isArabic ? 'تنزيل المحدد' : 'Download selected' }}
+                        </button>
+                        <button v-if="optional_downloads_completed" @click="dismiss_model_setup" class="download-btn small">
+                            {{ app_state.isArabic ? 'ابدأ الآن' : 'Start creating' }}
+                        </button>
+                        <button v-if="!optional_downloads_in_progress" @click="dismiss_model_setup" class="skip-btn">
+                            {{ app_state.isArabic ? (optional_downloads_completed ? 'لاحقًا' : 'تخطي') : (optional_downloads_completed ? 'Later' : 'Skip') }}
+                        </button>
                     </div>
                 </div>
 
@@ -210,10 +260,11 @@ export default
         // Seed bundled default models (Windows installer ships one so it's ready to generate).
         // Then check for models and automatically prompt download if none found.
         // Run immediately after scan and also re-attempt once the start screen finishes
+        let seededBundledModels = [];
         try {
-            let seeded = window.ipcRenderer.sendSync('seed_bundled_models');
-            if (seeded && seeded.length > 0) {
-                console.log('Seeded bundled models:', seeded);
+            seededBundledModels = window.ipcRenderer.sendSync('seed_bundled_models');
+            if (seededBundledModels && seededBundledModels.length > 0) {
+                console.log('Seeded bundled models:', seededBundledModels);
                 // Reload persisted model registry so the onboarding check sees them.
                 this.assets_manager.downloaded_assets = window.ipcRenderer.sendSync('load_data', 'downloaded_assets.json');
             }
@@ -223,6 +274,10 @@ export default
         this.check_and_prompt_model_download();
         this.modelSetupRetryTimer = setTimeout(() => {
             this.check_and_prompt_model_download();
+            // If a bundled model was seeded and we haven't offered optional downloads yet, show them now.
+            if (seededBundledModels && seededBundledModels.length > 0 && !this.optionalDownloadsAlreadyOffered() && !this.show_model_setup) {
+                this.offerOptionalDownloads();
+            }
         }, 5000);
 
         let data = window.ipcRenderer.sendSync('load_data', 'app_data_2.json');
@@ -357,6 +412,21 @@ export default
             } catch(e) {
                 return '2.4.0';
             }
+        },
+        setupHeaderTitle() {
+            if (this.show_optional_model_downloads) {
+                return this.app_state.isArabic ? 'نماذج إضافية' : 'More models';
+            }
+            return this.app_state.isArabic ? 'مرحبًا بك في واجهة DiffusionBee!' : 'Welcome to DiffusionBee GUI!';
+        },
+        setupHeaderSubtitle() {
+            if (this.show_optional_model_downloads) {
+                return this.app_state.isArabic ? 'اختر نماذج إضافية لتنزيلها الآن أو تخطَّها.' : 'Choose extra models to download now, or skip them.';
+            }
+            return this.app_state.isArabic ? 'دعنا نثبت نموذجًا حتى تتمكن من البدء في الإنشاء.' : "Let's get a model installed so you can start creating.";
+        },
+        hasSelectedOptionalModels() {
+            return Object.values(this.selected_optional_models).some(Boolean);
         }
     },
 
@@ -444,10 +514,20 @@ export default
                 return;
             }
 
-            // Only run if there are no models available
             let existing = Object.keys(this.assets_manager.all_avail_assets);
-            if (existing.length > 0) {
-                console.log('Models already available (' + existing.length + '), skipping first-run setup.');
+            const onboardingCompleted = this.app_state.app_data.settings && this.app_state.app_data.settings.onboarding_completed;
+
+            // If models already exist and onboarding is complete, nothing to do.
+            if (existing.length > 0 && onboardingCompleted) {
+                console.log('Models already available (' + existing.length + ') and onboarding completed.');
+                return;
+            }
+
+            // If models exist but onboarding isn't complete yet (e.g. bundled model just seeded),
+            // offer optional additional downloads as a consent-based next step.
+            if (existing.length > 0 && !onboardingCompleted && !this.optionalDownloadsAlreadyOffered()) {
+                console.log('Models available from seeding — offering optional downloads.');
+                this.offerOptionalDownloads();
                 return;
             }
 
@@ -516,10 +596,7 @@ export default
                     clearInterval(this.modelDownloadInterval);
                     this.modelDownloadInterval = null;
 
-                    // Auto-dismiss after a short delay so the user sees the success state
-                    setTimeout(() => {
-                        this.show_model_setup = false;
-                    }, 2000);
+                    // Success state remains visible so the user can optionally download more models.
                 } else if (dl.status === 'error') {
                     this.is_downloading_model = false;
                     this.model_download_error = dl.error || 'Download failed';
@@ -563,6 +640,8 @@ export default
             this.show_model_setup = false;
             this.model_download_error = '';
             this.completeOnboarding();
+            this.markOptionalDownloadsOffered();
+            this.stopOptionalDownloadPolling();
             if (this.modelDownloadInterval) {
                 clearInterval(this.modelDownloadInterval);
                 this.modelDownloadInterval = null;
@@ -571,6 +650,160 @@ export default
                 clearTimeout(this.modelSetupRetryTimer);
                 this.modelSetupRetryTimer = null;
             }
+        },
+
+        markOptionalDownloadsOffered() {
+            if (!this.app_state.app_data.settings) {
+                Vue.set(this.app_state.app_data, 'settings', {});
+            }
+            Vue.set(this.app_state.app_data.settings, 'optional_downloads_offered', true);
+        },
+
+        optionalDownloadsAlreadyOffered() {
+            return Boolean(this.app_state.app_data.settings && this.app_state.app_data.settings.optional_downloads_offered);
+        },
+
+        async offerOptionalDownloads() {
+            if (!this.assets_manager || !this.assets_manager.all_avail_assets) {
+                console.log('assets_manager not ready for optional downloads.');
+                return;
+            }
+
+            this.show_model_setup = true;
+            this.show_optional_model_downloads = true;
+            this.optional_downloads_completed = false;
+            this.optional_downloads_in_progress = false;
+            this.optional_download_error = '';
+            this.selected_optional_models = {};
+            this.optional_download_progress = {};
+
+            if (this.optional_models.length === 0) {
+                await this.fetchOptionalModels();
+            }
+        },
+
+        async fetchOptionalModels() {
+            try {
+                let user_id = window.ipcRenderer.sendSync('get_instance_id', '');
+                let models_url = 'https://models.diffusionbee.com/list_models?user_id=' + user_id;
+                let response = await fetch(models_url, { cache: 'no-store' });
+                let models = await response.json();
+
+                if (!models || models.length === 0) {
+                    this.optional_download_error = 'No models available from the server.';
+                    return;
+                }
+
+                const machineProfile = getMachineProfile();
+                const hfToken = getHfTokenSync();
+                const mergedModels = mergeFlux2IntoCatalog(models, hfToken);
+                const installedIds = new Set(Object.keys(this.assets_manager.all_avail_assets));
+
+                // Curated list: high-quality SD/SDXL models plus recommended FLUX.2 if the machine can handle it.
+                const candidateIds = [
+                    'DreamShaper_6_baked_vae',
+                    'CyberRealistic__v3.1',
+                    'Juggernaut_X',
+                    'FLUX.2-klein-4B',
+                ];
+
+                const candidateSet = new Set(candidateIds);
+                let candidates = mergedModels.filter((model) => {
+                    if (!model || !model.id || !model.url) return false;
+                    if (installedIds.has(model.id)) return false;
+                    if (candidateSet.has(model.id)) return true;
+                    return false;
+                });
+
+                // If curated list is empty, fall back to selectable onboarding models.
+                if (candidates.length === 0) {
+                    candidates = mergedModels.filter((model) =>
+                        model && model.id && model.url &&
+                        !installedIds.has(model.id) &&
+                        isSelectableOnboardingModel(model, { profile: machineProfile, hasHfToken: Boolean(hfToken) })
+                    );
+                }
+
+                // Sort by known quality/size heuristics and limit to avoid overwhelming the user.
+                const { sortStableDiffusionModelsBestFirst } = require('./utils/model_selection.js');
+                candidates = sortStableDiffusionModelsBestFirst(candidates, machineProfile).slice(0, 6);
+
+                this.optional_models = candidates;
+                // Pre-select the first non-FLUX model as a gentle default.
+                for (const model of candidates) {
+                    const isFlux = model.model_meta_data && model.model_meta_data.family === 'flux2';
+                    this.$set(this.selected_optional_models, model.id, !isFlux && candidates.indexOf(model) === 0);
+                }
+            } catch (e) {
+                console.error('Failed to fetch optional models:', e);
+                this.optional_download_error = 'Could not reach the model server. Check your internet connection.';
+            }
+        },
+
+        startOptionalDownloads() {
+            const selected = this.optional_models.filter((m) => this.selected_optional_models[m.id]);
+            if (selected.length === 0) return;
+
+            this.optional_downloads_in_progress = true;
+            this.optional_downloads_completed = false;
+            this.optional_download_error = '';
+            this.optional_download_progress = {};
+
+            for (const model of selected) {
+                this.$set(this.optional_download_progress, model.id, 0);
+                this.assets_manager.download_asset(model);
+            }
+
+            this.optionalDownloadInterval = setInterval(() => {
+                let allDone = true;
+                let anyError = false;
+
+                for (const model of selected) {
+                    const dl = this.assets_manager.downloading[model.id];
+                    if (!dl) {
+                        // If not in downloading and not in downloaded_assets, it's still pending.
+                        if (!this.assets_manager.downloaded_assets[model.id]) {
+                            allDone = false;
+                        }
+                        continue;
+                    }
+
+                    this.$set(this.optional_download_progress, model.id, dl.progress || 0);
+
+                    if (dl.status === 'downloading' || dl.status === 'not_downloaded') {
+                        allDone = false;
+                    } else if (dl.status === 'error') {
+                        anyError = true;
+                        allDone = false;
+                    }
+                }
+
+                if (anyError) {
+                    this.optional_download_error = 'One or more model downloads failed.';
+                }
+
+                if (allDone && !anyError) {
+                    this.optional_downloads_completed = true;
+                    this.optional_downloads_in_progress = false;
+                    this.stopOptionalDownloadPolling();
+                    this.markOptionalDownloadsOffered();
+                }
+            }, 300);
+        },
+
+        stopOptionalDownloadPolling() {
+            if (this.optionalDownloadInterval) {
+                clearInterval(this.optionalDownloadInterval);
+                this.optionalDownloadInterval = null;
+            }
+        },
+
+        formatBytes(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         },
 
         updateSplashProgress(status, progress) {
@@ -598,6 +831,9 @@ export default
         }
         if (this.start_screen_interval) {
             clearInterval(this.start_screen_interval);
+        }
+        if (this.optionalDownloadInterval) {
+            clearInterval(this.optionalDownloadInterval);
         }
     },
 
@@ -644,6 +880,16 @@ export default
             model_download_error: '',
             modelDownloadInterval: null,
             modelSetupRetryTimer: null,
+
+            // Optional additional model downloads after onboarding
+            show_optional_model_downloads: false,
+            optional_models: [],
+            selected_optional_models: {},
+            optional_downloads_in_progress: false,
+            optional_downloads_completed: false,
+            optional_download_progress: {},
+            optional_download_error: '',
+            optionalDownloadInterval: null,
         }
     },
 
@@ -898,6 +1144,98 @@ export default
     color: #ff453a;
     font-size: 0.85rem;
     margin-bottom: 12px;
+}
+
+/* Optional additional model downloads */
+.optional-downloads-body {
+    align-items: stretch;
+    width: 100%;
+}
+
+.optional-downloads-body h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #ffffff;
+}
+
+.optional-downloads-subtitle {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.optional-model-list {
+    width: 100%;
+    max-height: 260px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-right: 4px;
+}
+
+.optional-model-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.optional-model-item:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(62, 123, 250, 0.4);
+}
+
+.optional-model-item.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.optional-model-item input[type="checkbox"] {
+    margin-top: 3px;
+    width: 18px;
+    height: 18px;
+    accent-color: #3E7BFA;
+    cursor: pointer;
+}
+
+.optional-model-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.optional-model-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 3px;
+}
+
+.optional-model-desc {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.35;
+    margin-bottom: 4px;
+}
+
+.optional-model-meta {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.35);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.optional-model-progress {
+    margin-top: 6px;
 }
 
 #app {
