@@ -2,31 +2,32 @@
 # Enable at: https://ci.appveyor.com/projects/new (sign in with GitHub, select this repo)
 #
 # To publish to GitHub Releases automatically:
-# 1. Create a GitHub personal access token with `repo` scope.
-# 2. Encrypt it at https://ci.appveyor.com/tools/encrypt (while signed into your AppVeyor account).
-# 3. Replace REPLACE_WITH_ENCRYPTED_TOKEN below with the encrypted string.
-# 4. Push a tag like `v2.4.0-win`; AppVeyor will build the installer and attach it to the release.
+# 1. Create a GitHub personal access token with `repo` scope at https://github.com/settings/tokens/new
+# 2. In your AppVeyor project, go to Settings → Environment and add a variable:
+#      Name: GITHUB_TOKEN   Value: <your token>   ✓ tick "Encrypt value"
+# 3. Push a tag like `v2.4.0-win`; AppVeyor will build the installer and attach it to the release.
 
 image: Visual Studio 2022
 
 environment:
   nodejs_version: "20"
+  # Explicit Python 3.10 path — tensorflow==2.10.0 does not support Python 3.11+ on Windows.
+  PYTHON_EXE: C:\Python310-x64\python.exe
 
 install:
   - ps: Install-Product node $env:nodejs_version x64
   - ps: |
-      npm install -g pnpm
-      python --version
-      python -m pip install --upgrade pip
-      python -m pip install pyinstaller
+      & $env:PYTHON_EXE --version
+      & $env:PYTHON_EXE -m pip install --upgrade pip
+      & $env:PYTHON_EXE -m pip install pyinstaller
   - ps: |
-      python -m pip install -r backends/stable_diffusion/requirements.txt
+      & $env:PYTHON_EXE -m pip install -r backends/stable_diffusion/requirements.txt
 
 build_script:
   - ps: |
       # Build Windows backend executable
       Set-Location backends/stable_diffusion
-      pyinstaller diffusionbee_backend.spec
+      & $env:PYTHON_EXE -m PyInstaller diffusionbee_backend.spec
       Set-Location ..\..
   - ps: |
       # Download Real-ESRGAN Windows release
@@ -53,12 +54,18 @@ artifacts:
   - path: electron_app\dist_electron\*.exe
     name: windows-installer
 
-deploy:
-  - provider: GitHub
-    auth_token:
-      secure: REPLACE_WITH_ENCRYPTED_TOKEN
-    artifact: windows-installer
-    draft: false
-    prerelease: false
-    on:
-      appveyor_repo_tag: true
+on_success:
+  - ps: |
+      if ($env:APPVEYOR_REPO_TAG -eq "true" -and $env:GITHUB_TOKEN) {
+        $installer = Get-ChildItem -Path "electron_app\dist_electron" -Filter "*.exe" | Select-Object -First 1
+        if ($installer) {
+          Write-Host "Uploading $($installer.Name) to GitHub release $($env:APPVEYOR_REPO_TAG_NAME)"
+          $env:GH_TOKEN = $env:GITHUB_TOKEN
+          choco install gh --no-progress --yes
+          gh release upload "$env:APPVEYOR_REPO_TAG_NAME" "$($installer.FullName)" --repo "$env:APPVEYOR_REPO_NAME" --clobber
+        } else {
+          Write-Warning "No installer .exe found to upload."
+        }
+      } else {
+        Write-Host "Skipping GitHub release upload (no tag or no GITHUB_TOKEN)."
+      }
