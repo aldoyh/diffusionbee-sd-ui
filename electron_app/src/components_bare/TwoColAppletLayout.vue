@@ -48,30 +48,31 @@ export default {
   flex-wrap: wrap;
    justify-content: center;
    align-items: center;
-
 }
 
 .right_workpace{
     height: 100%;
     width: calc( 100% - 350px);
     overflow-y: auto;
+    background: var(--color-bg);
+    animation: fadeSlideUp 0.5s var(--ease-out-expo) forwards;
 }
 
 .left_controls{
     border-width: 0px;
     border-right-width: 1px;
     border-style: solid;
-    border-color: var( --thin-border-color);
+    border-color: var(--color-border);
     height: 100%;
-
+    background: var(--color-bg-elevated);
+    box-shadow: var(--shadow-sm);
+    z-index: 10;
 }
 
 .left_controls_inputs{
     max-height: calc( 100% - 50px );
     overflow-y: auto;
     width: 100%;
-
 }
-
 
 </style>

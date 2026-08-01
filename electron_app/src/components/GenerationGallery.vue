@@ -1,7 +1,7 @@
 <template>
     <div class="generation_gallery_div" :class="{ 'generation_gallery_div--compact': compact, 'generation_gallery_div--carousel': compact }" :id="div_id">
 
-        <div v-if="groups_with_non_zero_imgs.length == 0 " style="width:30% ; height: 30% ; margin-left:35%; top:50% ; transform: translateY(50%);">
+        <div v-if="groups_with_non_zero_imgs.length == 0 " class="gallery-empty" style="width:30% ; height: 30% ; margin-left:35%; top:50% ; transform: translateY(50%);">
             <!-- <img src="../assets/imgs/blank_illus4_dark.png" style="opacity:0.3; width: 100%; height: 100%;  object-fit: contain;">  -->
 
             <picture >

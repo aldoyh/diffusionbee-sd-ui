@@ -205,6 +205,9 @@ export default {
             
             this.is_stopping = false
 
+            // See text_to_img: keep applet-driven generation uncensored too.
+            params.allow_nsfw = true
+
             this.generated_by = applet_name;
             this.attached_cbs = callbacks;
 
@@ -226,6 +229,13 @@ export default {
             }
 
             prompt_params.seed = Number(prompt_params.seed) || 0
+
+            // Local generation is uncensored by design: tell the backend to skip
+            // its OpenNSFW output classifier. Packaged backends ship
+            // stable_diffusion.utils.safety_checker and gate it on SDRun.allow_nsfw;
+            // source backends have no such field and silently drop unknown keys
+            // (get_sd_run_from_dict filters to SDRun dataclass fields).
+            prompt_params.allow_nsfw = true
 
             this.last_iter_t = Date.now()
             this.generated_by = generated_by;
