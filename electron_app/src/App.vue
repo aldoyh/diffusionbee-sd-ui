@@ -89,8 +89,9 @@
                         <button v-if="!show_optional_model_downloads && !optional_downloads_in_progress && !optional_downloads_completed" @click="offerOptionalDownloads" class="download-btn small" style="margin-top: 16px;">
                             {{ app_state.isArabic ? 'تحميل نماذج إضافية (اختياري)' : 'Get more models (optional)' }}
                         </button>
-                        <button v-if="!show_optional_model_downloads && !optional_downloads_in_progress && !optional_downloads_completed" @click="dismiss_model_setup" class="skip-btn" style="margin-top: 12px;">
-                            {{ app_state.isArabic ? 'ابدأ الآن' : 'Start creating' }}
+                        <button v-if="!show_optional_model_downloads && !optional_downloads_in_progress && !optional_downloads_completed" @click="dismiss_model_setup" class="open-btn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            {{ app_state.isArabic ? 'فتح التطبيق' : 'OPEN App' }}
                         </button>
                     </div>
                 </div>
@@ -146,6 +147,12 @@
                         <button @click="dismiss_model_setup" class="skip-btn">{{ app_state.isArabic ? 'تخطي الآن' : 'Skip for now' }}</button>
                     </div>
                 </div>
+
+                <!-- Footer with attribution -->
+                <div class="model-setup-attribution">
+                    <p>Made in Bahrain by Hasan AlDoy</p>
+                </div>
+
             </div>
         </div>
 
@@ -274,10 +281,6 @@ export default
         this.check_and_prompt_model_download();
         this.modelSetupRetryTimer = setTimeout(() => {
             this.check_and_prompt_model_download();
-            // If a bundled model was seeded and we haven't offered optional downloads yet, show them now.
-            if (seededBundledModels && seededBundledModels.length > 0 && !this.optionalDownloadsAlreadyOffered() && !this.show_model_setup) {
-                this.offerOptionalDownloads();
-            }
         }, 5000);
 
         let data = window.ipcRenderer.sendSync('load_data', 'app_data_2.json');
@@ -423,7 +426,7 @@ export default
             if (this.show_optional_model_downloads) {
                 return this.app_state.isArabic ? 'اختر نماذج إضافية لتنزيلها الآن أو تخطَّها.' : 'Choose extra models to download now, or skip them.';
             }
-            return this.app_state.isArabic ? 'دعنا نثبت نموذجًا حتى تتمكن من البدء في الإنشاء.' : "Let's get a model installed so you can start creating.";
+            return this.app_state.isArabic ? 'انقر مرة واحدة وسنحمّل أفضل نموذج لجهازك — دون أي خطوات إضافية.' : "One click and we'll download the best model for your machine — no setup needed.";
         },
         hasSelectedOptionalModels() {
             return Object.values(this.selected_optional_models).some(Boolean);
@@ -517,17 +520,13 @@ export default
             let existing = Object.keys(this.assets_manager.all_avail_assets);
             const onboardingCompleted = this.app_state.app_data.settings && this.app_state.app_data.settings.onboarding_completed;
 
-            // If models already exist and onboarding is complete, nothing to do.
-            if (existing.length > 0 && onboardingCompleted) {
-                console.log('Models already available (' + existing.length + ') and onboarding completed.');
-                return;
-            }
-
-            // If models exist but onboarding isn't complete yet (e.g. bundled model just seeded),
-            // offer optional additional downloads as a consent-based next step.
-            if (existing.length > 0 && !onboardingCompleted && !this.optionalDownloadsAlreadyOffered()) {
-                console.log('Models available from seeding — offering optional downloads.');
-                this.offerOptionalDownloads();
+            // If models already exist: silently complete onboarding, validate compatibility, skip downloads.
+            if (existing.length > 0) {
+                console.log('Models already available (' + existing.length + ') — completing onboarding, verifying compatibility.');
+                if (!onboardingCompleted) {
+                    this.completeOnboarding();
+                }
+                this.verifyModelsHardwareCompatibility();
                 return;
             }
 
@@ -798,6 +797,136 @@ export default
             }
         },
 
+        verifyModelsHardwareCompatibility() {
+            try {
+                const machineProfile = getMachineProfile();
+                const assets = this.assets_manager.all_avail_assets || {};
+                const modelIds = Object.keys(assets);
+
+                const hwLabel = `${machineProfile.platform} ${machineProfile.arch}` +
+                    (machineProfile.isAppleSilicon ? ' (Apple Silicon)' : '');
+
+                console.log('');
+                console.log('═'.repeat(50));
+                console.log('  Hardware & Model Compatibility Report');
+                console.log('═'.repeat(50));
+                console.log(`  Host:         ${hwLabel}`);
+                console.log(`  Total RAM:    ${machineProfile.totalMemGB.toFixed(1)} GB`);
+                console.log(`  Models found: ${modelIds.length}`);
+                console.log('');
+
+                if (modelIds.length === 0) {
+                    console.log('  No models registered. Onboarding will be required.');
+                    console.log('═'.repeat(50));
+                    return;
+                }
+
+                const compatibleModels = [];
+                const incompatibleModels = [];
+                let fsAvailable = false;
+                try {
+                    require('fs');
+                    fsAvailable = true;
+                } catch (_) { /* ignore */ }
+
+                for (const id of modelIds) {
+                    const asset = assets[id];
+                    const meta = (asset && asset.model_meta_data) || {};
+                    const path = (asset && asset.asset_path) || '';
+
+                    // Check file exists on disk
+                    let existsOnDisk = false;
+                    let fileSize = 'unknown';
+                    if (fsAvailable) {
+                        try {
+                            const fs = require('fs');
+                            existsOnDisk = fs.existsSync(path);
+                            if (existsOnDisk) {
+                                fileSize = this.formatBytes(fs.statSync(path).size);
+                            }
+                        } catch (_) { /* ignore */ }
+                    }
+
+                    const sdType = (meta.sd_type || 'unknown').toLowerCase();
+                    const floatType = (meta.float_type || 'unknown').toLowerCase();
+
+                    // Assess compatibility based on hardware
+                    let compatible = true;
+                    let notes = [];
+
+                    // FLUX models need significant RAM
+                    if (sdType.startsWith('flux2') || sdType.startsWith('flux')) {
+                        if (machineProfile.totalMemGB < 16) {
+                            compatible = false;
+                            notes.push('FLUX requires ≥16GB RAM');
+                        } else if (sdType.includes('dev') && machineProfile.totalMemGB < 28) {
+                            compatible = false;
+                            notes.push('FLUX.2-dev requires ≥28GB RAM');
+                        } else {
+                            notes.push('Great on Apple Silicon (MPS)');
+                        }
+                    }
+
+                    // SDXL models: need more RAM
+                    if (sdType.includes('sdxl')) {
+                        if (machineProfile.totalMemGB < 12) {
+                            compatible = false;
+                            notes.push('SDXL needs ≥12GB RAM');
+                        } else {
+                            notes.push('SDXL compatible');
+                        }
+                    }
+
+                    // SD 1.x models: broadly compatible
+                    if (sdType.includes('sd_1x') || sdType === 'sd_1x') {
+                        notes.push('Lightweight, broadly compatible');
+                    }
+
+                    // Float precision notes
+                    if (floatType === 'float32' && machineProfile.isAppleSilicon) {
+                        notes.push('float32 — consider float16 for better Apple Silicon perf');
+                    } else if (floatType === 'float16' && machineProfile.isAppleSilicon) {
+                        notes.push('Optimal float16 for Apple Silicon');
+                    } else if (floatType === 'bfloat16' && machineProfile.isAppleSilicon) {
+                        notes.push('bfloat16 — good Apple Silicon support');
+                    }
+
+                    if (!existsOnDisk) {
+                        compatible = false;
+                        notes.unshift('⚠️ File missing from disk');
+                    }
+
+                    const mark = compatible ? '✅' : '⚠️';
+                    console.log(`  ${mark} ${id}`);
+                    console.log(`      Type: ${meta.sd_type || 'unknown'}  |  Precision: ${meta.float_type || 'unknown'}  |  Size: ${fileSize}`);
+                    if (notes.length > 0) {
+                        console.log(`      ${notes.join(' | ')}`);
+                    }
+
+                    if (compatible) {
+                        compatibleModels.push(id);
+                    } else {
+                        incompatibleModels.push(id);
+                    }
+                }
+
+                console.log('');
+                const label = `${machineProfile.platform} ${machineProfile.arch} (${machineProfile.totalMemGB.toFixed(0)} GB)`;
+                if (incompatibleModels.length === 0) {
+                    console.log(`  ✅ All ${compatibleModels.length} model(s) compatible with ${label}.`);
+                } else {
+                    console.log(`  ⚠️  ${incompatibleModels.length} model(s) may have compatibility issues on ${label}:`);
+                    for (const id of incompatibleModels) {
+                        console.log(`      - ${id}`);
+                    }
+                }
+                console.log('═'.repeat(50));
+                console.log('');
+            } catch (e) {
+                console.warn('Could not verify model hardware compatibility:', e);
+            }
+        },
+
         formatBytes(bytes) {
             if (!bytes || bytes === 0) return '0 B';
             const k = 1024;
@@ -921,12 +1050,14 @@ export default
 }
 
 .model-setup-dialog {
-    background: #1c1c1e;
+    background: rgba(28, 28, 30, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-radius: 20px;
     padding: 40px;
     max-width: 460px;
     width: 90%;
-    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08) inset;
     border: 1px solid rgba(255,255,255,0.08);
     animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     color: #ffffff;
@@ -973,9 +1104,10 @@ export default
     width: 36px;
     height: 36px;
     border: 3px solid rgba(255,255,255,0.1);
-    border-top-color: #3E7BFA;
+    border-top-color: hsl(258 90% 65%);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+    box-shadow: 0 0 15px hsl(258 90% 65% / 0.5);
 }
 
 @keyframes spin {
@@ -1010,7 +1142,7 @@ export default
 }
 
 .download-btn {
-    background: #3E7BFA;
+    background: var(--brand-gradient);
     color: #ffffff;
     border: none;
     border-radius: 14px;
@@ -1021,14 +1153,13 @@ export default
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 8px 24px rgba(62, 123, 250, 0.3);
 }
 
 .download-btn:hover {
-    background: #2d6ae8;
     transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(62, 123, 250, 0.4);
+    box-shadow: 0 12px 32px var(--brand-glow);
 }
 
 .download-btn.small {
@@ -1059,7 +1190,9 @@ export default
 
 .progress-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #3E7BFA, #6c5ce7);
+    background: var(--brand-gradient);
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
     border-radius: 10px;
     transition: width 0.3s ease;
 }
@@ -1259,5 +1392,74 @@ body {
 
 [dir="rtl"] {
     text-align: right;
+}
+
+/* Footer attribution for model setup dialog */
+.model-setup-attribution {
+    text-align: center;
+    padding: 16px 0 4px;
+    border-top: 1px solid var(--color-border, #262626);
+    margin-top: 8px;
+}
+
+.model-setup-attribution p {
+    font-size: 12px;
+    color: var(--color-text-tertiary, #737373);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    margin: 0;
+}
+
+.model-setup-attribution:hover p {
+    color: var(--color-text-secondary, #a3a3a3);
+}
+
+/* Improved Open button for welcome screen */
+.open-btn {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border-radius: 14px;
+    padding: 16px 40px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    width: 100%;
+}
+
+.open-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 36px rgba(62, 123, 250, 0.5), 0 4px 12px rgba(0, 0, 0, 0.2);
+    filter: brightness(1.08);
+}
+
+.open-btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(62, 123, 250, 0.4);
+}
+
+.open-btn svg {
+    transition: transform 0.3s ease;
+}
+
+.open-btn:hover svg {
+    transform: scale(1.15) rotate(90deg);
+}
+
+/* RTL adjustments */
+[dir="rtl"] .model-setup-attribution p {
+    font-family: 'Tajawal', sans-serif;
+}
+
+[dir="rtl"] .open-btn {
+    flex-direction: row-reverse;
 }
 </style>

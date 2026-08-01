@@ -9,11 +9,11 @@
                 <div class="onboarding-banner-copy">
                     <p class="onboarding-banner-kicker">{{ app.app_state.isArabic ? 'الإعداد الأولي' : 'First-time setup' }}</p>
                     <h2 class="onboarding-banner-title">{{ app.app_state.isArabic ? 'لنثبت نموذجًا واحدًا لتبدأ التوليد' : 'Install one model to start generating' }}</h2>
-                    <p class="onboarding-banner-desc">{{ app.app_state.isArabic ? 'سنختار أفضل نموذج لجهازك — بما في ذلك FLUX.2 Klein عند توفره — ونحمّله من Hugging Face بعد موافقتك.' : 'We will pick the best model for your machine — including FLUX.2 Klein when available — and download it from Hugging Face after you confirm.' }}</p>
+                    <p class="onboarding-banner-desc">{{ app.app_state.isArabic ? 'سنختار أفضل نموذج لجهازك — بما في ذلك FLUX.2 Klein عند توفره — ونحمّله من Hugging Face بنقرة واحدة.' : 'We will pick the best model for your machine — including FLUX.2 Klein when available — and download it from Hugging Face in one click.' }}</p>
                 </div>
                 <div class="onboarding-banner-actions">
-                    <button type="button" class="onboarding-primary-btn" @click="startOnboarding">
-                        {{ app.app_state.isArabic ? 'إعداد تلقائي' : 'Set up automatically' }}
+                    <button type="button" class="onboarding-primary-btn" @click="downloadDefaultModel">
+                        {{ app.app_state.isArabic ? 'تحميل النموذج الافتراضي' : 'Download default model' }}
                     </button>
                     <button type="button" class="onboarding-secondary-btn" @click="openPage('ModelStore')">
                         {{ app.app_state.isArabic ? 'اختيار يدوي' : 'Choose manually' }}
@@ -228,8 +228,8 @@
                 </div>
                 <div class="quick-model-picker quick-model-picker--empty" v-else>
                     <span class="quick-controls-label">{{ app.app_state.isArabic ? 'النموذج' : 'Model' }}</span>
-                    <button type="button" class="onboarding-primary-btn onboarding-primary-btn--compact" @click="startOnboarding">
-                        {{ app.app_state.isArabic ? 'تثبيت نموذج' : 'Install a model' }}
+                    <button type="button" class="onboarding-primary-btn onboarding-primary-btn--compact" @click="downloadDefaultModel">
+                        {{ app.app_state.isArabic ? 'تحميل النموذج الافتراضي' : 'Download default model' }}
                     </button>
                 </div>
 
@@ -1103,9 +1103,21 @@ const Home = {
             if (!model || !model.model_meta_data || !model.model_meta_data.sd_type) return '';
             return ' (' + model.model_meta_data.sd_type + ')';
         },
-        startOnboarding() {
-            if (this.app && this.app.launchOnboarding) {
+        async downloadDefaultModel() {
+            if (!this.app || !this.app.launchOnboarding || !this.app.start_model_download) return;
+            // Pick the best default model for this machine (fetches the catalog on demand).
+            if (!this.app.model_to_download) {
+                await this.app.fetch_models_list();
+            }
+            if (!this.app.model_to_download) {
+                // Catalog unavailable (e.g. offline) — open the dialog so the user can retry.
                 this.app.launchOnboarding(true);
+                return;
+            }
+            // One click: open the setup dialog (shows live progress) and start downloading.
+            this.app.launchOnboarding(true);
+            if (this.app.show_model_setup) {
+                this.app.start_model_download();
             }
         },
         all_icons(category){

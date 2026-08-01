@@ -6,7 +6,12 @@ const path = require('path');
 const bundledDir = path.join(__dirname, '..', '..', '.bundled-models');
 const manifestPath = path.join(bundledDir, 'manifest.json');
 
-assert.ok(fs.existsSync(manifestPath), `Manifest must exist at ${manifestPath}`);
+// Bundling is OPT-IN (npm run bundle:models). CI installers are model-free, so skip
+// gracefully when no models were staged instead of failing the test run.
+if (!fs.existsSync(manifestPath)) {
+    console.log('bundled_models.test.js: SKIPPED — no .bundled-models/ staged (bundling is opt-in; CI builds are model-free)');
+    process.exit(0);
+}
 
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 assert.ok(Array.isArray(manifest.models), 'Manifest must contain a models array');

@@ -14,10 +14,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          # tensorflow==2.10.0 ships no cp311 wheels; match the AppVeyor build on Python 3.10.
+          python-version: '3.10'
 
       - name: Install backend Python dependencies
-        run: pip install -r backends/stable_diffusion/requirements.txt
+        run: |
+          pip install "numpy<2" "scipy<1.14" pyinstaller==5.13.2
+          pip install -r backends/stable_diffusion/requirements.txt
 
       - name: Build backend with PyInstaller
         working-directory: backends/stable_diffusion
@@ -35,17 +38,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Cache bundled default model
-        id: cache-model
-        uses: actions/cache@v4
-        with:
-          path: electron_app/.bundled-models
-          key: bundled-model-default-sd15-${{ hashFiles('scripts/bundle_default_models.js') }}
-
-      - name: Bundle default generation model
-        if: steps.cache-model.outputs.cache-hit != 'true'
-        run: npm run bundle:models -- --download
 
       - name: Install pnpm
         run: npm install -g pnpm

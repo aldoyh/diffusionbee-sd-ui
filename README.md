@@ -266,9 +266,11 @@ Push to `master` and the `.github/workflows/windows-build.yml` job will:
 1. Set up Python 3.11 and install backend dependencies.
 2. Build `diffusionbee_backend.exe` with PyInstaller.
 3. Download the Real-ESRGAN Windows binary.
-4. Bundle the default Stable Diffusion 1.5 model (so the app is ready to generate).
-5. Build the Vue frontend and produce an NSIS `.exe` installer.
-6. Upload the installer as a workflow artifact named `windows-installer`.
+4. Build the Vue frontend and produce an NSIS `.exe` installer.
+5. Upload the installer as a workflow artifact named `windows-installer`.
+
+The installer is **model-free** — no model weights are downloaded or embedded during the build.
+On first launch the app downloads a default model automatically (see below).
 
 ### Option 2: AppVeyor (no Windows machine or GitHub billing needed)
 
@@ -280,21 +282,28 @@ If GitHub Actions is unavailable, use the included `appveyor.yml`:
 4. Optional: encrypt a GitHub token in `appveyor.yml` (replace `REPLACE_WITH_ENCRYPTED_TOKEN`) so AppVeyer can attach the `.exe` directly to GitHub Releases when you push a tag like `v2.4.0-win`.
 5. Download the `.exe` from the build artifacts or the GitHub Release page.
 
-> The Windows installer ships with Stable Diffusion 1.5 bundled so the app is ready to generate immediately. After first launch, users are optionally asked if they want to download additional curated models (e.g. DreamShaper, CyberRealistic, Juggernaut XL, FLUX.2 Klein 4B).
+> The Windows installer is **model-free**: it ships without any model weights, keeping the
+> download small and the build fast. On first run the app's Home screen shows a one-click
+> **“Download default model”** button (it picks the best model for the machine, including
+> FLUX.2 Klein when available, and downloads it straight from Hugging Face). After that,
+> users can optionally add curated models (e.g. DreamShaper, CyberRealistic, Juggernaut XL,
+> FLUX.2 Klein 4B) from the Model Store.
 
 ### Option 3: Local Windows build
 
 On a Windows machine with Node.js 20+, Python 3.11, and PyInstaller installed:
 
 ```bash
-# Full pipeline (downloads the default model if not cached)
 node scripts/build-windows.js
-
-# Skip bundling the default model for a smaller installer
-node scripts/build-windows.js --no-models
 ```
 
-The resulting installer is written to `electron_app/dist_electron/*.exe`.
+The pipeline builds a **model-free** installer (no model download/embedding — the app
+downloads models on first run). The resulting installer is written to
+`electron_app/dist_electron/*.exe`.
+
+> Bundling a model into the installer is still possible for a self-contained build, but it
+> is opt-in only: `npm run bundle:models -- --download` stages the default SD 1.5 model, and
+> `electron_app/vue.config.js` embeds it when `electron_app/.bundled-models/` exists.
 
 ### Option 4: Manual steps
 
@@ -312,10 +321,7 @@ pyinstaller diffusionbee_backend.spec
 cd ../..
 npm run prepare:backend:win
 
-# 5. Bundle default model
-npm run bundle:models -- --download
-
-# 6. Build installer
+# 5. Build installer (model-free; app downloads models on first run)
 npm run build:win
 ```
 

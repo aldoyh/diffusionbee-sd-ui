@@ -8,10 +8,12 @@
  *   3. Build backend executable with PyInstaller.
  *   4. Download Real-ESRGAN Windows release.
  *   5. Stage backend for electron-builder.
- *   6. Bundle default SD 1.5 model (ready to generate).
- *   7. Build Vue frontend and NSIS installer.
+ *   6. Build Vue frontend and NSIS installer.
  *
- * Usage: node scripts/build-windows.js [--no-models]
+ * The installer is MODEL-FREE: no image-generation model is downloaded or embedded.
+ * The app downloads models on first run on the user's machine.
+ *
+ * Usage: node scripts/build-windows.js
  */
 
 const fs = require('fs');
@@ -21,8 +23,6 @@ const { spawn } = require('child_process');
 const ROOT = path.resolve(__dirname, '..');
 const BACKEND_DIR = path.join(ROOT, 'backends', 'stable_diffusion');
 const REALESRGAN_RELEASE_DIR = path.join(BACKEND_DIR, 'realesrgan-release');
-
-const args = { noModels: process.argv.slice(2).includes('--no-models') };
 
 function run(cmd, args, options = {}) {
     return new Promise((resolve, reject) => {
@@ -66,9 +66,13 @@ async function downloadRealEsrgan() {
         return;
     }
     if (process.platform === 'win32') {
+        // The asset name is versioned (realesrgan-ncnn-vulkan-v0.2.0-windows.zip), so the
+        // `releases/latest/download/<name>` URL 404s unless the name is exact. Resolve the
+        // current Windows asset through the GitHub API instead of hardcoding it.
+        const releaseUrl = 'https://api.github.com/repos/xinntao/Real-ESRGAN-ncnn-vulkan/releases/latest';
         await run('powershell', [
             '-Command',
-            `Invoke-WebRequest -Uri 'https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan/releases/latest/download/realesrgan-ncnn-vulkan-windows.zip' -OutFile '${zipPath}'; Expand-Archive -Path '${zipPath}' -DestinationPath '${REALESRGAN_RELEASE_DIR}' -Force`,
+            `[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $release = Invoke-RestMethod -Uri '${releaseUrl}' -Headers @{ 'User-Agent' = 'diffusionbee-build' }; $asset = $release.assets | Where-Object { $_.name -like '*windows*.zip' } | Select-Object -First 1; if (-not $asset) { throw 'No Windows Real-ESRGAN asset found' }; Invoke-WebRequest -Uri $asset.browser_download_url -OutFile '${zipPath}'; Expand-Archive -Path '${zipPath}' -DestinationPath '${REALESRGAN_RELEASE_DIR}' -Force`,
         ]);
     } else {
         console.log('[build-windows] Non-Windows host: skipping Real-ESRGAN binary download.');
@@ -83,15 +87,6 @@ async function stageBackend() {
         '--source', 'backends/stable_diffusion/dist/diffusionbee_backend',
         ...realesrganArg.split(' ').filter(Boolean),
     ]);
-}
-
-async function bundleModels() {
-    if (args.noModels) {
-        console.log('[build-windows] Skipping model bundling (--no-models).');
-        return;
-    }
-    console.log('[build-windows] Bundling default generation model...');
-    await run('node', ['scripts/bundle_default_models.js', '--download']);
 }
 
 async function buildInstaller() {
@@ -115,7 +110,6 @@ async function main() {
         await buildBackend();
         await downloadRealEsrgan();
         await stageBackend();
-        await bundleModels();
         await buildInstaller();
         console.log('\n[build-windows] Build completed successfully.');
     } catch (err) {

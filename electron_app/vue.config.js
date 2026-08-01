@@ -1,9 +1,40 @@
 let build_config = {};
+const fs = require('fs');
+const path = require('path');
 try {
     build_config = require('./build_config.json');
     console.log(build_config + "\n\n\n\n\n")
 } catch (err) {
     build_config = {}
+}
+
+// Bundled models are OPT-IN: electron-builder errors if an extraResources `from` path is
+// missing, so only embed .bundled-models/ when a developer staged it (npm run bundle:models).
+// CI installers are model-free — the app downloads models on first run.
+const bundledModelsExist = fs.existsSync(path.resolve(__dirname, '.bundled-models'));
+
+// electron-builder rejects unknown/null entries, so build the array conditionally.
+const extraResources = [
+    {
+        "from": process.env.BACKEND_BUILD_PATH || "../electron_app/.packaged-backend",
+        "to": "core",
+        "filter": [
+            "**/*",
+            "!**/venv/**",
+            "!**/venv311/**",
+            "!**/.venv/**",
+            "!**/__pycache__/**",
+            "!**/*.pyc",
+            "!**/.DS_Store"
+        ]
+    },
+];
+if (bundledModelsExist) {
+    extraResources.push({
+        "from": "../electron_app/.bundled-models",
+        "to": "bundled_models",
+        "filter": ["**/*"]
+    });
 }
 
 
@@ -60,26 +91,7 @@ module.exports = {
                 artifactName: "diffusion-sd-ui"+(build_config.build_name||"")+"-${version}.${ext}",
 
                 afterSign: "./afterSignHook.js",
-                "extraResources": [
-                    {
-                        "from": process.env.BACKEND_BUILD_PATH || "../electron_app/.packaged-backend",
-                        "to": "core",
-                        "filter": [
-                            "**/*",
-                            "!**/venv/**",
-                            "!**/venv311/**",
-                            "!**/.venv/**",
-                            "!**/__pycache__/**",
-                            "!**/*.pyc",
-                            "!**/.DS_Store"
-                        ]
-                    },
-                    {
-                        "from": "../electron_app/.bundled-models",
-                        "to": "bundled_models",
-                        "filter": ["**/*"]
-                    }
-                ], // access via path.join(path.dirname(__dirname), 'core' );
+                "extraResources": extraResources, // access via path.join(path.dirname(__dirname), 'core' );
 
                 "mac": {
                     "icon" : "build/Icon-1024.png" , 

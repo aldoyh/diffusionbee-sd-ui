@@ -14,45 +14,99 @@ environment:
   # Explicit Python 3.10 path — tensorflow==2.10.0 does not support Python 3.11+ on Windows.
   PYTHON_EXE: C:\Python310-x64\python.exe
 
+# Installers are built MODEL-FREE: no model is downloaded or embedded during the build.
+# The app downloads models on first run on the user's machine (see the in-app setup dialog).
+# These caches are small and shave real time off repeated builds.
+cache:
+  - '%LOCALAPPDATA%\pip\Cache -> backends\stable_diffusion\requirements.txt'
+  - '%LOCALAPPDATA%\electron\Cache -> electron_app\package.json'
+  - '%LOCALAPPDATA%\electron-builder\Cache -> electron_app\package.json'
+
 install:
+  # AppVeyor's VS2022 image ships PowerShell 5.1, which does NOT throw on a non-zero
+  # native exit code, and only treats stderr as a terminating error when $ErrorActionPreference
+  # is 'Stop'. We therefore redirect stderr to stdout (stringified, so it can't throw) and
+  # check $LASTEXITCODE explicitly. A failing step now stops the build immediately with a
+  # clear message instead of limping on and producing cascading confusion.
   - ps: Install-Product node $env:nodejs_version x64
+  - ps: npm install -g pnpm
+
   - ps: |
-      $ErrorActionPreference = 'Continue'
+      $ErrorActionPreference = 'Stop'
+      function Invoke-Native([string]$exe, [string[]]$argsList) {
+          & $exe @argsList 2>&1 | Out-String
+          if ($LASTEXITCODE -ne 0) { throw "Command failed (exit $LASTEXITCODE): $exe $($argsList -join ' ')" }
+      }
       & $env:PYTHON_EXE --version
-      & $env:PYTHON_EXE -m pip install --upgrade pip --no-warn-script-location 2>&1 | Out-String
-      & $env:PYTHON_EXE -m pip install pyinstaller --no-warn-script-location 2>&1 | Out-String
-  - ps: |
-      $ErrorActionPreference = 'Continue'
-      # TensorFlow 2.10.0 predates NumPy 2.x; pin a compatible stack first.
-      & $env:PYTHON_EXE -m pip install "numpy<2" "scipy<1.14" --no-warn-script-location 2>&1 | Out-String
-      & $env:PYTHON_EXE -m pip install -r backends/stable_diffusion/requirements.txt --no-warn-script-location 2>&1 | Out-String
+      Invoke-Native $env:PYTHON_EXE @('-m', 'pip', 'install', '--upgrade', 'pip', '--no-warn-script-location')
+      # TensorFlow 2.10.0 predates NumPy 2.x and is incompatible with PyInstaller 6.x;
+      # pin the whole stack so pip can't resolve newer broken versions.
+      Invoke-Native $env:PYTHON_EXE @('-m', 'pip', 'install', 'numpy<2', 'scipy<1.14', 'pyinstaller==5.13.2', '--no-warn-script-location')
+      Invoke-Native $env:PYTHON_EXE @('-m', 'pip', 'install', '-r', 'backends/stable_diffusion/requirements.txt', '--no-warn-script-location')
 
 build_script:
+  # 1) Backend executable (PyInstaller).
   - ps: |
-      $ErrorActionPreference = 'Continue'
-      Set-Location backends/stable_diffusion
-      & $env:PYTHON_EXE -m PyInstaller diffusionbee_backend.spec 2>&1 | Out-String
-      Set-Location ..\..
+      $ErrorActionPreference = 'Stop'
+      function Invoke-Native([string]$exe, [string[]]$argsList) {
+          & $exe @argsList 2>&1 | Out-String
+          if ($LASTEXITCODE -ne 0) { throw "Command failed (exit $LASTEXITCODE): $exe $($argsList -join ' ')" }
+      }
+      Push-Location backends/stable_diffusion
+      try {
+          Invoke-Native $env:PYTHON_EXE @('-m', 'PyInstaller', 'diffusionbee_backend.spec')
+      } finally { Pop-Location }
+      if (-not (Test-Path 'backends/stable_diffusion/dist/diffusionbee_backend/diffusionbee_backend.exe')) {
+          throw 'PyInstaller did not produce backends/stable_diffusion/dist/diffusionbee_backend/diffusionbee_backend.exe'
+      }
+
+  # 2) Real-ESRGAN Windows binary. The asset name is versioned (e.g.
+  #    realesrgan-ncnn-vulkan-v0.2.0-windows.zip), so hardcoding it breaks whenever the
+  #    upstream project bumps a release. Resolve the current asset via the GitHub API instead.
+  #    Extracted to the repo ROOT as `realesrgan-release` — that is exactly the relative path
+  #    `npm run prepare:backend:win` passes to the staging script.
   - ps: |
-      $ErrorActionPreference = 'Continue'
-      Set-Location backends/stable_diffusion
-      $url = "https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan/releases/latest/download/realesrgan-ncnn-vulkan-windows.zip"
-      Invoke-WebRequest -Uri $url -OutFile realesrgan.zip
-      Expand-Archive -Path realesrgan.zip -DestinationPath realesrgan-release -Force
-      Set-Location ..\..
+      $ErrorActionPreference = 'Stop'
+      # PS 5.1 can default to older TLS; force TLS 1.2 for the GitHub API call.
+      [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+      $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/xinntao/Real-ESRGAN-ncnn-vulkan/releases/latest' -Headers @{ 'User-Agent' = 'diffusionbee-ci' }
+      $asset = $release.assets | Where-Object { $_.name -like '*windows*.zip' } | Select-Object -First 1
+      if (-not $asset) { throw 'No Windows Real-ESRGAN asset found in the latest release' }
+      Write-Host "Downloading Real-ESRGAN: $($asset.name)"
+      Invoke-WebRequest -Uri $asset.browser_download_url -OutFile 'realesrgan.zip'
+      Expand-Archive -Path 'realesrgan.zip' -DestinationPath 'realesrgan-release' -Force
+      if (-not (Test-Path 'realesrgan-release')) { throw 'Real-ESRGAN extraction failed' }
+      Write-Host 'Real-ESRGAN ready at realesrgan-release'
+
+  # 3) Frontend dependencies. `npm install` at the root installs root deps (cross-env) and
+  #    then runs the root "install" script, which does `cd electron_app && pnpm install` —
+  #    so pnpm must be on PATH first (done in the install phase above).
   - ps: |
-      $ErrorActionPreference = 'Continue'
-      npm install
-      Set-Location electron_app
-      pnpm install
-      Set-Location ..
+      $ErrorActionPreference = 'Stop'
+      function Invoke-Native([string]$exe, [string[]]$argsList) {
+          & $exe @argsList 2>&1 | Out-String
+          if ($LASTEXITCODE -ne 0) { throw "Command failed (exit $LASTEXITCODE): $exe $($argsList -join ' ')" }
+      }
+      Invoke-Native 'npm' @('install')
+
+  # 4) Stage backend (with Real-ESRGAN). The installer is model-free — the app downloads
+  #    models on first run on the user's Windows machine.
   - ps: |
-      $ErrorActionPreference = 'Continue'
-      npm run prepare:backend:win
-      npm run bundle:models -- --download
+      $ErrorActionPreference = 'Stop'
+      function Invoke-Native([string]$exe, [string[]]$argsList) {
+          & $exe @argsList 2>&1 | Out-String
+          if ($LASTEXITCODE -ne 0) { throw "Command failed (exit $LASTEXITCODE): $exe $($argsList -join ' ')" }
+      }
+      Invoke-Native 'npm' @('run', 'prepare:backend:win')
+
+  # 5) NSIS installer. (build:win re-runs prepare:backend:win internally; that is idempotent.)
   - ps: |
-      $ErrorActionPreference = 'Continue'
-      npm run build:win
+      $ErrorActionPreference = 'Stop'
+      function Invoke-Native([string]$exe, [string[]]$argsList) {
+          & $exe @argsList 2>&1 | Out-String
+          if ($LASTEXITCODE -ne 0) { throw "Command failed (exit $LASTEXITCODE): $exe $($argsList -join ' ')" }
+      }
+      Invoke-Native 'npm' @('run', 'build:win')
 
 artifacts:
   - path: electron_app\dist_electron\*.exe
@@ -60,17 +114,18 @@ artifacts:
 
 on_success:
   - ps: |
-      $ErrorActionPreference = 'Continue'
-      if ($env:APPVEYOR_REPO_TAG -eq "true" -and $env:GITHUB_TOKEN) {
-        $installer = Get-ChildItem -Path "electron_app\dist_electron" -Filter "*.exe" | Select-Object -First 1
-        if ($installer) {
-          Write-Host "Uploading $($installer.Name) to GitHub release $($env:APPVEYOR_REPO_TAG_NAME)"
-          $env:GH_TOKEN = $env:GITHUB_TOKEN
-          choco install gh --no-progress --yes 2>&1 | Out-String
-          gh release upload "$env:APPVEYOR_REPO_TAG_NAME" "$($installer.FullName)" --repo "$env:APPVEYOR_REPO_NAME" --clobber 2>&1 | Out-String
-        } else {
-          Write-Warning "No installer .exe found to upload."
-        }
-      } else {
-        Write-Host "Skipping GitHub release upload (no tag or no GITHUB_TOKEN)."
+      # Release upload is best-effort: never fail the build because of it.
+      try {
+          if ($env:APPVEYOR_REPO_TAG -eq 'true' -and $env:GITHUB_TOKEN) {
+              $installer = Get-ChildItem -Path 'electron_app\dist_electron' -Filter '*.exe' | Select-Object -First 1
+              if (-not $installer) { throw 'No installer .exe found to upload.' }
+              Write-Host "Uploading $($installer.Name) to GitHub release $env:APPVEYOR_REPO_TAG_NAME"
+              $env:GH_TOKEN = $env:GITHUB_TOKEN
+              choco install gh --no-progress --yes 2>&1 | Out-String
+              gh release upload "$env:APPVEYOR_REPO_TAG_NAME" "$($installer.FullName)" --repo "$env:APPVEYOR_REPO_NAME" --clobber 2>&1 | Out-String
+          } else {
+              Write-Host 'Skipping GitHub release upload (no tag or no GITHUB_TOKEN).'
+          }
+      } catch {
+          Write-Warning "GitHub release upload failed: $_"
       }
