@@ -85,9 +85,15 @@ export default {
         isIndeterminate() {
             return this.progress < 0;
         },
+        progressPercent() {
+            const val = typeof this.progress === 'number' && !Number.isNaN(this.progress)
+                ? this.progress
+                : 0;
+            return Math.min(Math.max(val, 0), 100);
+        },
         progressStyle() {
             if (this.progress >= 0) {
-                return { width: Math.min(Math.max(this.progress, 0), 100) + '%' };
+                return { width: this.progressPercent + '%' };
             }
             return {}; // CSS animation handles indeterminate width
         },

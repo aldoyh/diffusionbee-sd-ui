@@ -24,23 +24,31 @@ cache:
 
 install:
   # AppVeyor's VS2022 image ships PowerShell 5.1, which does NOT throw on a non-zero
-  # native exit code, and only treats stderr as a terminating error when $ErrorActionPreference
-  # is 'Stop'. We therefore redirect stderr to stdout (stringified, so it can't throw) and
-  # check $LASTEXITCODE explicitly. A failing step now stops the build immediately with a
-  # clear message instead of limping on and producing cascading confusion.
+  # native exit code. IMPORTANT: never redirect native stderr with `2>&1` here — with
+  # $ErrorActionPreference='Stop' that turns the FIRST stderr line into a terminating
+  # error and aborts the step (this is exactly what killed the build at PyInstaller,
+  # whose INFO logs are written to stderr). Invoke-Native runs the command unredirected
+  # and checks $LASTEXITCODE explicitly, so a failing step still stops the build with a
+  # clear message instead of limping on.
   - ps: Install-Product node $env:nodejs_version x64
   - ps: npm install -g pnpm
 
   - ps: |
       $ErrorActionPreference = 'Stop'
       function Invoke-Native([string]$exe, [string[]]$argsList) {
-          & $exe @argsList 2>&1 | Out-String
+          # PS 5.1: `2>&1` turns native stderr lines into error records; with
+          # $ErrorActionPreference='Stop' the first stderr line aborts the step. Do NOT
+          # redirect — native stderr flows to the console and $LASTEXITCODE is the check.
+          & $exe @argsList
           if ($LASTEXITCODE -ne 0) { throw "Command failed (exit $LASTEXITCODE): $exe $($argsList -join ' ')" }
       }
       & $env:PYTHON_EXE --version
       Invoke-Native $env:PYTHON_EXE @('-m', 'pip', 'install', '--upgrade', 'pip', '--no-warn-script-location')
-      # TensorFlow 2.10.0 predates NumPy 2.x and is incompatible with PyInstaller 6.x;
-      # pin the whole stack so pip can't resolve newer broken versions.
+      # TensorFlow 2.10.0 predates NumPy 2.x and is incompatible with PyInstaller 6.x.
+      # Pin here for a fast first install; the SAME pins also live in requirements.txt
+      # (numpy<2, scipy<1.14, pyinstaller==5.13.2) so the `-r` install below cannot
+      # silently re-resolve numpy to 2.x — the previous run installed numpy 2.2.6 over
+      # this pin, which would crash the packaged backend at import time.
       Invoke-Native $env:PYTHON_EXE @('-m', 'pip', 'install', 'numpy<2', 'scipy<1.14', 'pyinstaller==5.13.2', '--no-warn-script-location')
       Invoke-Native $env:PYTHON_EXE @('-m', 'pip', 'install', '-r', 'backends/stable_diffusion/requirements.txt', '--no-warn-script-location')
 
@@ -49,7 +57,10 @@ build_script:
   - ps: |
       $ErrorActionPreference = 'Stop'
       function Invoke-Native([string]$exe, [string[]]$argsList) {
-          & $exe @argsList 2>&1 | Out-String
+          # PS 5.1: `2>&1` turns native stderr lines into error records; with
+          # $ErrorActionPreference='Stop' the first stderr line aborts the step. Do NOT
+          # redirect — native stderr flows to the console and $LASTEXITCODE is the check.
+          & $exe @argsList
           if ($LASTEXITCODE -ne 0) { throw "Command failed (exit $LASTEXITCODE): $exe $($argsList -join ' ')" }
       }
       Push-Location backends/stable_diffusion
@@ -84,7 +95,10 @@ build_script:
   - ps: |
       $ErrorActionPreference = 'Stop'
       function Invoke-Native([string]$exe, [string[]]$argsList) {
-          & $exe @argsList 2>&1 | Out-String
+          # PS 5.1: `2>&1` turns native stderr lines into error records; with
+          # $ErrorActionPreference='Stop' the first stderr line aborts the step. Do NOT
+          # redirect — native stderr flows to the console and $LASTEXITCODE is the check.
+          & $exe @argsList
           if ($LASTEXITCODE -ne 0) { throw "Command failed (exit $LASTEXITCODE): $exe $($argsList -join ' ')" }
       }
       Invoke-Native 'npm' @('install')
@@ -94,7 +108,10 @@ build_script:
   - ps: |
       $ErrorActionPreference = 'Stop'
       function Invoke-Native([string]$exe, [string[]]$argsList) {
-          & $exe @argsList 2>&1 | Out-String
+          # PS 5.1: `2>&1` turns native stderr lines into error records; with
+          # $ErrorActionPreference='Stop' the first stderr line aborts the step. Do NOT
+          # redirect — native stderr flows to the console and $LASTEXITCODE is the check.
+          & $exe @argsList
           if ($LASTEXITCODE -ne 0) { throw "Command failed (exit $LASTEXITCODE): $exe $($argsList -join ' ')" }
       }
       Invoke-Native 'npm' @('run', 'prepare:backend:win')
@@ -103,7 +120,10 @@ build_script:
   - ps: |
       $ErrorActionPreference = 'Stop'
       function Invoke-Native([string]$exe, [string[]]$argsList) {
-          & $exe @argsList 2>&1 | Out-String
+          # PS 5.1: `2>&1` turns native stderr lines into error records; with
+          # $ErrorActionPreference='Stop' the first stderr line aborts the step. Do NOT
+          # redirect — native stderr flows to the console and $LASTEXITCODE is the check.
+          & $exe @argsList
           if ($LASTEXITCODE -ne 0) { throw "Command failed (exit $LASTEXITCODE): $exe $($argsList -join ' ')" }
       }
       Invoke-Native 'npm' @('run', 'build:win')

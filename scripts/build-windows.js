@@ -50,6 +50,24 @@ async function validatePrerequisites() {
     console.log('[build-windows] Validating prerequisites...');
     if (!exists(path.join(BACKEND_DIR, 'diffusionbee_backend.py'))) {
         throw new Error('Backend script not found');
+    }
+    if (!exists(path.join(BACKEND_DIR, 'diffusionbee_backend.spec'))) {
+        throw new Error('PyInstaller spec not found');
+    }
+    if (!exists(path.join(ROOT, 'electron_app', 'build', 'Icon.ico'))) {
+        throw new Error('Windows icon not found');
+    }
+    console.log('[build-windows] Prerequisites OK.');
+}
+
+async function installBackendDependencies() {
+    console.log('[build-windows] Installing backend Python dependencies...');
+    // pyinstaller==5.13.2 is pinned because TensorFlow 2.10.0 is incompatible with
+    // PyInstaller 6.x. numpy<2 / scipy<1.14 pins live inside requirements.txt.
+    await run('python', ['-m', 'pip', 'install', '-r', 'requirements.txt'], { cwd: BACKEND_DIR });
+    await run('python', ['-m', 'pip', 'install', 'pyinstaller==5.13.2']);
+}
+
 async function buildBackend() {
     console.log('[build-windows] Building backend executable with PyInstaller...');
     await run('pyinstaller', ['diffusionbee_backend.spec'], { cwd: BACKEND_DIR });
@@ -119,19 +137,3 @@ async function main() {
 }
 
 main();
-
-    }
-    if (!exists(path.join(BACKEND_DIR, 'diffusionbee_backend.spec'))) {
-        throw new Error('PyInstaller spec not found');
-    }
-    if (!exists(path.join(ROOT, 'electron_app', 'build', 'Icon.ico'))) {
-        throw new Error('Windows icon not found');
-    }
-    console.log('[build-windows] Prerequisites OK.');
-}
-
-async function installBackendDependencies() {
-    console.log('[build-windows] Installing backend Python dependencies...');
-    await run('python', ['-m', 'pip', 'install', '-r', 'requirements.txt'], { cwd: BACKEND_DIR });
-    await run('python', ['-m', 'pip', 'install', 'pyinstaller']);
-}

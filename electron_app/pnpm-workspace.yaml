@@ -8,3 +8,11 @@ allowBuilds:
   fsevents: true
   ttf2woff2: true
   yorkie: true
+
+# Force electron-builder ecosystem to v26.8.1 — vue-cli-plugin-electron-builder@2.1.1
+# pulls electron-builder@22 which lacks emitArtifactBuildStarted needed by dmg-builder@26
+overrides:
+  app-builder-lib: 26.8.1
+  dmg-builder: 26.8.1
+  electron-builder: 26.8.1
+  electron-builder-squirrel-windows: 26.8.1

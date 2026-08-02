@@ -189,6 +189,17 @@ Temporary Items
 
 pretrained_weights/
 electron_app/
+# Un-ignore electron_app source code (electron_app/.gitignore handles build artifacts)
+!electron_app/src/
+!electron_app/src/**
+!electron_app/public/
+!electron_app/public/**
+!electron_app/package.json
+!electron_app/pnpm-lock.yaml
+!electron_app/pnpm-workspace.yaml
+!electron_app/vue.config.js
+!electron_app/babel.config.js
+!electron_app/.eslintrc.js
 .packaged-backend
 .superpowers/
 node_modules/

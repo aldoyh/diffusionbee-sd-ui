@@ -1,13 +1,18 @@
+# Windows CI: tensorflow==2.10.0 predates NumPy 2.x (import crashes) and is
+# incompatible with PyInstaller 6.x. These pins MUST live in this file — a separate
+# `pip install numpy<2` step does NOT constrain the `pip install -r` resolution,
+# which happily upgrades numpy to 2.x (see AppVeyor log: numpy 2.2.6 installed
+# over the 1.26.4 pin, which crashes the packaged backend at import time).
 tensorflow==2.10.0
-numpy
+numpy<2
 regex
 tqdm
 Pillow==9.4.0
-scipy
+scipy<1.14
 ftfy
 fickling
 requests
-pyinstaller 
+pyinstaller==5.13.2
 onnxruntime
 opencv-python
 safetensors
