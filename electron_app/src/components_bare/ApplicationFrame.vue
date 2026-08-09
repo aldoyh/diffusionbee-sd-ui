@@ -22,14 +22,17 @@
 
            <div v-for="sidebar_item in sidebar_items" :key="sidebar_item.id" class="sidebar_item "  :class="{ sidebar_item_selected : sidebar_item.id ===  selected_sidebar_item_id }" @click="sidebar_item_on_click(sidebar_item.id)"> 
 
-              <svg v-if="icon_library[sidebar_item.icon]" class="sidebar_icon" width="15px" height="15px"  style="height: 15px; width: 15px; margin-top:-3px; margin-right:3px;"  v-html="icon_library[sidebar_item.icon]"> </svg>
+              <svg v-if="icon_library[sidebar_item.icon]" class="sidebar_icon" width="15px" height="15px" style="height: 15px; width: 15px;" v-html="icon_library[sidebar_item.icon]"> </svg>
 
               <font-awesome-icon v-else class="sidebar_icon" :icon="sidebar_item.icon" />
 
                  {{sidebar_item.text}}
              </div>
 
-       
+            <div class="sidebar_footer" aria-hidden="false">
+                <span class="sidebar_footer_text sidebar_footer_text--en">Made with Love ❤️ in Bahrain 🇧🇭</span>
+                <span class="sidebar_footer_text sidebar_footer_text--ar">صُنع بحب ❤️ في البحرين 🇧🇭</span>
+            </div>
         </div>
 
         <div class="title_bar">
@@ -198,7 +201,23 @@ export default {
 
      --sidebar-width: 200px;
      --titlebar-height: 55px;
-    
+
+    /*
+     * Legacy app-shell aliases: several components (ApplicationFrame,
+     * GalleryImage, Settings, Homepage, ModelStore, Inpainting) reference
+     * these names but never defined them, so they silently resolved to
+     * nothing and the shell rendered with unstyled browser defaults
+     * (most visibly: invisible title-bar text in dark mode). Aliasing
+     * them to the real design-system tokens from theme.css fixes every
+     * call site at once.
+     */
+    --sidebar-color: var(--sidebar-bg, var(--color-bg-elevated));
+    --text-color-solid: var(--color-text-primary);
+    --thin-border-color: var(--color-border);
+    --button-highlight-one: var(--color-bg-hover);
+    --title-icon_color: var(--color-text-secondary);
+    --border-color-invert: var(--color-border);
+    --border-color-invert-extralight: var(--color-bg-hover);
 }
 
 
@@ -477,9 +496,12 @@ img {
 
 .title_bar_icons{
     float: right;
-    margin-right: 20px; 
+    margin-right: 20px;
     height: var(--titlebar-height);
-    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    /* no margin-top: the flex container fills the title bar so icons center */
 }
 
 
@@ -495,7 +517,6 @@ img {
 .app_title_sidebar_collapsed{
     float:left;
     height: var(--titlebar-height);
-    margin-top: 16px;
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -580,7 +601,9 @@ img {
 .app_title {
     float: left;
     padding-left: 22px;
-    padding-top: 20px;
+    height: var(--titlebar-height);
+    display: flex;
+    align-items: center;
 
     font-family: var(--main-font-text);
     font-style: normal;
@@ -590,7 +613,7 @@ img {
 
     letter-spacing: -0.08px;
 
-    color: #000000;
+    color: var(--text-color-solid, var(--color-text-primary));
 }
 
 
@@ -606,6 +629,8 @@ img {
     background-color: var(--sidebar-color);
  
     width: var(--sidebar-width) ;
+    padding-bottom: 44px; /* keep the last nav item clear of the footer */
+    overflow-y: auto;
 
     transition: width 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
@@ -656,12 +681,47 @@ img {
 }
 
 .sidebar_icon{
-    margin-right: 5px;
+    /* spacing is handled by the flex gap on .sidebar_item */
     color: #0A84FF;
 }
 
 .sidebar_item_selected{
      background: rgba(0, 0, 0, 0.1);
+}
+
+.sidebar_footer{
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px 15px 12px;
+    text-align: center;
+    border-top: 1px solid var(--thin-border-color, var(--color-border, rgba(0, 0, 0, 0.08)));
+}
+
+.sidebar_footer_text{
+    display: none;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--text-color-solid, var(--color-text-tertiary, #737373));
+    opacity: 0.75;
+}
+
+/* Default locale (no [dir] set yet, or explicitly ltr) shows English */
+.sidebar_footer_text--en{
+    display: inline-block;
+}
+
+:root[dir="rtl"] .sidebar_footer_text--en,
+html[dir="rtl"] .sidebar_footer_text--en{
+    display: none;
+}
+
+:root[dir="rtl"] .sidebar_footer_text--ar,
+html[dir="rtl"] .sidebar_footer_text--ar{
+    display: inline-block;
+    font-family: 'Tajawal', var(--font-family-arabic, sans-serif);
 }
 
 .sidebar_item:hover{

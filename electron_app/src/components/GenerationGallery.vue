@@ -25,7 +25,7 @@
 import GalleryPane from "../components_bare/GalleryPane.vue"
 import Vue from 'vue'
 import {image_manu_functions} from "./image_menu_functions.js"
-import {open_popup} from "../utils"
+import {open_popup, gallery_item_context} from "../utils"
 
 export default {
     name: 'GenerationGallery',
@@ -147,7 +147,9 @@ export default {
         },
 
         on_image_click(image_item_data){
-            open_popup('file://' + image_item_data.image_url)
+            // Preview inside the app (full-screen lightbox), with prev/next
+            // across the other images of the same generation group.
+            open_popup('file://' + image_item_data.image_url, undefined, gallery_item_context(image_item_data))
         },
 
         add_group(group){

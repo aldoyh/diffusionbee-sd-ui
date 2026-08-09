@@ -5,6 +5,23 @@ import { app, protocol, BrowserWindow, nativeTheme, Menu} from 'electron'
 import createProtocol from 'vue-cli-plugin-electron-builder/lib/createProtocol'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
+// Single-instance guarantee. Without this, relaunching the app while an old
+// window is still around (e.g. a session started before a reinstall, or a
+// zombie from a crash) silently focuses the OLD window — which may run stale
+// code (pre-fix splash trap, old overlays) while the user believes they're
+// looking at the current build. With the lock, the second launch focuses the
+// live window instead and exits itself.
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
+if (!gotSingleInstanceLock) {
+    app.quit()
+}
+app.on('second-instance', () => {
+    if (win) {
+        if (win.isMinimized()) win.restore()
+        win.focus()
+    }
+})
+
 import settings from 'electron-settings';
 
 

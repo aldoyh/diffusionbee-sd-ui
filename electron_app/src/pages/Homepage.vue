@@ -9,7 +9,7 @@
                 <div class="onboarding-banner-copy">
                     <p class="onboarding-banner-kicker">{{ app.app_state.isArabic ? 'الإعداد الأولي' : 'First-time setup' }}</p>
                     <h2 class="onboarding-banner-title">{{ app.app_state.isArabic ? 'لنثبت نموذجًا واحدًا لتبدأ التوليد' : 'Install one model to start generating' }}</h2>
-                    <p class="onboarding-banner-desc">{{ app.app_state.isArabic ? 'سنختار أفضل نموذج لجهازك — بما في ذلك FLUX.2 Klein عند توفره — ونحمّله من Hugging Face بنقرة واحدة.' : 'We will pick the best model for your machine — including FLUX.2 Klein when available — and download it from Hugging Face in one click.' }}</p>
+                    <p class="onboarding-banner-desc">{{ app.app_state.isArabic ? 'سنختار أفضل نموذج لجهازك ونحمّله بنقرة واحدة — بدون أي إعداد.' : 'We will pick the best model for your machine and download it in one click — no setup needed.' }}</p>
                 </div>
                 <div class="onboarding-banner-actions">
                     <button type="button" class="onboarding-primary-btn" @click="downloadDefaultModel">
@@ -137,12 +137,41 @@
                             </svg>
                         </button>
 
+                        <!-- JSON Mode Toggle -->
+                        <button type="button" @click="toggleJsonMode" class="chat-action-btn" :class="{ 'chat-action-btn--active': jsonMode }" :title="app.app_state.isArabic ? 'وضع JSON للموجهات المدعومة للدفعة' : 'JSON batch mode'">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="9" y1="9" x2="15" y2="15"/>
+                                <line x1="15" y1="9" x2="9" y2="15"/>
+                            </svg>
+                        </button>
+
                         <!-- Submit -->
                         <button type="button" @click="submitPrompt" class="chat-submit" :disabled="!promptText.trim()" :title="app.app_state.isArabic ? 'إرسال للتوليد' : 'Submit for generation'">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
                             </svg>
                         </button>
+
+                        <!-- Batch queue: snapshot the current request without generating -->
+                        <button type="button" @click="addToBatch" class="chat-action-btn" :disabled="!promptText.trim()" :title="app.app_state.isArabic ? 'أضف الطلب الحالي إلى قائمة الدفعة (بدون توليد)' : 'Add current request to batch queue (no generation yet)'">📋</button>
+                        <button v-if="batch_queue.length > 0" type="button" @click="runBatch" class="chat-action-btn chat-action-btn--run" :class="{ 'disabled-action': batchPendingCount === 0 }" :title="app.app_state.isArabic ? (batchHasActive ? 'جارٍ التنفيذ...' : 'نفّذ طلبات الدفعة بالتسلسل') : (batchHasActive ? 'Running...' : 'Execute the pending batch requests sequentially')">{{ batchHasActive ? '⏳' : '▶' }}{{ batchPendingCount }}</button>
+                        <button v-if="batch_queue.length > 0" type="button" @click="clearBatch" class="chat-action-btn" :title="app.app_state.isArabic ? 'مسح قائمة الدفعة' : 'Clear batch queue'">🗑</button>
+                    </div>
+                </div>
+
+                <!-- Batch queue list (requests collected without generating) -->
+                <div v-if="batch_queue.length > 0" class="home-batch-panel" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
+                    <div class="home-batch-head">
+                        <span class="home-batch-title">{{ app.app_state.isArabic ? 'قائمة الدفعة' : 'Batch queue' }}</span>
+                        <span class="home-batch-count">{{ batch_queue.length }} {{ app.app_state.isArabic ? 'طلب' : 'request(s)' }}</span>
+                    </div>
+                    <div v-for="(item, idx) in batch_queue" :key="item.id" class="home-batch-item">
+                        <span class="home-batch-index">{{ idx + 1 }}</span>
+                        <span class="home-batch-prompt" :title="item.prompt">{{ truncatePrompt(item.prompt, 70) }}</span>
+                        <span class="home-batch-meta">{{ item.img_width }}×{{ item.img_height }} · ×{{ item.num_imgs }}</span>
+                        <span class="home-batch-status" :class="'home-batch-status--' + (item.state || 'pending')">{{ stateLabel(item.state) }}</span>
+                        <button type="button" class="home-batch-remove" @click="removeFromBatch(item.id)" :disabled="item.state === 'queued' || item.state === 'running'" :title="app.app_state.isArabic ? 'إزالة من الدفعة' : 'Remove from batch'">✕</button>
                     </div>
                 </div>
 
@@ -211,19 +240,14 @@
                 </div>
 
                 <div class="quick-model-picker" v-if="availableModels.length > 0">
-                    <label class="quick-controls-label" for="home-model-select">{{ app.app_state.isArabic ? 'النموذج' : 'Model' }}</label>
-                    <div class="quick-model-picker-row">
-                        <select
-                            id="home-model-select"
-                            class="model-select"
+                    <label class="quick-controls-label" id="home-model-select-label">{{ app.app_state.isArabic ? 'النموذج' : 'Model' }}</label>
+                    <div class="quick-model-picker-row" role="group" aria-labelledby="home-model-select-label">
+                        <ModelSelector
+                            :models="availableModels"
                             v-model="selectedModelId"
+                            :is-arabic="app.app_state.isArabic"
                             @change="onModelSelectChange"
-                        >
-                            <option v-for="model in availableModels" :key="model.id" :value="model.id">
-                                {{ model.title || model.id }}{{ modelMetaSuffix(model) }}
-                            </option>
-                        </select>
-                        <span class="model-select-meta" v-if="selectedModelMetaLabel">{{ selectedModelMetaLabel }}</span>
+                        />
                     </div>
                 </div>
                 <div class="quick-model-picker quick-model-picker--empty" v-else>
@@ -382,14 +406,23 @@
 <script>
 import { getRandomPrompt, getInspireLines, rememberPrompt } from "../prompt_library.js"
 import GenerationGallery from "../components/GenerationGallery.vue"
+import ModelSelector from "../components/ModelSelector.vue"
 import { syncGalleryGroup } from "../generation_broadcast.js"
 import { preparePromptForSd, validatePromptLength, countClipContentTokens } from "../prompt_utils.js"
 import { toFileUrl } from "../utils.js"
+import { loadHomepageBatch, saveHomepageBatch } from "../batch_queue_store.js"
+import batchQueueMixin from "../batch_queue_mixin.js"
+import { saveUserPrompt, getUserPrompts } from "../prompt_library.js"
 const { getFallbackDefaultStableDiffusionAsset, sortStableDiffusionModelsBestFirst } = require("../utils/model_selection.js")
 const { isGeneratableModelType, isFlux2Model } = require("../utils/flux2_catalog.js")
 const { generatePromptWithOllama, normalizeGeneratedPrompt } = require("../utils/ollama_prompt_service.js")
 
 const PUBLIC_BASE = (typeof process !== 'undefined' && process.env && process.env.BASE_URL) || '/';
+
+// Maximum number of 700ms retries before giving up on auto-generating a
+// queued prompt (≈70s). Prevents an unbounded poll when the model download
+// can never complete.
+const PENDING_MAX_ATTEMPTS = 100;
 
 const WELCOME_ASSET_REQUIRES = {
     'welcome_anime_tokyo_alley.png': require('../assets/welcome/welcome_anime_tokyo_alley.png'),
@@ -470,13 +503,17 @@ const WELCOME_CAROUSEL_META = [
 const Home = {
     name: 'Home',
     props: {app:Object, },
-    components: { GenerationGallery },
+    mixins: [batchQueueMixin],
+    components: { GenerationGallery, ModelSelector },
     mounted() {
         this.loadRecentPrompts();
         this.startInspirationRotation();
         if (this.app.functions.subscribe_generation) {
             this.app.functions.subscribe_generation((group) => this.onGenerationComplete(group));
         }
+        // Restore any previously collected batch (survives app restarts).
+        this.batch_queue = loadHomepageBatch()
+        this.startBatchPolling()
         this.$nextTick(() => {
             this.autoSelectModel();
             this.scrollHomeToTop();
@@ -489,6 +526,7 @@ const Home = {
             clearInterval(this.inspirationInterval);
         }
         this.clearPendingGenerationTimer();
+        this.stopBatchPolling();
     },
     data() {
         return {
@@ -511,6 +549,8 @@ const Home = {
                 { name: "Sketch", nameArabic: "رسم يدوي", icon: "\u270F\uFE0F" },
                 { name: "Fantasy", nameArabic: "خيالي", icon: "\uD83D\uDC09" }
             ],
+            jsonMode: false,
+            jsonBatchInfo: { totalPrompts: 0, totalImages: 0, valid: false },
             promptModifiers: [
                 { label: 'Cinematic', labelArabic: 'سينمائي', value: ', cinematic lighting, dramatic composition' },
                 { label: 'Ultra Detailed', labelArabic: 'مفصل للغاية', value: ', ultra detailed, 8k, intricate details' },
@@ -535,6 +575,7 @@ const Home = {
             pendingPrompt: '',
             pendingGenerationReason: '',
             pendingGenerationTimer: null,
+            pendingGenerationAttempts: 0,
             activeHomeMode: 'create',
             selectedResolutionPresetId: 'square',
             selectedQualityPresetId: 'balanced',
@@ -625,9 +666,10 @@ const Home = {
                     id: 'detail',
                     label: 'Detailed',
                     labelArabic: 'تفصيلي',
-                    num_steps: 35,
+                    num_steps: 50,
                     guidance_scale: 8.5,
                     scheduler: 'karras',
+                    max_steps: 100,
                 },
             ],
             batchPresetOptions: [1, 2, 4],
@@ -713,7 +755,12 @@ const Home = {
             return sdType.includes('xl');
         },
         getSelectedQualityPreset() {
-            return this.qualityPresets.find((preset) => preset.id === this.selectedQualityPresetId) || this.qualityPresets[1];
+            const preset = this.qualityPresets.find((p) => p.id === this.selectedQualityPresetId) || this.qualityPresets[1];
+            // If 'detailed' is selected, use 85% of max_steps
+            if (preset.id === 'detail' && preset.max_steps) {
+                return { ...preset, num_steps: Math.round(preset.max_steps * 0.85) };
+            }
+            return preset;
         },
         getSelectedResolutionPreset() {
             return this.resolutionPresets.find((preset) => preset.id === this.selectedResolutionPresetId) || this.resolutionPresets[0];
@@ -802,7 +849,26 @@ const Home = {
             this.tryRunPendingPrompt();
 
             if (!this.pendingGenerationTimer) {
+                // Bound the retry loop: if the model download can never
+                // complete (server down, catalog reject, disk error) this
+                // must NOT poll forever. Give up after PENDING_MAX_ATTEMPTS
+                // (~70s) and surface a toast so the user can act.
+                this.pendingGenerationAttempts = 0;
                 this.pendingGenerationTimer = setInterval(() => {
+                    this.pendingGenerationAttempts += 1;
+                    if (this.pendingGenerationAttempts >= PENDING_MAX_ATTEMPTS) {
+                        this.clearPendingGenerationTimer();
+                        if (this.pendingPrompt) {
+                            const stuck = this.pendingPrompt;
+                            this.pendingPrompt = '';
+                            this.pendingGenerationReason = '';
+                            this.app.show_toast(this.app.app_state.isArabic
+                                ? 'تعذر تجهيز النموذج تلقائيًا. حاول من صفحة النماذج.'
+                                : 'Could not auto-download the model. Try the Models page.');
+                            console.warn('[home] Gave up auto-generating prompt after ' + PENDING_MAX_ATTEMPTS + ' attempts:', stuck);
+                        }
+                        return;
+                    }
                     this.tryRunPendingPrompt();
                 }, 700);
             }
@@ -1043,6 +1109,11 @@ const Home = {
             let prompt = this.promptText.trim();
             if (!prompt) return;
 
+            if (this.jsonMode) {
+                this.submitJsonBatch();
+                return;
+            }
+
             if (!this.ensureModelReadyForGeneration() || !this.isBackendReady() || !this.$refs.homeGallery) {
                 this.queuePromptForAutoGeneration(prompt, this.isBackendReady() ? 'model' : 'backend');
                 return;
@@ -1051,6 +1122,166 @@ const Home = {
             if (!this.generatePrompt(prompt)) {
                 this.queuePromptForAutoGeneration(prompt, 'retry');
             }
+        },
+
+        // --- JSON batch mode: the textarea holds a JSON array of prompts ---
+
+        toggleJsonMode() {
+            this.jsonMode = !this.jsonMode;
+            this.parseJsonBatch();
+        },
+        parseJsonBatch() {
+            let totalPrompts = 0;
+            let valid = false;
+            try {
+                const parsed = JSON.parse(this.promptText || '[]');
+                if (Array.isArray(parsed)) {
+                    const prompts = parsed.filter(p => typeof p === 'string' && String(p).trim().length > 0);
+                    totalPrompts = prompts.length;
+                    valid = totalPrompts > 0;
+                }
+            } catch (e) {
+                valid = false;
+            }
+            this.jsonBatchInfo = {
+                totalPrompts,
+                totalImages: totalPrompts,
+                valid,
+            };
+        },
+        submitJsonBatch() {
+            let prompts = [];
+            try {
+                const parsed = JSON.parse(this.promptText || '[]');
+                if (Array.isArray(parsed)) {
+                    prompts = parsed.map(p => String(p).trim()).filter(Boolean);
+                }
+            } catch (e) {
+                this.app.show_toast(this.app.app_state.isArabic
+                    ? 'صيغة JSON غير صالحة — أدخل مصفوفة من الموجهات النصية.'
+                    : 'Invalid JSON — enter an array of prompt strings.');
+                return;
+            }
+
+            if (prompts.length === 0) {
+                this.app.show_toast(this.app.app_state.isArabic
+                    ? 'لا توجد موجهات صالحة في JSON.'
+                    : 'No valid prompts in the JSON array.');
+                return;
+            }
+
+            if (!this.ensureModelReadyForGeneration() || !this.isBackendReady() || !this.$refs.homeGallery) {
+                // Do NOT queue the raw JSON text as a pending prompt — the
+                // auto-retry path would generate an image from the JSON string
+                // literal. Tell the user to retry once the model/backend is ready.
+                this.app.show_toast(this.app.app_state.isArabic
+                    ? 'النموذج أو المحرك غير جاهز بعد. حاول مرة أخرى بعد التجهيز.'
+                    : 'Model/backend not ready yet. Try again once it is.');
+                return;
+            }
+
+            this.promptText = '';
+            this.jsonMode = false;
+            for (const p of prompts) {
+                this.generatePrompt(p);
+            }
+            this.app.show_toast(this.app.app_state.isArabic
+                ? ('تمت إضافة ' + prompts.length + ' موجه إلى قائمة الانتظار.')
+                : (prompts.length + ' prompts queued for generation.'));
+        },
+
+        // --- Batch queue (collect requests without generating, then run sequentially) ---
+
+        addToBatch() {
+            if (this.is_batch_running) return;
+            const prompt = this.promptText.trim();
+            if (!prompt) {
+                this.app.show_toast(this.app.app_state.isArabic ? 'اكتب موجهًا أولاً.' : 'Write a prompt first.');
+                return;
+            }
+
+            const selectedAsset = this.getSelectedModelAsset();
+            if (isFlux2Model(selectedAsset)) {
+                this.app.show_toast(this.app.app_state.isArabic
+                    ? 'FLUX.2 لا يدعمه محرك التوليد الحالي. اختر نموذج SD.'
+                    : 'FLUX.2 is not supported by the current generation backend. Pick an SD model.');
+                return;
+            }
+
+            const modelPath = this.app.assets_manager.get_downloaded_asset_path(this.selectedModelId);
+            if (!modelPath) {
+                this.app.show_toast(this.app.app_state.isArabic
+                    ? 'حمّل النموذج أولاً قبل إضافة الطلب إلى الدفعة.'
+                    : 'Download the model first before adding to the batch.');
+                return;
+            }
+
+            const prepared = preparePromptForSd(prompt, this.app.app_state.isArabic);
+            const validation = validatePromptLength(prepared.prompt, this.app.app_state.isArabic);
+            if (!validation.valid) {
+                this.app.show_toast(validation.message);
+                return;
+            }
+
+            const quickOptions = this.buildQuickGenerationOptions();
+
+            const item = {
+                id: Math.random().toString(),
+                prompt: prompt,
+                preparedPrompt: prepared.prompt,
+                negative_prompt: this.negativePrompt || '',
+                model_id: this.selectedModelId,
+                model_tdict_path: modelPath,
+                img_width: quickOptions.img_width,
+                img_height: quickOptions.img_height,
+                num_imgs: quickOptions.num_imgs,
+                num_steps: quickOptions.num_steps,
+                guidance_scale: quickOptions.guidance_scale,
+                scheduler: quickOptions.scheduler,
+                applet_name: 'txt2img',
+                state: 'pending',
+                group_id: null,
+            };
+
+            this.batch_queue.push(item);
+
+            const n = this.batch_queue.length;
+            this.app.show_toast(this.app.app_state.isArabic
+                ? ('أُضيف إلى الدفعة (' + this.batchCountLabel(n) + '). اضغط "تشغيل الدفعة" لبدء التوليد بالتسلسل.')
+                : ('Added to batch (' + this.batchCountLabel(n) + '). Press "Run Batch" to generate sequentially.'));
+        },
+
+        // --- Batch mixin hooks (shared mechanics live in batch_queue_mixin.js) ---
+
+        submitBatchItem(item, groupId) {
+            const genOptions = {
+                model_tdict_path: item.model_tdict_path,
+                prompt: item.preparedPrompt,
+                negative_prompt: item.negative_prompt,
+                img_width: item.img_width,
+                img_height: item.img_height,
+                num_imgs: item.num_imgs,
+                seed: Math.floor(Math.random() * 1000000),
+                guidance_scale: item.guidance_scale,
+                num_steps: item.num_steps,
+                scheduler: item.scheduler,
+                applet_name: 'txt2img',
+            };
+            const rawFormOptions = {
+                prompt: item.prompt,
+                seed: genOptions.seed,
+                selected_sd_model: item.model_id,
+                num_imgs: item.num_imgs,
+            };
+            this.app.stable_diffusion_manager.add_job(genOptions, rawFormOptions, this.$refs.homeGallery, groupId);
+        },
+
+        getBatchGallery() {
+            return this.$refs.homeGallery;
+        },
+
+        persistBatchQueue(queue) {
+            saveHomepageBatch(queue);
         },
 
         applyStyle(styleName) {
@@ -1099,10 +1330,6 @@ const Home = {
         onModelSelectChange() {
             this.autoSelectModel();
         },
-        modelMetaSuffix(model) {
-            if (!model || !model.model_meta_data || !model.model_meta_data.sd_type) return '';
-            return ' (' + model.model_meta_data.sd_type + ')';
-        },
         async downloadDefaultModel() {
             if (!this.app || !this.app.launchOnboarding || !this.app.start_model_download) return;
             // Pick the best default model for this machine (fetches the catalog on demand).
@@ -1138,6 +1365,9 @@ const Home = {
     watch: {
         promptText() {
             this.updateClipTokenCount();
+            if (this.jsonMode) {
+                this.parseJsonBatch();
+            }
         },
         availableModels() {
             this.autoSelectModel();
@@ -1180,15 +1410,6 @@ const Home = {
         selectedModelLabel() {
             const model = this.getSelectedModelAsset();
             return model ? (model.title || model.id) : '';
-        },
-        selectedModelMetaLabel() {
-            const model = this.getSelectedModelAsset();
-            if (!model || !model.model_meta_data) return '';
-
-            const parts = [];
-            if (model.model_meta_data.sd_type) parts.push(model.model_meta_data.sd_type);
-            if (model.model_meta_data.float_type) parts.push(model.model_meta_data.float_type);
-            return parts.join(' \u00B7 ');
         },
         tokenCounterClass() {
             if (this.clipTokenCount > 68) return 'token-counter--danger';
@@ -2124,6 +2345,172 @@ button:focus-visible {
     box-shadow: 0 10px 24px rgba(0,0,0,0.35);
 }
 
+.chat-action-btn--run {
+    background: rgba(52, 199, 89, 0.16);
+    color: #34c759;
+    font-weight: 700;
+}
+
+.chat-action-btn--run:hover {
+    background: rgba(52, 199, 89, 0.28);
+    color: #34c759;
+}
+
+.disabled-action {
+    opacity: 0.55;
+    pointer-events: none;
+    filter: saturate(0.8);
+}
+
+/* --- Batch queue panel --- */
+.home-batch-panel {
+    width: 100%;
+    max-width: 800px;
+    margin: 10px auto 0;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(30px);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 260px;
+    overflow-y: auto;
+    box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.45);
+}
+
+.home-batch-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.home-batch-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.home-batch-count {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.75);
+    background: rgba(62, 123, 250, 0.25);
+    padding: 2px 10px;
+    border-radius: 12px;
+}
+
+.home-batch-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.home-batch-item:hover {
+    border-color: rgba(62, 123, 250, 0.4);
+    background: rgba(62, 123, 250, 0.08);
+}
+
+.home-batch-index {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(62, 123, 250, 0.28);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.home-batch-prompt {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.home-batch-meta {
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.55);
+    white-space: nowrap;
+}
+
+.home-batch-remove {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    font-size: 0.72rem;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.home-batch-remove:hover {
+    background: rgba(255, 69, 58, 0.2);
+    color: #ff453a;
+}
+
+.home-batch-remove:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.home-batch-status {
+    flex-shrink: 0;
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+.home-batch-status--pending {
+    color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.home-batch-status--queued {
+    color: #ff9500;
+    background: rgba(255, 149, 0, 0.16);
+}
+
+.home-batch-status--running {
+    color: #6da2ff;
+    background: rgba(62, 123, 250, 0.18);
+}
+
+.home-batch-status--done {
+    color: #34c759;
+    background: rgba(52, 199, 89, 0.16);
+}
+
+.home-batch-status--error {
+    color: #ff453a;
+    background: rgba(255, 69, 58, 0.18);
+}
+
 .chat-submit:disabled {
     background: rgba(255, 255, 255, 0.05);
     color: rgba(255, 255, 255, 0.1);
@@ -2455,42 +2842,9 @@ button:focus-visible {
     flex-wrap: wrap;
 }
 
-.model-select {
+.quick-model-picker-row .model-selector {
     min-width: min(100%, 320px);
     flex: 1;
-    appearance: none;
-    -webkit-appearance: none;
-    padding: 11px 38px 11px 14px;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.06) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.65)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
-    color: rgba(255, 255, 255, 0.95);
-    font-family: var(--main-font-text), sans-serif;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-}
-
-.model-select:hover,
-.model-select:focus {
-    border-color: rgba(62, 123, 250, 0.45);
-    background-color: rgba(62, 123, 250, 0.1);
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(62, 123, 250, 0.12);
-}
-
-.model-select option {
-    color: #111;
-    background: #fff;
-}
-
-.model-select-meta {
-    font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.5);
-    white-space: nowrap;
-    flex-shrink: 0;
-    margin-left: auto;
 }
 
 .sd-badge {
@@ -2645,6 +2999,21 @@ button:focus-visible {
     font-size: 0.9rem;
     display: inline-block;
     transition: all 0.3s ease;
+}
+
+/* Tool-card "Open" button: center it under the card text. The element also
+   carries the legacy global .l_button (ApplicationFrame.vue) whose rules
+   (`display: inline-block; margin: 0 9px 0 0; height: 22px; padding: 3px 10px`)
+   left it flush-left with a stray 9px margin. A block + fit-content +
+   auto-margin centers it regardless of the card's left text-align, and
+   height/padding are re-asserted so the legacy 22px box does not win. */
+.select_app_desc .l_button.button_colored {
+    display: block;
+    width: fit-content;
+    margin: 10px auto 0;
+    height: auto;
+    padding: 10px 24px;
+    font-size: 0.9rem;
 }
 
 .select_app:hover .button_colored {

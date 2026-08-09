@@ -12,13 +12,25 @@ function main() {
   }
 
   const rawPath = fs.readFileSync(pathFile, 'utf8');
-  const trimmedPath = rawPath.trim();
+  let trimmedPath = rawPath.trim();
 
   if (!trimmedPath) {
     throw new Error(`[normalize-electron-path] ${pathFile} is empty`);
   }
 
-  if (rawPath !== trimmedPath) {
+  // pnpm occasionally writes a spurious 'dist/' prefix into path.txt. The
+  // prefix must NOT be there: electron's own index.js joins __dirname/dist with
+  // this value, and so do we below — a prefixed value produces a broken
+  // .../dist/dist/Electron.app/... lookup. (Same class of dirt as the trailing
+  // whitespace handled below.)
+  if (trimmedPath.startsWith('dist/')) {
+    trimmedPath = trimmedPath.slice('dist/'.length);
+    if (!trimmedPath) {
+      throw new Error(`[normalize-electron-path] ${pathFile} contains only a 'dist/' prefix`);
+    }
+    fs.writeFileSync(pathFile, trimmedPath, 'utf8');
+    console.log(`[normalize-electron-path] Removed spurious 'dist/' prefix in ${pathFile}`);
+  } else if (rawPath !== trimmedPath) {
     fs.writeFileSync(pathFile, trimmedPath, 'utf8');
     console.log(`[normalize-electron-path] Trimmed trailing whitespace in ${pathFile}`);
   }

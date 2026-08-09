@@ -44,8 +44,16 @@ export default {
 
     },
     data() {
-        let downloaded_assets_storage = window.ipcRenderer.sendSync('load_data' , 'downloaded_assets.json'); // get from local storage
-        let local_assets_storage = window.ipcRenderer.sendSync('load_data' , 'locally_loaded_assets.json'); // get from local storage
+        let downloaded_assets_storage = {};
+        let local_assets_storage = {};
+        if (window.ipcRenderer && typeof window.ipcRenderer.sendSync === 'function') {
+            try {
+                downloaded_assets_storage = window.ipcRenderer.sendSync('load_data' , 'downloaded_assets.json'); // get from local storage
+                local_assets_storage = window.ipcRenderer.sendSync('load_data' , 'locally_loaded_assets.json'); // get from local storage
+            } catch (e) {
+                console.warn('AssetsManager: ipc load_data failed at mount', e);
+            }
+        }
 
         return {
             downloaded_assets: downloaded_assets_storage ,
@@ -58,14 +66,18 @@ export default {
     watch:{
          'downloaded_assets': {
             handler: function(new_value) {
-                window.ipcRenderer.sendSync('save_data', new_value , 'downloaded_assets.json');
+                if (window.ipcRenderer && typeof window.ipcRenderer.sendSync === 'function') {
+                    window.ipcRenderer.sendSync('save_data', new_value , 'downloaded_assets.json');
+                }
             },
             deep: true
         } , 
 
          'local_assets': {
             handler: function(new_value) {
-                window.ipcRenderer.sendSync('save_data', new_value , 'locally_loaded_assets.json');
+                if (window.ipcRenderer && typeof window.ipcRenderer.sendSync === 'function') {
+                    window.ipcRenderer.sendSync('save_data', new_value , 'locally_loaded_assets.json');
+                }
             },
             deep: true
         } , 
@@ -206,7 +218,11 @@ export default {
             }
 
             function on_progress(progress){
-                if(convert_to_tdict)
+                progress = Number(progress);
+                if (!Number.isFinite(progress)) {
+                    progress = -1; // unknown-size download (no Content-Length) -> indeterminate
+                }
+                if(convert_to_tdict && progress >= 0)
                     progress = Math.round(progress*0.9)
                 console.log("downlaod progress "+ progress)
                 Vue.set( that.downloading[asset_id] , 'progress' , progress)

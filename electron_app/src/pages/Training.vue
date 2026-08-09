@@ -32,7 +32,7 @@
                         <input type="file" ref="fileInput" multiple hidden @change="handleFileUpload">
                     </div>
                     <div class="image-preview-grid" v-if="previewImages.length > 0">
-                        <div v-for="(img, idx) in previewImages.slice(0, 4)" :key="idx" class="preview-item">
+                        <div v-for="(img, idx) in previewImages.slice(0, 4)" :key="idx" class="preview-item" @click="previewImage(idx)">
                             <img :src="img">
                         </div>
                         <div v-if="previewImages.length > 4" class="preview-more">+{{ previewImages.length - 4 }}</div>
@@ -82,6 +82,7 @@
 </template>
 
 <script>
+import { open_popup } from '../utils.js'
 const Training = {
     name: 'Training',
     props: { app: Object },
@@ -103,6 +104,14 @@ const Training = {
     methods: {
         triggerUpload() {
             this.$refs.fileInput.click();
+        },
+        previewImage(idx) {
+            const images = this.previewImages.map((src, i) => ({
+                image_url: src,
+                description: 'Training image ' + (i + 1)
+            }));
+            // In-app lightbox (data: URLs) with prev/next across all uploads.
+            open_popup(this.previewImages[idx], undefined, images);
         },
         handleFileUpload(event) {
             const files = event.target.files;
@@ -282,6 +291,15 @@ Training.description = "Train a model on your own images using DreamBooth."
     aspect-ratio: 1;
     border-radius: 8px;
     overflow: hidden;
+    cursor: pointer;
+}
+
+.preview-item:hover img {
+    transform: scale(1.06);
+}
+
+.preview-item img {
+    transition: transform 0.2s ease;
 }
 
 .preview-item img {

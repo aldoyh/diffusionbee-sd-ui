@@ -115,6 +115,20 @@ function start_bridge() {
              win.webContents.send('to_renderer', 'adlg ' + data.toString('utf8') );
     });
 
+    // A failed spawn (missing binary, broken venv, ENOENT) only emits an
+    // 'error' event — 'close' may never fire. Without this handler the
+    // renderer never receives `sdbk inrd`, the splash screen (a full-window
+    // drag region) would stay up forever, and the user could neither click
+    // nor type. Surface the error immediately so the app can fail loudly
+    // instead of hanging silently.
+    python.on('error', (err) => {
+        console.error('Backend process failed to start:', err);
+        last_few_err = last_few_err + String(err && err.message ? err.message : err);
+        last_few_err = last_few_err.slice(-300);
+        if(win && !is_app_closing)
+            win.webContents.send('to_renderer', 'alrt Backend failed to start: ' + (err && err.message ? err.message : err));
+    });
+
     python.on('close', () => {
         // if( code != 0 )
         // {

@@ -33,7 +33,7 @@ Join the Discord server: [discord.gg/t6rC5RaJQn](https://discord.gg/t6rC5RaJQn)
 
 ## Screenshots
 
-### Homepage (new welcome screen)
+### Homepage (welcome screen)
 
 ![Homepage](docs/screenshots/01-homepage.png)
 
@@ -41,7 +41,7 @@ The welcome carousel uses six locally generated sample images bundled under `ele
 
 ### Text to image (UI)
 
-![Text to image UI](docs/screenshots/02-txt2img.png)
+![Text to image UI](docs/screenshots/02-txt2img-ui.png)
 
 ### Generation output (history + standalone sample)
 
@@ -66,6 +66,14 @@ Real backend output — not an empty UI placeholder:
 ### Models
 
 ![Models](docs/screenshots/06-models.png)
+
+### Homepage (Arabic)
+
+![Homepage Arabic](docs/screenshots/08-homepage-arabic.png)
+
+Screenshots are regenerated and verified by `./scripts/ensure_doc_screenshots.sh`, which fails
+if any screenshot lacks real image content. To capture against the installed app instead of the
+Electron dev process, run it with `APP_PROCESS_NAME=diffusion-sd-ui`.
 
 ---
 

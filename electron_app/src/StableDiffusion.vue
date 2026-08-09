@@ -105,6 +105,8 @@ export default {
 
             if(msg_code == "mlpr"){
                 let p = Number(msg.substring(5).trim());
+                // Guard against NaN (e.g. backend sends no progress yet)
+                if (Number.isNaN(p)) { p = -1; }
                 this.loading_percentage = p;
             }
             if(msg_code == "mlms"){

@@ -60,72 +60,428 @@ function resolve_asset_illustration(name) {
 
 
 
-const escapeHtml = (unsafe) => {
-    return unsafe.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+// ─────────────────────────────────────────────────────────────────────────────
+// In-app image preview lightbox
+//
+// Previously, open_popup() opened a SEPARATE OS window via
+// window.open(..., '_blank', ...) — so clicking a generated image (or a history
+// image) popped a second window OUTSIDE the app (frameless on macOS, and the
+// file:// image embedded in a data: URI was not guaranteed to load at all).
+// This is now a full-screen lightbox rendered inside the app window:
+//
+//   • click backdrop / Esc / ×  → close
+//   • mouse wheel / + / −       → zoom (cursor-anchored)
+//   • drag                      → pan (when zoomed in)
+//   • ← / → arrow keys          → previous / next image in the same generation group
+//   • 0                         → reset zoom
+// ─────────────────────────────────────────────────────────────────────────────
+
+let lightbox_state = null;
+let lightbox_style_injected = false;
+
+function ensure_lightbox_style() {
+    if (lightbox_style_injected) return;
+    lightbox_style_injected = true;
+    const style = document.createElement('style');
+    style.textContent = `
+        .dbee-lightbox {
+            position: fixed; inset: 0; z-index: 2147483000;
+            background: rgba(6, 6, 10, 0.94);
+            display: flex; align-items: center; justify-content: center;
+            user-select: none; -webkit-user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Helvetica Neue", Arial, sans-serif;
+            animation: dbee-lightbox-fade 0.18s ease-out;
+        }
+        @keyframes dbee-lightbox-fade { from { opacity: 0; } to { opacity: 1; } }
+        .dbee-lightbox-stage {
+            position: relative; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; cursor: default;
+        }
+        .dbee-lightbox-img {
+            display: block;
+            max-width: 92%; max-height: 92%;
+            object-fit: contain; border-radius: 6px;
+            box-shadow: 0 12px 64px rgba(0, 0, 0, 0.65);
+            transform-origin: 0 0; will-change: transform;
+        }
+        .dbee-lightbox-loading {
+            position: absolute;
+            width: 44px; height: 44px; border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.15);
+            border-top-color: rgba(255, 255, 255, 0.85);
+            animation: dbee-lightbox-spin 0.9s linear infinite;
+        }
+        @keyframes dbee-lightbox-spin { to { transform: rotate(360deg); } }
+        .dbee-lightbox-error {
+            position: absolute;
+            color: #fff; background: rgba(190, 45, 45, 0.9);
+            padding: 10px 18px; border-radius: 8px; font-size: 14px;
+        }
+        .dbee-lightbox-close {
+            position: absolute; top: 16px; right: 16px;
+            width: 40px; height: 40px; border-radius: 50%;
+            border: none; background: rgba(255, 255, 255, 0.08); color: #fff;
+            font-size: 24px; line-height: 1; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .dbee-lightbox-close:hover { background: rgba(255, 255, 255, 0.2); }
+        .dbee-lightbox-toolbar {
+            position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+            display: flex; align-items: center; gap: 6px; max-width: calc(100vw - 40px);
+            background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(255, 255, 255, 0.14);
+            padding: 6px 12px; border-radius: 999px;
+            color: rgba(255, 255, 255, 0.92); font-size: 13px;
+            backdrop-filter: blur(6px);
+        }
+        .dbee-lightbox-btn {
+            border: none; background: transparent; color: rgba(255, 255, 255, 0.85);
+            font-size: 15px; line-height: 1; cursor: pointer;
+            min-width: 26px; height: 26px; border-radius: 6px;
+        }
+        .dbee-lightbox-btn:hover { background: rgba(255, 255, 255, 0.16); }
+        .dbee-lightbox-counter { min-width: 46px; text-align: center; opacity: 0.85; }
+        .dbee-lightbox-caption {
+            max-width: 34vw; overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap; opacity: 0.72; border-left: 1px solid rgba(255, 255, 255, 0.2);
+            padding-left: 10px; margin-left: 4px;
+        }
+        .dbee-lightbox-nav {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 44px; height: 44px; border-radius: 50%;
+            border: none; background: rgba(255, 255, 255, 0.08); color: #fff;
+            font-size: 28px; line-height: 1; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .dbee-lightbox-nav:hover { background: rgba(255, 255, 255, 0.22); }
+        .dbee-lightbox-prev { left: 16px; }
+        .dbee-lightbox-next { right: 16px; }
+        .dbee-lightbox-nav[hidden] { display: none; }
+        .dbee-lightbox-btn[hidden] { display: none; }
+        .dbee-lightbox-text {
+            max-width: 70vw; color: rgba(255, 255, 255, 0.92);
+            font-size: 16px; line-height: 1.6; text-align: center;
+            word-break: break-word;
+        }
+    `;
+    document.head.appendChild(style);
 }
 
+function destroy_lightbox() {
+    const state = lightbox_state;
+    if (!state) return;
+    lightbox_state = null;
+    window.removeEventListener('mousemove', state.on_mousemove);
+    window.removeEventListener('mouseup', state.on_mouseup);
+    document.removeEventListener('keydown', state.on_keydown);
+    document.body.style.overflow = state.prev_body_overflow;
+    if (state.backdrop && state.backdrop.parentNode) {
+        state.backdrop.parentNode.removeChild(state.backdrop);
+    }
+}
 
-function open_popup( img_url , text ){
-            
-    let css = `
-        <style>
-        img {
-    
-                     width: 100%;
-                      height:100%;
-                      object-fit: contain;
-                      user-drag: none;
-          
-            }
-            @media (prefers-color-scheme: light) {
-                body {
-                    background-color: #f2f2f2;
-                }
-            }
-            @media (prefers-color-scheme: dark) {
-                body {
-                    background-color: #303030;
-                }
-            }
-            body{
-                padding : 0;
-                margin: 0;
-                -webkit-user-select: none;
-                    -webkit-app-region: drag;
-                  
-                      user-drag: none;
-                        -webkit-user-drag: none;
-                        user-select: none;
-                        -moz-user-select: none;
-                        -webkit-user-select: none;
-                        -ms-user-select: none;
-            }
-            p{
-                padding:40px;
-            }
+// Builds the list of sibling images of the same generation group for the
+// lightbox's prev/next navigation. `image_item_data` is the GalleryImage
+// component instance that was clicked; its parent GalleryPane exposes the
+// full group image list.
+function gallery_item_context(image_item_data) {
+    const pane = (image_item_data && image_item_data.$parent) || null;
+    const items = (pane && Array.isArray(pane.image_data)) ? pane.image_data : [];
+    return items
+        .filter(x => x && x.image_url && x.image_url !== 'ERROR')
+        .map(x => ({ image_url: x.image_url, description: x.description }));
+}
 
-       </style>
-    `
-    let html = '<html><head>'+css+'</head><body>' ;
+function open_popup(img_url, text, images) {
+    if (lightbox_state) destroy_lightbox();
+    ensure_lightbox_style();
 
-    if (img_url)
-        html += '<img src="'+escapeHtml(img_url)+'"> ';
-    
-    if( text )
-         html += '<p> '+ escapeHtml(text) +' </p>';
-    
-    html += '</body></html>'
-    
-    let uri = "data:text/html," + encodeURIComponent(html);
-    uri;
-    let if_frame= '';
-    if(navigator.platform.toUpperCase().indexOf('MAC')>=0 ){
-        if_frame = ",frame=false"
+    const norm = (u) => String(u || '').replace(/^file:\/\//, '');
+
+    let imgs = (Array.isArray(images) ? images : [])
+        .filter(x => x && x.image_url && x.image_url !== 'ERROR');
+    if (!imgs.length && img_url) {
+        imgs = [{ image_url: img_url, description: text }];
     }
 
-    window.open(escapeHtml(uri), '_blank', 'top=100,left=100,nodeIntegration=no'+if_frame); // 
-    
+    // Legacy text-only popup, rendered in-app instead of an OS window.
+    // Folded into the same lightbox_state machinery so a later image popup
+    // destroys it (and its Esc listener) instead of leaving it lingering.
+    if (!imgs.length) {
+        if (!text) return;
+        const backdrop = document.createElement('div');
+        backdrop.className = 'dbee-lightbox';
+        backdrop.setAttribute('role', 'dialog');
+        backdrop.setAttribute('aria-modal', 'true');
+        const p = document.createElement('div');
+        p.className = 'dbee-lightbox-text';
+        p.textContent = text;
+        backdrop.appendChild(p);
+        const on_key = (e) => { if (e.key === 'Escape') destroy_lightbox(); };
+        document.addEventListener('keydown', on_key);
+        backdrop.addEventListener('click', () => destroy_lightbox());
+        document.body.appendChild(backdrop);
+        lightbox_state = {
+            backdrop,
+            on_keydown: on_key,
+            on_mousemove: null,
+            on_mouseup: null,
+            prev_body_overflow: document.body.style.overflow,
+        };
+        return;
+    }
 
+    const backdrop = document.createElement('div');
+    backdrop.className = 'dbee-lightbox';
+    backdrop.setAttribute('role', 'dialog');
+    backdrop.setAttribute('aria-modal', 'true');
+
+    const stage = document.createElement('div');
+    stage.className = 'dbee-lightbox-stage';
+
+    const imgEl = new Image();
+    imgEl.className = 'dbee-lightbox-img';
+    imgEl.alt = '';
+
+    const loading = document.createElement('div');
+    loading.className = 'dbee-lightbox-loading';
+
+    const errorEl = document.createElement('div');
+    errorEl.className = 'dbee-lightbox-error';
+    errorEl.style.display = 'none';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'dbee-lightbox-nav dbee-lightbox-prev';
+    prevBtn.innerHTML = '&#8249;';
+    prevBtn.title = 'Previous (←)';
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'dbee-lightbox-nav dbee-lightbox-next';
+    nextBtn.innerHTML = '&#8250;';
+    nextBtn.title = 'Next (→)';
+
+    const toolbar = document.createElement('div');
+    toolbar.className = 'dbee-lightbox-toolbar';
+    const zoomOutBtn = document.createElement('button');
+    zoomOutBtn.className = 'dbee-lightbox-btn';
+    zoomOutBtn.textContent = '−';
+    zoomOutBtn.title = 'Zoom out (−)';
+    const zoomInBtn = document.createElement('button');
+    zoomInBtn.className = 'dbee-lightbox-btn';
+    zoomInBtn.textContent = '+';
+    zoomInBtn.title = 'Zoom in (+)';
+    const zoomResetBtn = document.createElement('button');
+    zoomResetBtn.className = 'dbee-lightbox-btn';
+    zoomResetBtn.textContent = '1:1';
+    zoomResetBtn.title = 'Reset zoom (0)';
+    // Only shown for local files (hidden for remote/data URLs) — lets the
+    // user open the full-resolution file in the OS default viewer.
+    const openBtn = document.createElement('button');
+    openBtn.className = 'dbee-lightbox-btn dbee-lightbox-open';
+    openBtn.textContent = 'Open';
+    openBtn.title = 'Open in default viewer';
+    const counter = document.createElement('span');
+    counter.className = 'dbee-lightbox-counter';
+    const caption = document.createElement('span');
+    caption.className = 'dbee-lightbox-caption';
+    caption.style.display = 'none';
+
+    toolbar.appendChild(zoomOutBtn);
+    toolbar.appendChild(zoomInBtn);
+    toolbar.appendChild(zoomResetBtn);
+    toolbar.appendChild(openBtn);
+    toolbar.appendChild(counter);
+    toolbar.appendChild(caption);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'dbee-lightbox-close';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.title = 'Close (Esc)';
+    closeBtn.setAttribute('aria-label', 'Close preview');
+
+    stage.appendChild(loading);
+    stage.appendChild(errorEl);
+    stage.appendChild(imgEl);
+    backdrop.appendChild(stage);
+    backdrop.appendChild(prevBtn);
+    backdrop.appendChild(nextBtn);
+    backdrop.appendChild(toolbar);
+    backdrop.appendChild(closeBtn);
+    document.body.appendChild(backdrop);
+
+    const state = {
+        backdrop, stage, img: imgEl,
+        images: imgs,
+        index: 0,
+        zoom: 1, panX: 0, panY: 0,
+        dragging: false,
+        prev_body_overflow: document.body.style.overflow,
+    };
+    document.body.style.overflow = 'hidden';
+
+    function apply_transform() {
+        state.img.style.transform =
+            'translate(' + state.panX + 'px, ' + state.panY + 'px) scale(' + state.zoom + ')';
+    }
+
+    function update_cursor() {
+        state.img.style.cursor = state.zoom > 1 ? 'grab' : 'zoom-in';
+    }
+
+    function set_zoom(next, anchor_client_x, anchor_client_y) {
+        next = Math.min(8, Math.max(1, next));
+        if (next === state.zoom) return;
+        const ratio = next / state.zoom;
+        if (anchor_client_x !== undefined && anchor_client_y !== undefined) {
+            const rect = state.img.getBoundingClientRect();
+            const px = anchor_client_x - rect.left;
+            const py = anchor_client_y - rect.top;
+            state.panX = px - px * ratio + state.panX * ratio;
+            state.panY = py - py * ratio + state.panY * ratio;
+        }
+        state.zoom = next;
+        apply_transform();
+        update_cursor();
+    }
+
+    function zoom_by(factor) {
+        const rect = state.img.getBoundingClientRect();
+        set_zoom(state.zoom * factor, rect.left + rect.width / 2, rect.top + rect.height / 2);
+    }
+
+    function reset_zoom() {
+        const rect = state.img.getBoundingClientRect();
+        set_zoom(1, rect.left + rect.width / 2, rect.top + rect.height / 2);
+    }
+
+    function set_image(i, keep_zoom) {
+        i = Math.max(0, Math.min(state.images.length - 1, i));
+        state.index = i;
+        if (!keep_zoom) {
+            state.zoom = 1; state.panX = 0; state.panY = 0;
+        }
+        apply_transform();
+        update_cursor();
+
+        const item = state.images[i];
+        loading.style.display = 'block';
+        errorEl.style.display = 'none';
+        imgEl.style.display = 'none';
+        caption.style.display = item.description ? 'block' : 'none';
+        if (item.description) caption.textContent = item.description;
+        counter.textContent = (i + 1) + ' / ' + state.images.length;
+        prevBtn.hidden = state.images.length < 2;
+        nextBtn.hidden = state.images.length < 2;
+        // 'Open in default viewer' only makes sense for local files.
+        const curUrl = toFileUrl(item.image_url);
+        openBtn.hidden = !(curUrl && curUrl.startsWith('file://'));
+
+        imgEl.onload = () => {
+            loading.style.display = 'none';
+            imgEl.style.display = 'block';
+        };
+        imgEl.onerror = () => {
+            loading.style.display = 'none';
+            errorEl.textContent = 'Could not load image';
+            errorEl.style.display = 'block';
+        };
+        imgEl.src = toFileUrl(item.image_url);
+    }
+
+    function nav(delta) {
+        if (state.images.length < 2) return;
+        set_image(state.index + delta, false);
+    }
+
+    function on_wheel(e) {
+        e.preventDefault();
+        // Cursor-anchored zoom (same factor as the +/- buttons).
+        set_zoom(state.zoom * (e.deltaY < 0 ? 1.2 : 1 / 1.2), e.clientX, e.clientY);
+    }
+
+    function on_mousedown(e) {
+        if (state.zoom <= 1) return;
+        e.preventDefault();
+        state.dragging = true;
+        state.drag_start_x = e.clientX;
+        state.drag_start_y = e.clientY;
+        state.pan_start_x = state.panX;
+        state.pan_start_y = state.panY;
+        state.img.style.cursor = 'grabbing';
+    }
+
+    function on_mousemove(e) {
+        if (!state.dragging) return;
+        state.panX = state.pan_start_x + (e.clientX - state.drag_start_x);
+        state.panY = state.pan_start_y + (e.clientY - state.drag_start_y);
+        apply_transform();
+    }
+
+    function on_mouseup() {
+        if (!state.dragging) return;
+        state.dragging = false;
+        update_cursor();
+        // A click that ends a pan (mouseup lands on the stage, not the image)
+        // would otherwise synthesize a click on the stage and close the
+        // lightbox — remember the pan so the next click is ignored.
+        state.just_panned = true;
+    }
+
+    function on_keydown(e) {
+        if (e.key === 'Escape') {
+            destroy_lightbox();
+        } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') {
+            e.preventDefault();
+            nav(1);
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+            e.preventDefault();
+            nav(-1);
+        } else if (e.key === '+' || e.key === '=') {
+            e.preventDefault();
+            zoom_by(1.25);
+        } else if (e.key === '-' || e.key === '_') {
+            e.preventDefault();
+            zoom_by(1 / 1.25);
+        } else if (e.key === '0') {
+            e.preventDefault();
+            reset_zoom();
+        }
+    }
+
+    state.on_mousemove = on_mousemove;
+    state.on_mouseup = on_mouseup;
+    state.on_keydown = on_keydown;
+    window.addEventListener('mousemove', on_mousemove);
+    window.addEventListener('mouseup', on_mouseup);
+    document.addEventListener('keydown', on_keydown);
+
+    stage.addEventListener('wheel', on_wheel, { passive: false });
+    stage.addEventListener('mousedown', on_mousedown);
+    zoomInBtn.addEventListener('click', () => zoom_by(1.25));
+    zoomOutBtn.addEventListener('click', () => zoom_by(1 / 1.25));
+    zoomResetBtn.addEventListener('click', () => reset_zoom());
+    closeBtn.addEventListener('click', () => destroy_lightbox());
+    prevBtn.addEventListener('click', () => nav(-1));
+    nextBtn.addEventListener('click', () => nav(1));
+    openBtn.addEventListener('click', () => {
+        const url = toFileUrl(state.images[state.index].image_url);
+        if (!url || !url.startsWith('file://')) return;
+        if (window.ipcRenderer && typeof window.ipcRenderer.sendSync === 'function') {
+            window.ipcRenderer.sendSync('open_path', url);
+        }
+    });
+
+    // Clicking the backdrop (outside the image) closes the preview.
+    backdrop.addEventListener('click', (e) => {
+        if (state.just_panned) {
+            state.just_panned = false;
+            return;
+        }
+        if (e.target === backdrop || e.target === stage) destroy_lightbox();
+    });
+
+    lightbox_state = state;
+    const start_index = img_url ? imgs.findIndex(x => norm(x.image_url) === norm(img_url)) : 0;
+    set_image(start_index < 0 ? 0 : start_index, false);
 }
 
 
@@ -343,4 +699,4 @@ function migrate_history_only_once( current_new_history ){
 }
 
 
-export { compute_n_cols , compute_time_remaining , resolve_asset_illustration , toFileUrl , simple_hash , open_popup, share_on_arthub, form_params_to_text, find_in_form_recursive, form_params_to_readable_dict, migrate_history_only_once}
+export { compute_n_cols , compute_time_remaining , resolve_asset_illustration , toFileUrl , simple_hash , open_popup, gallery_item_context, share_on_arthub, form_params_to_text, find_in_form_recursive, form_params_to_readable_dict, migrate_history_only_once}

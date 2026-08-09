@@ -129,6 +129,31 @@ ipcMain.on('open_url', (event, url) => {
 })
 
 
+// Open a local file with the OS default app (e.g. Preview on macOS).
+// Used by the image preview lightbox's "Open in default viewer" action.
+ipcMain.on('open_path', (event, fpath) => {
+    let cleanPath = String(fpath || '');
+    if (cleanPath.startsWith('file://')) {
+        // fileURLToPath correctly handles Windows drive letters
+        // (file:///C:/... -> C:\...) and percent-encoding; fall back to a
+        // plain prefix strip if it can't parse the URL.
+        try {
+            cleanPath = require('url').fileURLToPath(cleanPath);
+        } catch (err) {
+            cleanPath = cleanPath.slice(7);
+        }
+    }
+    if (cleanPath) {
+        // shell.openPath resolves with an error-message string on failure
+        // (it does not reject), so check the resolved value.
+        require('electron').shell.openPath(cleanPath).then((err) => {
+            if (err) console.error('[open_path] Failed to open:', cleanPath, err);
+        });
+    }
+    event.returnValue = '';
+})
+
+
 
 ipcMain.on('save_file', (event, arg) => {
     let p1 = arg.split("||")[0];
@@ -757,12 +782,17 @@ ipcMain.on('download-file', (event, url, dest, downloadId, options) => {
     })
     .on('response', response => {
       const totalBytes = parseInt(response.headers['content-length'], 10);
+      const hasKnownTotal = Number.isFinite(totalBytes) && totalBytes > 0;
       let downloadedBytes = 0;
 
       response.on('data', chunk => {
         downloadedBytes += chunk.length;
         hash.update(chunk);
-        const progress = Math.round((downloadedBytes / totalBytes) * 100);
+        // Some servers (HF LFS, chunked/streaming responses) omit Content-Length.
+        // Guard against NaN progress, which used to surface as "NaN%" in the UI.
+        const progress = hasKnownTotal
+          ? Math.round(Math.min(100, (downloadedBytes / totalBytes) * 100))
+          : -1;
         try { 
            event.sender.send(`to_download`, {fn:'progress' , download_id: downloadId , msg:progress });
         } catch (err) {

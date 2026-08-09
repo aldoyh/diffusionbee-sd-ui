@@ -68,7 +68,21 @@ const FLUX2_MODELS = [
   },
 ];
 
-const GENERATABLE_MODEL_TYPES = ['sd_model', 'sd_model_inpaint', 'flux2_model', 'flux_nnc'];
+/**
+ * THE GATE — the model types the ACTIVE generation backend can actually run.
+ *
+ * This is the single flip point for the whole FLUX story. The fork's TensorFlow
+ * 2.10 backend has no FLUX inference (verified: the packaged upstream binary's
+ * flux_dylib.dylib is unreferenced dead weight — nothing links or loads it), so
+ * FLUX.1 / FLUX.2 must never be recommended, selected, or advertised as
+ * generatable. Everything downstream — the onboarding picker, Homepage's model
+ * picker, applet dropdowns, ModelStore badges — derives from this constant.
+ *
+ * When a real FLUX backend ships (upstream re-packaging or a decoupled MLX
+ * sidecar), add the new model type(s) here (e.g. 'flux2_model', 'flux_nnc') and
+ * flip `preferFlux2` in model_selection.js — no other code changes required.
+ */
+const GENERATABLE_MODEL_TYPES = ['sd_model', 'sd_model_inpaint'];
 
 function buildHfResolveUrl(repoId, filename, revision = 'main') {
   const repo = String(repoId || '').replace(/^\/+|\/+$/g, '');

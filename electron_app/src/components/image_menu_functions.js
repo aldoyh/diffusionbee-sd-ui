@@ -1,7 +1,17 @@
 
 import { uploadToImgbb, getImgbbApiKey } from "../utils/imgbb_upload.js"
+import { open_popup, gallery_item_context, toFileUrl } from "../utils.js"
 
 let image_manu_functions = {}
+
+image_manu_functions['preview_image'] = function (app, image_item_data){
+	if(!image_item_data || !image_item_data.image_url || image_item_data.image_url == 'ERROR')
+        return;
+	// Full-screen in-app lightbox (zoom / pan / prev-next across the other
+	// images of the same generation group) — same viewer as clicking the image.
+	open_popup(toFileUrl(image_item_data.image_url), undefined, gallery_item_context(image_item_data))
+}
+image_manu_functions['preview_image'].text = "Preview"
 
 image_manu_functions['save_image'] =  function (app, image_item_data){
 	app;

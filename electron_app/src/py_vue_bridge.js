@@ -83,12 +83,18 @@ function on_msg_recieve(msg) { // on new msg from python
 
 }
 
-window.bind_ipc_renderer_on(on_msg_recieve)
+// Guard: preload.js exposes this in Electron. The browser demo build
+// (serve:ui) does not, so only wire it up when present.
+if (typeof window.bind_ipc_renderer_on === 'function') {
+    window.bind_ipc_renderer_on(on_msg_recieve)
+}
 
 
 
 function send_to_py(msg) {
-    window.ipcRenderer.sendSync('to_python_sync', msg)
+    if (window.ipcRenderer && typeof window.ipcRenderer.sendSync === 'function') {
+        window.ipcRenderer.sendSync('to_python_sync', msg)
+    }
 }
 
 function send_to_py_async() {

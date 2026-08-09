@@ -15,7 +15,7 @@
                     {{description}}
                 </div>
 
-                 <div v-if="image_url" class="cdiv gall_top_right_btn_container" style=" position:absolute ; margin-top:7px ; margin-left:7px "  >
+                 <div v-if="image_url" class="cdiv gall_top_right_btn_container" :style="aux_img_url ? 'position:absolute; top:33%; margin-left:7px;' : 'position:absolute; margin-top:7px; margin-left:7px;'"  >
                     <b-dropdown left variant="link" size="sm" toggle-class="text-decoration-none" no-caret>
                         <template #button-content>
                             <div   class=" l_button button_colored" style="background-color: rgba(0,0,0,0.6);">
@@ -119,13 +119,11 @@ export default {
     padding:5px;
 }
 
-.gall_top_right_btn_container{
-    display: none;
-}
-
-.gal_item_inner:hover > div > .gall_top_right_btn_container{
+/* The per-image Actions menu is always visible on generated images — no hover
+   gesture required to discover it (hover used to hide it via the shared
+   .gall_top_right_btn_container rule below). */
+.cdiv.gall_top_right_btn_container{
     display: block;
-    /*opacity: 0.1;*/
 }
 
 

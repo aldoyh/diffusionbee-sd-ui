@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# Capture DiffusionBee UI screenshots from a running Electron window (macOS).
+# Capture DiffusionBee UI screenshots from a running app window (macOS).
+# Works against the dev Electron process (default) or the installed
+# diffusion-sd-ui.app — override with APP_PROCESS_NAME=diffusion-sd-ui.
 set -euo pipefail
 
 OUT_DIR="${1:-$(cd "$(dirname "$0")/.." && pwd)/docs/screenshots}"
+APP_PROCESS_NAME="${APP_PROCESS_NAME:-Electron}"
 mkdir -p "$OUT_DIR"
 
 # Calibrated cliclick indices (32px row stride from sidebar top).
@@ -10,14 +13,14 @@ mkdir -p "$OUT_DIR"
 SIDEBAR_INDICES=(0 1 3 4 6 7 9)
 
 focus_app() {
-  osascript -e 'tell application "System Events" to set frontmost of process "Electron" to true' >/dev/null
+  osascript -e "tell application \"System Events\" to set frontmost of process \"$APP_PROCESS_NAME\" to true" >/dev/null
   sleep 0.35
 }
 
 get_bounds() {
-  osascript <<'APPLESCRIPT'
+  osascript <<APPLESCRIPT
 tell application "System Events"
-  tell process "Electron"
+  tell process "$APP_PROCESS_NAME"
     set frontmost to true
     set winPos to position of window 1
     set winSize to size of window 1
@@ -32,7 +35,7 @@ resize_window() {
   local h="${2:-900}"
   osascript <<APPLESCRIPT
 tell application "System Events"
-  tell process "Electron"
+  tell process "$APP_PROCESS_NAME"
     set frontmost to true
     set position of window 1 to {80, 50}
     set size of window 1 to {$w, $h}
@@ -53,9 +56,9 @@ capture_window() {
 
 scroll_home_to_top() {
   focus_app
-  osascript <<'APPLESCRIPT'
+  osascript <<APPLESCRIPT
 tell application "System Events"
-  tell process "Electron"
+  tell process "$APP_PROCESS_NAME"
     set frontmost to true
     key code 115
   end tell
@@ -87,9 +90,9 @@ navigate_to_slot() {
 }
 
 click_lang_toggle() {
-  osascript <<'APPLESCRIPT'
+  osascript <<APPLESCRIPT
 tell application "System Events"
-  tell process "Electron"
+  tell process "$APP_PROCESS_NAME"
     set frontmost to true
     repeat with el in (entire contents of window 1)
       try
@@ -109,7 +112,7 @@ click_ui_named() {
   local needle="$1"
   osascript <<APPLESCRIPT
 tell application "System Events"
-  tell process "Electron"
+  tell process "$APP_PROCESS_NAME"
     set frontmost to true
     repeat with el in (entire contents of window 1)
       try
@@ -125,9 +128,9 @@ end tell
 APPLESCRIPT
 }
 
-echo "Waiting for Diffusion SD UI (Electron) window..."
+echo "Waiting for Diffusion SD UI ($APP_PROCESS_NAME) window..."
 for i in $(seq 1 90); do
-  if osascript -e 'tell application "System Events" to return (exists process "Electron")' 2>/dev/null | grep -q true; then
+  if osascript -e "tell application \"System Events\" to return (exists process \"$APP_PROCESS_NAME\")" 2>/dev/null | grep -q true; then
     if get_bounds >/dev/null 2>&1; then
       break
     fi

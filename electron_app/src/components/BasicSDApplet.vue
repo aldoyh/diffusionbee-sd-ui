@@ -36,6 +36,7 @@ import Vue from 'vue'
 import {find_in_form_recursive} from "../utils.js"
 import { preparePromptForSd, validatePromptLength } from "../prompt_utils.js"
 const { getFallbackDefaultStableDiffusionAsset, sortStableDiffusionModelsBestFirst } = require("../utils/model_selection.js")
+const { isGeneratableModelType } = require("../utils/flux2_catalog.js")
 
 function prep_sd_options(options){
     options = JSON.parse(JSON.stringify(options))
@@ -82,7 +83,10 @@ export default {
             if (!this.app || !this.app.assets_manager || !this.sd_options) return
 
             let assets = Object.values(this.app.assets_manager.all_avail_assets || {})
-            assets = assets.filter(x => x.model_meta_data && (this.model_options_types ||["sd_model"]).includes(x.model_meta_data.type))
+            // Belt-and-suspenders on top of model_options_types: never let a
+            // non-generatable model (FLUX.1/FLUX.2) into an applet dropdown,
+            // even if a page passes it in model_options_types.
+            assets = assets.filter(x => x.model_meta_data && isGeneratableModelType(x.model_meta_data.type) && (this.model_options_types ||["sd_model"]).includes(x.model_meta_data.type))
             assets = sortStableDiffusionModelsBestFirst(assets)
             let best = assets[0]
             if (!best) return
@@ -209,7 +213,9 @@ export default {
             let el = find_in_form_recursive( "selected_sd_model" , form)
             if(el){
                 let assets = Object.values(this.app.assets_manager.all_avail_assets || {})
-                assets = assets.filter(x => x.model_meta_data && (this.model_options_types ||["sd_model"]).includes(x.model_meta_data.type))
+                // Same generatability gate as ensureOptimalModelSelection — FLUX
+                // models must never be offered in any applet's model picker.
+                assets = assets.filter(x => x.model_meta_data && isGeneratableModelType(x.model_meta_data.type) && (this.model_options_types ||["sd_model"]).includes(x.model_meta_data.type))
                 assets = sortStableDiffusionModelsBestFirst(assets)
                 let new_ids = assets.map(x => x.id)
                 let mergedOptions = new_ids.concat(el['options'].filter((idd) => !new_ids.includes(idd)))
@@ -217,6 +223,12 @@ export default {
                 if (new_ids.length > 0) {
                     el['default_value'] = new_ids[0]
                 }
+                // Render the model picker with the visual ModelSelector
+                // (card-style list) instead of the native <select>. The
+                // resolved asset objects travel with the config so the
+                // selector can show titles / type badges / precision meta.
+                el['component'] = 'ModelSelectorInput'
+                el['model_assets'] = assets
             }
 
             // get the functions to get the mask and stuff

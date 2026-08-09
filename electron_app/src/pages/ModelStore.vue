@@ -14,11 +14,12 @@
                  <MoonLoader class="moonloader" color="#000000" size="50px" style="zoom:0.4"></MoonLoader>
             </div>
 
-            <div v-for="model in downloaded_models_list" :key="model.id" class="model_card" v-bind:style="{ 'background-image': 'url(' + (model.img_url || default_img_url )+ ')' }">
+            <div v-for="model in downloaded_models_list" :key="model.id" class="model_card" v-bind:style="{ 'background-image': 'url(' + (model.img_url || default_img_url )+ ')' }" @click="previewModelImage(model, $event)">
                  <div class="card_desc"> 
                     <h2> {{model.title || model.id}} </h2> 
                     <p> {{model.description}} </p> 
                     <p style="zoom:0.7"> {{ model_metadata_to_str(model) }}</p>
+                    <p v-if="!isRunnableModel(model)" class="model-not-runnable-msg">{{ modelNotRunnableMessage() }}</p>
                     <DownloadButton :app=app  :asset_details="model"> </DownloadButton>
                 </div> 
             </div>
@@ -31,11 +32,12 @@
         <h2>{{ app.app_state.isArabic ? 'النماذج المتاحة' : 'Available Models' }}</h2>
         <div class="icon_container">
 
-            <div v-for="model in not_downloaded_models_list" :key="model.id" class="model_card" v-bind:style="{ 'background-image': 'url(' + (model.img_url || default_img_url) + ')' }">
+            <div v-for="model in not_downloaded_models_list" :key="model.id" class="model_card" v-bind:style="{ 'background-image': 'url(' + (model.img_url || default_img_url) + ')' }" @click="previewModelImage(model, $event)">
                  <div class="card_desc"> 
                     <h2> {{model.title || model.id}} </h2> 
                     <p> {{model.description}} </p> 
                     <p style="zoom:0.7"> {{ model_metadata_to_str(model) }}</p>
+                    <p v-if="!isRunnableModel(model)" class="model-not-runnable-msg">{{ modelNotRunnableMessage() }}</p>
                     <DownloadButton v-if="canDownloadModel(model)" :app=app  :asset_details="model"> </DownloadButton>
                     <p v-if="!canDownloadModel(model)" class="model-unavailable-msg">{{ modelDownloadBlockMessage(model) }}</p>
                 </div> 
@@ -54,10 +56,11 @@
 
 import Vue from 'vue'
 
+import { open_popup } from '../utils.js'
 import DownloadButton from "../components/DownloadButton.vue"
 import MoonLoader from 'vue-spinner/src/MoonLoader.vue'
 const { isModelDownloadAllowed, getModelDownloadBlockMessage } = require("../utils/app_version.js")
-const { mergeFlux2IntoCatalog } = require("../utils/flux2_catalog.js")
+const { mergeFlux2IntoCatalog, isGeneratableModelType } = require("../utils/flux2_catalog.js")
 const { getHfTokenSync } = require("../utils/hf_auth.js")
 
 const ModelStore ={
@@ -95,21 +98,42 @@ const ModelStore ={
         canDownloadModel(model) {
             return isModelDownloadAllowed(model);
         },
+        // The active backend can't run every catalog model (FLUX.1/FLUX.2 need
+        // a FLUX engine this build doesn't ship). Show those as download-only
+        // rather than pretending they're generatable — the "🔵" pattern.
+        isRunnableModel(model) {
+            return Boolean(model && model.model_meta_data && isGeneratableModelType(model.model_meta_data.type));
+        },
+        modelNotRunnableMessage() {
+            return this.app.app_state.isArabic
+                ? '🔵 للتحميل فقط — لا يعمل في هذا الإصدار (يتطلب محرك توليد غير متوفر بعد).'
+                : '🔵 Download only — not runnable on this build (needs a generation engine not shipped yet).';
+        },
+        previewModelImage(model, event) {
+            // Don't hijack clicks on the description/download overlay.
+            if (event && event.target && event.target.closest && event.target.closest('.card_desc')) return;
+            const url = model.img_url || this.default_img_url;
+            if (!url) return;
+            open_popup(url, model.title || model.id);
+        },
         modelDownloadBlockMessage(model) {
             return getModelDownloadBlockMessage(model, this.app.app_state.isArabic);
         },
         load_models_list_from_web(){
             let that = this;
 
-            let user_id = window.ipcRenderer.sendSync('get_instance_id' , '');
+            let user_id = window.ipcRenderer && typeof window.ipcRenderer.sendSync === 'function'
+                ? window.ipcRenderer.sendSync('get_instance_id' , '')
+                : 'local';
             let models_url = "https://models.diffusionbee.com/list_models?user_id="+user_id;
             
             fetch(models_url, {cache: "no-store"})
                 .then(response => response.json())
                 .then(data => mergeFlux2IntoCatalog(data || [], getHfTokenSync()))
-                .then(data =>  that.models_list = (data || that.models_list) )
+                .then(data =>  that.models_list = (Array.isArray(data) ? data : (that.models_list || [])) )
                 .then(() => console.log(that.models_list))
                 .then(() =>  that.save_models_list_local_storage() )
+                .catch((err) => console.warn('Failed to load models from web:', err))
 
             
         } ,     
@@ -119,7 +143,11 @@ const ModelStore ={
             if(models){
                 models = JSON.parse(models)
             }
-            Vue.set(this , 'models_list' , models)
+            // Guard: JSON.parse can yield null/undefined when the key is absent
+            // or empty. `not_downloaded_models_list` filters `models_list`, so it
+            // must stay an array or the page crashes with
+            // "Cannot read properties of null (reading 'filter')".
+            Vue.set(this , 'models_list' , Array.isArray(models) ? models : [])
         } , 
 
         save_models_list_local_storage(){
@@ -229,6 +257,7 @@ ModelStore.sidebar_show = "always"
     background-size: contain;
     background-color: var(--sidebar-color);
     position: relative;
+    cursor: pointer;
 }
 
 
@@ -270,6 +299,13 @@ ModelStore.sidebar_show = "always"
 .model-unavailable-msg {
     color: rgba(255, 180, 120, 0.95);
     font-size: 0.78rem;
+    margin-top: 4px;
+}
+
+.model-not-runnable-msg {
+    color: rgba(140, 170, 255, 0.95);
+    font-size: 0.74rem;
+    line-height: 1.3;
     margin-top: 4px;
 }
 

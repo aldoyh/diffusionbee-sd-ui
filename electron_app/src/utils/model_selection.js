@@ -1,4 +1,4 @@
-const { isFlux2Model } = require('./flux2_catalog.js');
+const { isFlux2Model, isGeneratableModelType } = require('./flux2_catalog.js');
 
 const FALLBACK_SD15_MODEL = {
   id: 'Default_SD1.5',
@@ -70,7 +70,13 @@ function getModelSdType(model) {
 function isSelectableStableDiffusionModel(model) {
   const text = getModelSearchText(model);
   if (!text) return false;
-  if (isFlux2Model(model)) return true;
+  // Only model types the active backend can run are selectable — the
+  // GENERATABLE_MODEL_TYPES gate (see flux2_catalog.js). FLUX.2's old
+  // always-selectable bypass is gone: it produced the trap where onboarding
+  // recommended a model the generator then refused.
+  const type = normalizeText(model.model_meta_data && model.model_meta_data.type);
+  if (type && !isGeneratableModelType(type)) return false;
+  if (isFlux2Model(model)) return false;
   if (text.includes('flux')) return false;
   if (text.includes('controlnet')) return false;
   if (text.includes('embedding')) return false;
@@ -78,18 +84,14 @@ function isSelectableStableDiffusionModel(model) {
   return true;
 }
 
-function isSelectableOnboardingModel(model, options = {}) {
+function isSelectableOnboardingModel(model) {
   if (!model || !model.id || !model.url) return false;
-  if (isFlux2Model(model)) {
-    const minRam = Number(model.min_ram_gb) || 0;
-    if (minRam > 0 && options.profile && options.profile.totalMemGB < minRam) {
-      return false;
-    }
-    if (model.requires_hf_token && !options.hasHfToken) {
-      return false;
-    }
-    return true;
-  }
+  // Onboarding must never recommend a model the backend can't generate with
+  // (the FLUX trap: recommend → download → refuse at generation time). Same
+  // single gate as every other picker, so `preferFlux2` can never resurrect
+  // a non-generatable recommendation.
+  const type = normalizeText(model.model_meta_data && model.model_meta_data.type);
+  if (type && !isGeneratableModelType(type)) return false;
   return isSelectableStableDiffusionModel(model);
 }
 
@@ -274,7 +276,10 @@ function pickOptimalStableDiffusionModel(models, profile = getMachineProfile()) 
 
 function pickOptimalOnboardingModel(models, profile = getMachineProfile(), options = {}) {
   const hasHfToken = Boolean(options.hasHfToken);
-  const preferFlux2 = options.preferFlux2 !== false;
+  // FLUX preference is DISABLED while the active backend has no FLUX
+  // inference. Flip to `options.preferFlux2 !== false` (default-on) when a real
+  // FLUX backend ships — GENERATABLE_MODEL_TYPES gates it either way.
+  const preferFlux2 = options.preferFlux2 === true;
 
   const candidates = (models || []).filter((model) => isSelectableOnboardingModel(model, {
     profile,

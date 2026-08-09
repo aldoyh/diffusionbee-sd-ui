@@ -96,7 +96,7 @@ import {native_confirm} from "../native_functions_vue_bridge.js";
 import {share_on_arthub} from '../utils.js'
 import GalleryPane from "../components_bare/GalleryPane.vue"
 import {image_manu_functions} from "../components/image_menu_functions.js"
-import {open_popup , form_params_to_text , form_params_to_readable_dict, toFileUrl} from "../utils"
+import {open_popup, gallery_item_context , form_params_to_text , form_params_to_readable_dict, toFileUrl} from "../utils"
 import { historyStore, addToHistory, deleteEntry, clearHistory } from "../history_service.js"
 
 import Vue from 'vue'
@@ -187,7 +187,9 @@ const History =  {
         },
 
         on_image_click(image_item_data){
-            open_popup(toFileUrl(image_item_data.image_url))
+            // Preview inside the app (full-screen lightbox), with prev/next
+            // across the other images of the same history group.
+            open_popup(toFileUrl(image_item_data.image_url), undefined, gallery_item_context(image_item_data))
         },
 
         delete_hist(k){

@@ -16,3 +16,10 @@ overrides:
   dmg-builder: 26.8.1
   electron-builder: 26.8.1
   electron-builder-squirrel-windows: 26.8.1
+  # SECURITY: pin keyv to the last known-clean 4.x. keyv@6.0.0 (published 2026-08-04
+  # via a compromised maintainer account) shipped a malicious preinstall worm
+  # (SNYK-JS-KEYV-18515941). eslint (flat-cache 3.x) and @electron/get (got 11 /
+  # cacheable-request 7) both pull keyv through ^4.x ranges, which would happily
+  # resolve a future malicious 4.x. Do not raise this until the maintainer's
+  # account is confirmed clean and a verified release is published.
+  keyv: 4.5.4

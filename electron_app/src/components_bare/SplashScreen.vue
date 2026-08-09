@@ -82,27 +82,27 @@ export default {
         },
     },
     computed: {
+        // Treat NaN / Infinity / non-numeric progress as indeterminate so the
+        // progress bar never displays a "NaN%" label.
         isIndeterminate() {
-            return this.progress < 0;
+            return !(Number.isFinite(this.progress) && this.progress >= 0);
         },
         progressPercent() {
-            const val = typeof this.progress === 'number' && !Number.isNaN(this.progress)
-                ? this.progress
-                : 0;
+            const val = Number.isFinite(this.progress) ? this.progress : 0;
             return Math.min(Math.max(val, 0), 100);
         },
         progressStyle() {
-            if (this.progress >= 0) {
+            if (Number.isFinite(this.progress) && this.progress >= 0) {
                 return { width: this.progressPercent + '%' };
             }
             return {}; // CSS animation handles indeterminate width
         },
         showProgressValue() {
-            return this.progress >= 0;
+            return Number.isFinite(this.progress) && this.progress >= 0;
         },
         statusText() {
             if (this.status) return this.status;
-            if (this.progress < 0) return 'Initializing...';
+            if (!Number.isFinite(this.progress) || this.progress < 0) return 'Initializing...';
             if (this.progress < 30) return 'Starting services...';
             if (this.progress < 60) return 'Loading models...';
             if (this.progress < 90) return 'Preparing UI...';

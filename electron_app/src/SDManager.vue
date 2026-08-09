@@ -41,9 +41,11 @@ export default {
     methods: {
 
         // call this 
-        add_job(gen_options, raw_form_options ,gallery_component){
+        add_job(gen_options, raw_form_options ,gallery_component, group_id){
             gen_options = JSON.parse(JSON.stringify(gen_options))
-            let group_options = {group_id : Math.random().toString() , jobs:[] }
+            // Optional caller-provided group_id so the caller can track this
+            // group's lifecycle (used by the batch queue status display).
+            let group_options = {group_id : group_id || Math.random().toString() , jobs:[] }
             let n = gen_options.num_imgs
             for(let i=0 ; i < n  ; i ++ ){
                 raw_form_options = JSON.parse(JSON.stringify(raw_form_options))
@@ -108,6 +110,10 @@ export default {
                     console.warn('finish_current_job: no gallery for group', current_group_id)
                     this.current_group_id = undefined;
                     this.queue.current_group = undefined;
+                    // Keep the queue moving: without this dispatch the next
+                    // queued group would sit forever and the batch poller
+                    // would spin on a never-completing item.
+                    this.get_and_do_job();
                     return
                 }
                 let gallery_group = gallery.get_group( this.current_group_id )
@@ -115,6 +121,7 @@ export default {
                     console.warn('finish_current_job: no gallery group for', current_group_id)
                     this.current_group_id = undefined;
                     this.queue.current_group = undefined;
+                    this.get_and_do_job();
                     return
                 }
                 let n_done = 0
@@ -224,8 +231,19 @@ export default {
                     that.queue.current_group.jobs[that.current_job_index].done_percentage = p ;
                     
                     let gallery = that.group_gallery_mapping[that.current_group_id]
+                    if (!gallery) {
+                        // Gallery unmounted while the job runs (user navigated
+                        // away) — nothing to update, don't throw.
+                        return;
+                    }
                     let gallery_group = gallery.get_group( that.current_group_id )
+                    if (!gallery_group) {
+                        return;
+                    }
                     let el_to_update = gallery_group.imgs[ that.queue.current_group.jobs[that.current_job_index].image_no ]
+                    if (!el_to_update) {
+                        return;
+                    }
                     el_to_update.done_percentage = p ;
                     gallery.update_group( gallery_group  )
 

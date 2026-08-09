@@ -105,30 +105,38 @@ function hydrateFromHistory(app) {
         return
     }
 
-    let latest = null
-    for (const key of keys) {
-        const entry = hist[key]
+    // History keys are stored in insertion order (newest appended last), so walk
+    // backwards to collect the most recent groups with displayable images. This
+    // keeps the Homepage "recent" gallery populated after a restart instead of
+    // showing only the single latest generation.
+    const groups = []
+    for (let i = keys.length - 1; i >= 0 && groups.length < LIVE_GALLERY_LIMIT; i--) {
+        const entry = hist[keys[i]]
         if (!hasDisplayableImage(entry)) {
             continue
         }
-        if (!latest) {
-            latest = { key, entry }
-            continue
-        }
-        const entryTime = (entry.params && entry.params.timestamp) || 0
-        const latestTime = (latest.entry.params && latest.entry.params.timestamp) || 0
-        if (entryTime >= latestTime) {
-            latest = { key, entry }
-        }
+        const group = cloneGalleryGroup(entry)
+        group.group_id = group.group_id || keys[i]
+        groups.push(group)
     }
 
-    if (!latest) {
+    if (groups.length === 0) {
         return
     }
 
-    const group = cloneGalleryGroup(latest.entry)
-    group.group_id = group.group_id || latest.key
-    upsertLiveGroup(app, group)
+    // Replace the live list with the hydrated groups (newest first).
+    Vue.set(app.app_state, 'live_gallery_groups', groups)
+    Vue.set(app.app_state, 'last_gallery_group', groups[0])
+
+    // Sync into any galleries that are already registered (e.g. the eagerly
+    // mounted Homepage gallery). Galleries that mount later are covered by
+    // registerGallery(), which replays live_gallery_groups on registration.
+    const galleries = app.functions._registered_galleries || []
+    for (const gallery of galleries) {
+        for (const group of groups) {
+            syncGalleryGroup(gallery, group, null)
+        }
+    }
 }
 
 export function registerGenerationBroadcast(app) {

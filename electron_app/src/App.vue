@@ -56,6 +56,7 @@
                     <div class="model-setup-loading">
                         <div class="loading-spinner"></div>
                         <p>{{ app_state.isArabic ? 'جارٍ التحقق من النماذج المتاحة...' : 'Checking for available models...' }}</p>
+                        <button @click="dismiss_model_setup" class="skip-btn" style="margin-top: 8px;">{{ app_state.isArabic ? 'تخطي الآن' : 'Skip for now' }}</button>
                     </div>
                 </div>
 
@@ -69,6 +70,7 @@
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         {{ app_state.isArabic ? 'تحميل وابدأ' : 'Download & Get Started' }}
                     </button>
+                    <button @click="dismiss_model_setup" class="skip-btn" style="margin-top: 12px;">{{ app_state.isArabic ? 'تخطي' : 'Skip' }}</button>
                 </div>
 
                 <div v-else-if="is_downloading_model && !model_download_completed" class="model-setup-body">
@@ -78,6 +80,11 @@
                             <div class="progress-bar-fill" :style="{ width: Math.min(model_download_progress, 100) + '%' }"></div>
                         </div>
                         <p class="progress-text">{{ Math.round(model_download_progress) }}%</p>
+                        <!-- Escape hatch: a stalled download (no Content-Length,
+                             dead server) must never trap the user behind the
+                             full-screen overlay with a forever-running poller.
+                             dismiss_model_setup clears modelDownloadInterval. -->
+                        <button @click="dismiss_model_setup" class="skip-btn" style="margin-top: 12px;">{{ app_state.isArabic ? 'إلغاء التحميل' : 'Cancel download' }}</button>
                     </div>
                 </div>
 
@@ -150,7 +157,7 @@
 
                 <!-- Footer with attribution -->
                 <div class="model-setup-attribution">
-                    <p>Made in Bahrain by Hasan AlDoy</p>
+                    <p>{{ app_state.isArabic ? 'صُنع بحب ❤️ في البحرين 🇧🇭' : 'Made with Love ❤️ in Bahrain 🇧🇭' }}</p>
                 </div>
 
             </div>
@@ -228,11 +235,29 @@ export default
         // ── Splash screen progress updates ──
         this.updateSplashProgress('Initializing backend...', 5);
 
+        // The splash screen is a full-window drag region that swallows every
+        // click and keystroke, so it must NEVER be allowed to run forever.
+        // The interval below only stops when the backend reports input-ready
+        // (`sdbk inrd`); if the backend fails to start / hangs, the watchdog
+        // deadline fires and we let the user into the app anyway (the Home
+        // onboarding banner and Model Store still give a path forward).
+        // 30s cap: on modest machines (8GB) model load can take ~10-20s, but
+        // a full-window input block must never outlast that by much.
+        const SPLASH_MAX_WAIT_MS = 30000; // 30s hard cap
+        const splashDeadline = Date.now() + SPLASH_MAX_WAIT_MS;
         this.start_screen_interval = setInterval( function(){
             if(that.stable_diffusion && that.stable_diffusion.is_input_avail){
                 that.updateSplashProgress('Starting services...', 15);
+                clearInterval(that.start_screen_interval);
+                that.start_screen_interval = null;
                 that.app_state.is_start_screen = false;
-                clearInterval(that.start_screen_interval)
+            } else if (Date.now() >= splashDeadline) {
+                // Backend never became ready — stop polling and unlock the UI.
+                clearInterval(that.start_screen_interval);
+                that.start_screen_interval = null;
+                that.updateSplashProgress('Backend not responding — you can still browse.', 100);
+                that.app_state.is_start_screen = false;
+                console.warn('[splash] Backend did not become input-ready within ' + SPLASH_MAX_WAIT_MS + 'ms — unlocking the UI.');
             } else {
                 that.updateSplashProgress('Waiting for backend...', 8);
             }
@@ -249,16 +274,21 @@ export default
             console.warn('Failed to scan disk for models:', e);
         }
 
-        // Track model download progress during splash
+        // Track model download progress during splash. This interval is
+        // cleared when the start screen ends (see the is_start_screen watcher)
+        // so it can never keep firing every 500ms for the whole app lifetime.
         this.splashBackendCheckInterval = setInterval(() => {
             if (this.assets_manager && this.assets_manager.downloading) {
                 for (let id of Object.keys(this.assets_manager.downloading)) {
                     let dl = this.assets_manager.downloading[id];
                     if (dl && dl.status === 'downloading' && dl.progress !== undefined) {
-                        // Map download progress (0-100) to splash progress range (30-85)
-                        let p = 30 + Math.round(dl.progress * 0.55);
-                        this.updateSplashProgress('Downloading model...', p);
-                        break;
+                        const dlProgress = Number(dl.progress);
+                        if (Number.isFinite(dlProgress) && dlProgress >= 0) {
+                            // Map download progress (0-100) to splash progress range (30-85)
+                            let p = 30 + Math.round(Math.min(dlProgress, 100) * 0.55);
+                            this.updateSplashProgress('Downloading model...', p);
+                            break;
+                        }
                     }
                 }
             }
@@ -283,7 +313,7 @@ export default
             this.check_and_prompt_model_download();
         }, 5000);
 
-        let data = window.ipcRenderer.sendSync('load_data', 'app_data_2.json');
+        let data = window.ipcRenderer ? window.ipcRenderer.sendSync('load_data', 'app_data_2.json') : {};
         if(!data.history){
             data.history = {}
         }
@@ -307,9 +337,17 @@ export default
 
             handler: function(new_value) {
                 if (new_value == false) {
+                    // Stop the forever-running splash poller the moment the
+                    // start screen ends (it was previously only cleared in
+                    // beforeDestroy, so it fired every 500ms for the entire
+                    // app lifetime).
+                    if (this.splashBackendCheckInterval) {
+                        clearInterval(this.splashBackendCheckInterval);
+                        this.splashBackendCheckInterval = null;
+                    }
                     if(this.is_screen_frozen){
                         console.log("Unfreeze win!")
-                        window.ipcRenderer.sendSync('unfreeze_win', '');
+                        if (window.ipcRenderer) window.ipcRenderer.sendSync('unfreeze_win', '');
                         this.is_screen_frozen = false;
                     }
                     
@@ -317,7 +355,7 @@ export default
                 else{
                     if(!this.is_screen_frozen){
                         console.log("Freeze win!")
-                        window.ipcRenderer.sendSync('freeze_win', '');
+                        if (window.ipcRenderer) window.ipcRenderer.sendSync('freeze_win', '');
                         this.is_screen_frozen = true;
                     }
                 }
@@ -335,7 +373,7 @@ export default
         'app_state.app_data': {
 
             handler: function(new_value) {
-                window.ipcRenderer.sendSync('save_data', new_value , "app_data_2.json");
+                if (window.ipcRenderer) window.ipcRenderer.sendSync('save_data', new_value , "app_data_2.json");
             },
             deep: true
         } , 
@@ -468,7 +506,7 @@ export default
         check_for_updates(){
             
             let xmlHttp = new XMLHttpRequest();
-            let user_id = window.ipcRenderer.sendSync('get_instance_id' , '');
+            let user_id = window.ipcRenderer ? window.ipcRenderer.sendSync('get_instance_id' , '') : '';
             let updates_url = "https://checkupdates.diffusionbee.com/check_diffusionbee_updates?user_id="+user_id;
             xmlHttp.onreadystatechange = function() { 
                 if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
@@ -481,7 +519,7 @@ export default
                     let current_build_no = Number(require('../package.json').build_number)
                     if( latest_app_version != current_versoin && latest_build_no > current_build_no ){
                         if(native_confirm("A new version of " + require('../package.json').name +" is available. Do you want to visit " +require('../package.json').website+ " to update?"  ))
-                            window.ipcRenderer.sendSync('open_url', require('../package.json').website);
+                            if (window.ipcRenderer) window.ipcRenderer.sendSync('open_url', require('../package.json').website);
                     }
                 }
             }
@@ -495,12 +533,12 @@ export default
             {
                 this.should_show_dialog_on_quit = true;
                 this.show_dialog_on_quit_msg = 'Images are still being generated. Are you sure you want to quit?';
-                window.ipcRenderer.sendSync('show_dialog_on_quit', this.show_dialog_on_quit_msg);
+                if (window.ipcRenderer) window.ipcRenderer.sendSync('show_dialog_on_quit', this.show_dialog_on_quit_msg);
             }
             else
             {
                 this.should_show_dialog_on_quit = false;
-                window.ipcRenderer.sendSync('dont_show_dialog_on_quit', '');
+                if (window.ipcRenderer) window.ipcRenderer.sendSync('dont_show_dialog_on_quit', '');
             }
         } ,
 
@@ -535,10 +573,20 @@ export default
 
         async fetch_models_list() {
             try {
-                let user_id = window.ipcRenderer.sendSync('get_instance_id', '');
+                let user_id = window.ipcRenderer ? window.ipcRenderer.sendSync('get_instance_id', '') : '';
                 let models_url = 'https://models.diffusionbee.com/list_models?user_id=' + user_id;
                 console.log('Fetching models from:', models_url);
-                let response = await fetch(models_url, { cache: 'no-store' });
+                // Hard timeout so a hanging catalog request can never leave the
+                // z-9999 setup overlay stuck on "Checking for available models..."
+                // with no way out (the Skip button is the UI-level escape).
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 15000);
+                let response;
+                try {
+                    response = await fetch(models_url, { cache: 'no-store', signal: controller.signal });
+                } finally {
+                    clearTimeout(timeout);
+                }
                 let models = await response.json();
 
                 if (!models || models.length === 0) {
@@ -553,15 +601,31 @@ export default
                     profile: machineProfile,
                     hasHfToken: Boolean(hfToken),
                 }));
+                // NOTE: `preferFlux2` is deliberately not passed — the active
+                // backend has no FLUX inference, so onboarding must never
+                // recommend a FLUX model (see GENERATABLE_MODEL_TYPES in
+                // flux2_catalog.js — the single gate that flips when a real
+                // FLUX backend ships).
                 let default_model = pickOptimalOnboardingModel(downloadableModels, machineProfile, {
                     hasHfToken: Boolean(hfToken),
-                    preferFlux2: true,
                 });
                 if (!default_model) {
-                    default_model = downloadableModels[0] || mergedModels.find(m => m && m.id && m.url) || mergedModels[0];
+                    // The gated list above should never be empty (SD models
+                    // always qualify), but if it somehow is — a catalog hiccup,
+                    // or a server listing only FLUX entries — fall back to a
+                    // *generatable* entry only. The old fallback could hand the
+                    // user a FLUX.2 model the backend can't run (the FLUX trap).
+                    default_model = downloadableModels[0]
+                        || mergedModels.find((m) => m && m.id && m.url && isSelectableOnboardingModel(m))
+                        || null;
                 }
 
-                console.log('Found default model:', default_model ? default_model.id : 'none');
+                if (!default_model) {
+                    this.model_download_error = 'No compatible models available from the server.';
+                    return;
+                }
+
+                console.log('Found default model:', default_model.id);
                 this.model_to_download = default_model;
             } catch (e) {
                 console.error('Failed to fetch model list:', e);
@@ -586,7 +650,7 @@ export default
                 let dl = this.assets_manager.downloading[asset_id];
                 if (!dl) return;
 
-                this.model_download_progress = dl.progress || 0;
+                this.model_download_progress = Math.max(0, Math.min(100, Number(dl.progress) || 0));
 
                 if (dl.status === 'done') {
                     this.model_download_completed = true;
@@ -683,9 +747,18 @@ export default
 
         async fetchOptionalModels() {
             try {
-                let user_id = window.ipcRenderer.sendSync('get_instance_id', '');
+                let user_id = window.ipcRenderer ? window.ipcRenderer.sendSync('get_instance_id', '') : '';
                 let models_url = 'https://models.diffusionbee.com/list_models?user_id=' + user_id;
-                let response = await fetch(models_url, { cache: 'no-store' });
+                // Same hard timeout as fetch_models_list — never let the
+                // optional-downloads dialog hang without an escape.
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 15000);
+                let response;
+                try {
+                    response = await fetch(models_url, { cache: 'no-store', signal: controller.signal });
+                } finally {
+                    clearTimeout(timeout);
+                }
                 let models = await response.json();
 
                 if (!models || models.length === 0) {
@@ -698,12 +771,14 @@ export default
                 const mergedModels = mergeFlux2IntoCatalog(models, hfToken);
                 const installedIds = new Set(Object.keys(this.assets_manager.all_avail_assets));
 
-                // Curated list: high-quality SD/SDXL models plus recommended FLUX.2 if the machine can handle it.
+                // Curated list: high-quality SD/SDXL models only. FLUX.2 used
+                // to be curated here, but the active backend can't run FLUX —
+                // recommending the 7.75GB download was the "FLUX trap" (see
+                // GENERATABLE_MODEL_TYPES in flux2_catalog.js).
                 const candidateIds = [
                     'DreamShaper_6_baked_vae',
                     'CyberRealistic__v3.1',
                     'Juggernaut_X',
-                    'FLUX.2-klein-4B',
                 ];
 
                 const candidateSet = new Set(candidateIds);
@@ -767,7 +842,7 @@ export default
                         continue;
                     }
 
-                    this.$set(this.optional_download_progress, model.id, dl.progress || 0);
+                    this.$set(this.optional_download_progress, model.id, Math.max(0, Math.min(100, Number(dl.progress) || 0)));
 
                     if (dl.status === 'downloading' || dl.status === 'not_downloaded') {
                         allDone = false;
@@ -823,29 +898,24 @@ export default
 
                 const compatibleModels = [];
                 const incompatibleModels = [];
-                let fsAvailable = false;
-                try {
-                    require('fs');
-                    fsAvailable = true;
-                } catch (_) { /* ignore */ }
 
                 for (const id of modelIds) {
                     const asset = assets[id];
                     const meta = (asset && asset.model_meta_data) || {};
                     const path = (asset && asset.asset_path) || '';
 
-                    // Check file exists on disk
+                    // Check file exists on disk. Done through IPC instead of a
+                    // renderer-side require('fs') so the Node builtin never
+                    // enters the renderer bundle (keeps the browser demo build
+                    // compiling cleanly).
                     let existsOnDisk = false;
-                    let fileSize = 'unknown';
-                    if (fsAvailable) {
+                    if (window.ipcRenderer && typeof window.ipcRenderer.sendSync === 'function') {
                         try {
-                            const fs = require('fs');
-                            existsOnDisk = fs.existsSync(path);
-                            if (existsOnDisk) {
-                                fileSize = this.formatBytes(fs.statSync(path).size);
-                            }
+                            existsOnDisk = !!window.ipcRenderer.sendSync('file_exists', path);
                         } catch (_) { /* ignore */ }
                     }
+                    // Size comes from the asset catalog when known (no renderer fs access).
+                    const fileSize = asset.size_bytes ? this.formatBytes(asset.size_bytes) : 'unknown';
 
                     const sdType = (meta.sd_type || 'unknown').toLowerCase();
                     const floatType = (meta.float_type || 'unknown').toLowerCase();
@@ -937,8 +1007,11 @@ export default
 
         updateSplashProgress(status, progress) {
             this.splashStatus = status;
-            if (progress >= 0) {
-                this.splashProgress = progress;
+            const p = Number(progress);
+            // Reject NaN / Infinity / non-numeric values so the splash can
+            // never render a "NaN%" label.
+            if (Number.isFinite(p) && p >= 0) {
+                this.splashProgress = Math.min(100, p);
             }
         },
 

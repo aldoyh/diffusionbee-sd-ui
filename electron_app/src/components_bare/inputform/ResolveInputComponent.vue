@@ -18,6 +18,7 @@ import FilePathTextBox from "./FilePathTextBox.vue"
 import OutputText from "./OutputText.vue"
 import OutputImage from "./OutputImage.vue"
 import BetterSelector from "./BetterSelector.vue"
+import ModelSelectorInput from "./ModelSelectorInput.vue"
 
 
 export default {
@@ -26,7 +27,7 @@ export default {
         config: Object,
         form_values: Object,
     },
-    components: { 'Dropdown':Dropdown , 'Slider':Slider, 'Textbox':Textbox , 'TextareaInput':TextareaComponent, 'ImageInput':ImageInput , 'Checkbox':Checkbox , 'FilePathTextBox':FilePathTextBox , OutputText:OutputText, OutputImage:OutputImage , BetterSelector:BetterSelector },
+    components: { 'Dropdown':Dropdown , 'Slider':Slider, 'Textbox':Textbox , 'TextareaInput':TextareaComponent, 'ImageInput':ImageInput , 'Checkbox':Checkbox , 'FilePathTextBox':FilePathTextBox , OutputText:OutputText, OutputImage:OutputImage , BetterSelector:BetterSelector , ModelSelectorInput:ModelSelectorInput },
     beforeCreate: function () {
          this.$options.components.InputWithDesc = require('./InputWithDesc.vue').default // use this as circular
          this.$options.components.Accordian = require('./Accordian.vue').default // use this as circular

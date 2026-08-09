@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "demo-ui",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd electron_app && npm run serve:ui"],
+      "port": 8080
+    }
+  ]
+}

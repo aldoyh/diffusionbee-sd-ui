@@ -119,6 +119,7 @@ node electron_app/scripts/tests/convert_model_spawn.test.js
 node electron_app/scripts/tests/realesrgan_paths.test.js
 node electron_app/scripts/tests/to_file_url.test.js
 node electron_app/scripts/tests/win_icon.test.js
+node electron_app/scripts/tests/batch_queue_store.test.js
 ```
 These mirror logic in `bridge.js` and the build scripts and run without Electron.
 
@@ -156,6 +157,8 @@ bash scripts/verify_installed_app_ui.sh
 - The Python backend is fragile to relative `sys.path` manipulation (see top of `diffusionbee_backend.py`) — the dev launcher must be called with the script's actual CWD.
 - `electron_app/.DS_Store` files are ignored by `extraResources` filters but the filter list (`vue.config.js`) is the authoritative whitelist — keep it in sync if adding new backend artifact directories.
 - `node_modules/` and `package-lock.json` are present at the **root** even though `electron_app` uses pnpm. The root `package.json` is for build orchestration only; don't `npm install` new deps at the root.
+- **keyv is pinned to 4.5.4** via `overrides` in `electron_app/pnpm-workspace.yaml` — do NOT unpin or bump it. keyv@6.0.0 (published 2026-08-04 from the compromised maintainer account) shipped a malicious preinstall worm (SNYK-JS-KEYV-18515941); keyv comes in transitively via `eslint → file-entry-cache → flat-cache` and `electron → @electron/get → got → cacheable-request`, both through `^4.x` ranges. The pin keeps future installs from resolving a malicious 4.x. (Note: keyv 5.x would break flat-cache 3.x — `new Keyv()` vs named-only exports.)
+- **pnpm v11+ ignores the `"pnpm"` field in `electron_app/package.json`** (settings moved to `pnpm-workspace.yaml`); pnpm prints a warning listing ignored keys. Put overrides/settings in `pnpm-workspace.yaml`, not package.json.
 - `ai-image-studio.html` (root) is a standalone browser-only UI mock — not part of the build.
 
 ## Source-of-truth files
