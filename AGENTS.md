@@ -120,6 +120,7 @@ node electron_app/scripts/tests/realesrgan_paths.test.js
 node electron_app/scripts/tests/to_file_url.test.js
 node electron_app/scripts/tests/win_icon.test.js
 node electron_app/scripts/tests/batch_queue_store.test.js
+node electron_app/scripts/tests/download_resume.test.js
 ```
 These mirror logic in `bridge.js` and the build scripts and run without Electron.
 

@@ -154,5 +154,67 @@ image_manu_functions['upload_imgbb'] =  async function (app, image_item_data){
 }
 image_manu_functions['upload_imgbb'].text = "Upload to imgbb.com"
 
+// Arabic labels, resolved by the galleries when app_state.isArabic is set.
+const MENU_TEXT_AR = {
+    'preview_image': 'معاينة',
+    'save_image': 'حفظ الصورة',
+    'send_img_2_img': 'إرسال إلى توليد من صورة',
+    'send_outpaint': 'إرسال إلى اللوحة الذكية',
+    'send_inpaint': 'إرسال إلى الرسم الداخلي',
+    'send_img_2_img_with_params': 'إرسال إلى توليد من صورة مع المعاملات',
+    'use_params_current_page': 'استخدام المعاملات',
+    'copy_params': 'نسخ جميع المعاملات',
+    'send_to_postprocess': 'إرسال إلى رفع الدقة',
+    'generate_similar_images': 'توليد صور مشابهة',
+    'upload_imgbb': 'رفع إلى imgbb.com',
+};
 
-export {image_manu_functions}
+for (let fn of Object.keys(image_manu_functions)) {
+    image_manu_functions[fn].text_ar = MENU_TEXT_AR[fn] || image_manu_functions[fn].text;
+}
+
+// Menu structure: sectioned dropdown with per-item icons. The galleries build
+// their popup from these groups so the menu stays consistent everywhere
+// (generation gallery + History).
+const MENU_ICONS = {
+    'preview_image': 'search-plus',
+    'save_image': 'download',
+    'upload_imgbb': 'cloud-upload-alt',
+    'send_img_2_img': 'image',
+    'send_outpaint': 'magic',
+    'send_inpaint': 'paint-brush',
+    'send_img_2_img_with_params': 'sliders-h',
+    'send_to_postprocess': 'arrows-alt',
+    'use_params_current_page': 'tools',
+    'copy_params': 'copy',
+    'generate_similar_images': 'clone',
+};
+
+const MENU_GROUPS = [
+    { id: 'preview', label: 'Preview & Export', label_ar: 'معاينة وحفظ', items: ['preview_image', 'save_image', 'upload_imgbb'] },
+    { id: 'send', label: 'Send To', label_ar: 'إرسال إلى', items: ['send_img_2_img', 'send_outpaint', 'send_inpaint', 'send_img_2_img_with_params', 'send_to_postprocess'] },
+    { id: 'params', label: 'Parameters', label_ar: 'المعاملات', items: ['use_params_current_page', 'copy_params', 'generate_similar_images'] },
+];
+
+// Builds the sectioned menu passed down to GalleryImage. `skip` is an array of
+// function ids to omit (e.g. 'use_params_current_page' on non-Txt2Img pages).
+function build_image_menu_items(skip, isArabic) {
+    skip = skip || [];
+    const groups = [];
+    for (let g of MENU_GROUPS) {
+        const items = g.items
+            .filter(id => !skip.includes(id) && image_manu_functions[id])
+            .map(id => ({
+                id,
+                icon: MENU_ICONS[id],
+                text: (isArabic && image_manu_functions[id].text_ar) ? image_manu_functions[id].text_ar : image_manu_functions[id].text,
+            }));
+        if (items.length) {
+            groups.push({ id: g.id, label: (isArabic && g.label_ar) ? g.label_ar : g.label, items });
+        }
+    }
+    return groups;
+}
+
+
+export {image_manu_functions, build_image_menu_items}

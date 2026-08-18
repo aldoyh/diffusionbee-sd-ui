@@ -349,7 +349,7 @@
                     </div>
                 </transition-group>
 
-                <GenerationGallery ref="homeGallery" :app="app" :n_to_keep="10" :menu_items_skip="['use_params_current_page']" :compact="true" :fixed_col_size="280"></GenerationGallery>
+                <GenerationGallery ref="homeGallery" :app="app" :n_to_keep="10" :menu_items_skip="['use_params_current_page']" :compact="true" :fixed_col_size="280" :enable_selection="true" :on_selection_action="onGallerySelectionAction"></GenerationGallery>
             </div>
 
         </div>
@@ -414,7 +414,7 @@ import { loadHomepageBatch, saveHomepageBatch } from "../batch_queue_store.js"
 import batchQueueMixin from "../batch_queue_mixin.js"
 import { saveUserPrompt, getUserPrompts } from "../prompt_library.js"
 const { getFallbackDefaultStableDiffusionAsset, sortStableDiffusionModelsBestFirst } = require("../utils/model_selection.js")
-const { isGeneratableModelType, isFlux2Model } = require("../utils/flux2_catalog.js")
+const { resolveModelCapability, isFlux2Model } = require("../utils/flux2_catalog.js")
 const { generatePromptWithOllama, normalizeGeneratedPrompt } = require("../utils/ollama_prompt_service.js")
 
 const PUBLIC_BASE = (typeof process !== 'undefined' && process.env && process.env.BASE_URL) || '/';
@@ -1261,7 +1261,10 @@ const Home = {
                 img_width: item.img_width,
                 img_height: item.img_height,
                 num_imgs: item.num_imgs,
-                seed: Math.floor(Math.random() * 1000000),
+                // Gallery re-runs carry the original seed so the FIFO job
+                // reproduces the selected generation; form-added items get a
+                // fresh random seed as before.
+                seed: (item.seed !== undefined && item.seed !== null && item.seed >= 0) ? item.seed : Math.floor(Math.random() * 1000000),
                 guidance_scale: item.guidance_scale,
                 num_steps: item.num_steps,
                 scheduler: item.scheduler,
@@ -1278,6 +1281,38 @@ const Home = {
 
         getBatchGallery() {
             return this.$refs.homeGallery;
+        },
+
+        // Gallery multi-select "Re-run": map a selected image's stored params
+        // (saved by SDManager per job) onto the homepage batch-item shape so
+        // the shared FIFO runBatch machinery picks it up unchanged.
+        buildBatchItemFromImage(img) {
+            const p = img.params || {};
+            const prompt = p.prompt || img.description || '';
+            // The Homepage composer is txt2img-only. Images generated on the
+            // img2img/inpaint/upscaler applet pages can appear here (last
+            // generation hydration) — re-running those through the txt2img
+            // path would silently drop their input-image context, so skip
+            // them; their own pages' galleries can re-run them correctly.
+            if (!prompt || !p.model_tdict_path || (p.applet_name && p.applet_name !== 'txt2img')) return null;
+            return {
+                id: Math.random().toString(),
+                prompt: prompt,
+                preparedPrompt: prompt,
+                negative_prompt: p.negative_prompt || '',
+                model_id: (p.raw_form_options && p.raw_form_options.selected_sd_model) || '',
+                model_tdict_path: p.model_tdict_path,
+                img_width: p.img_width,
+                img_height: p.img_height,
+                num_imgs: 1,
+                num_steps: p.num_steps,
+                guidance_scale: p.guidance_scale,
+                scheduler: p.scheduler,
+                applet_name: p.applet_name || 'txt2img',
+                seed: (p.seed !== undefined && p.seed !== null && p.seed >= 0) ? p.seed : undefined,
+                state: 'pending',
+                group_id: null,
+            };
         },
 
         persistBatchQueue(queue) {
@@ -1456,7 +1491,7 @@ const Home = {
             if (!this.app.is_mounted || !this.app.assets_manager) return [];
             return sortStableDiffusionModelsBestFirst(
                 Object.values(this.app.assets_manager.all_avail_assets || {}).filter(
-                    m => m.model_meta_data && isGeneratableModelType(m.model_meta_data.type)
+                    m => m.model_meta_data && resolveModelCapability(m) === 'runnable'
                 )
             );
         },

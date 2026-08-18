@@ -749,17 +749,79 @@ ipcMain.on('get_assets_dir', (event) => {
 
 
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Model downloads: Range-resume + integrity + real cancel
+//
+// Downloads stream to a sibling `<dest>.partial` file, then atomically rename
+// to the final name on success. A dropped connection keeps the partial, so the
+// next attempt resumes via `Range: bytes=<size>-` instead of restarting a
+// multi-GB download from zero. An LFS/Xet `etag` is recorded in a tiny sidecar
+// (`<dest>.partial.json`) and cross-checked on resume — if the server is now
+// serving a different revision, the partial is discarded and the download
+// restarts. Integrity: fresh downloads keep the incremental MD5 (catalog
+// models); resumed downloads re-read the whole file when an MD5 is expected
+// (incremental hashing of only the tail would be wrong).
+// ─────────────────────────────────────────────────────────────────────────────
+
+// downloadId -> { request, partialPath, sidecarPath, cancelled }
+const activeDownloads = new Map();
+
+function normalize_etag(value) {
+  return String(value || '')
+    .replace(/^W\//, '')
+    .replace(/^"|"$/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+ipcMain.on('download-cancel', (event, downloadId) => {
+  const dl = activeDownloads.get(downloadId);
+  if (dl) {
+    const fs = require('fs');
+    dl.cancelled = true;
+    try { dl.request.abort(); } catch (err) { /* ignore */ }
+    // The abort can surface as a stream error, a request error, or nothing at
+    // all — don't depend on that path. Notify + clean up here directly.
+    activeDownloads.delete(downloadId);
+    try { if (fs.existsSync(dl.partialPath)) fs.unlinkSync(dl.partialPath); } catch (err) { /* ignore */ }
+    try { if (fs.existsSync(dl.sidecarPath)) fs.unlinkSync(dl.sidecarPath); } catch (err) { /* ignore */ }
+    try {
+      event.sender.send('to_download', { fn: 'cancelled', download_id: downloadId, msg: { message: 'cancelled' } });
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  event.returnValue = true;
+});
+
+// Orphaned `.partial` files (crashed/quitted sessions) waste disk and are
+// invisible to the model scanner. Call once at app startup.
+ipcMain.on('cleanup_partial_downloads', (event) => {
+  const path = require('path');
+  const fs = require('fs');
+  const homedir = require('os').homedir();
+  const dir = path.join(homedir, '.diffusionbee', 'downloaded_assets');
+  let removed = 0;
+  if (fs.existsSync(dir)) {
+    for (const name of fs.readdirSync(dir)) {
+      if (name.endsWith('.partial') || name.endsWith('.partial.json')) {
+        try {
+          fs.unlinkSync(path.join(dir, name));
+          removed += 1;
+        } catch (err) { /* ignore */ }
+      }
+    }
+  }
+  event.returnValue = removed;
+});
+
 ipcMain.on('download-file', (event, url, dest, downloadId, options) => {
 
   const fs = require('fs');
-
-  const file = fs.createWriteStream(dest);
-  const request = require('request');
-
   const crypto = require('crypto');
 
-  let hash = crypto.createHash('md5');
   const downloadOptions = options && typeof options === 'object' ? options : {};
+  const expectedMd5 = String(downloadOptions.expected_md5 || '').toLowerCase();
   const requestHeaders = { ...(downloadOptions.headers || {}) };
 
   if (downloadOptions.hf_auth && !requestHeaders.Authorization) {
@@ -773,59 +835,264 @@ ipcMain.on('download-file', (event, url, dest, downloadId, options) => {
     ? Number(downloadOptions.timeout_ms)
     : (downloadOptions.hf_auth ? 0 : 20000);
 
-  request.get({
+  // Resume bookkeeping: existing partial size + recorded etag sidecar.
+  const partialPath = dest + '.partial';
+  const sidecarPath = dest + '.partial.json';
+  let existingSize = 0;
+  let sidecar = {};
+  try {
+    if (fs.existsSync(partialPath)) {
+      existingSize = fs.statSync(partialPath).size;
+    }
+  } catch (err) { existingSize = 0; }
+  try {
+    if (fs.existsSync(sidecarPath)) {
+      sidecar = JSON.parse(fs.readFileSync(sidecarPath, 'utf8')) || {};
+    }
+  } catch (err) { sidecar = {}; }
+
+  if (existingSize > 0) {
+    requestHeaders.Range = `bytes=${existingSize}-`;
+    // ETag precondition (M5): only append when the server still serves the
+    // revision the partial came from. If-Range makes the server answer 200
+    // (full) instead of 206 (tail) on mismatch, so we never download a
+    // wrong-revision tail. If no etag was recorded we still resume, but the
+    // 206 handler below verifies continuity before appending.
+    if (sidecar.etag) {
+      requestHeaders['If-Range'] = `"${sidecar.etag}"`;
+    }
+  }
+
+  // Dedup by destination (M5): a second download to the same file would open a
+  // second writer and interleave the .partial. activeDownloads is keyed by
+  // downloadId, so scan for an existing partialPath match.
+  for (const existing of activeDownloads.values()) {
+    if (existing.partialPath === partialPath) {
+      console.log('[download] already in progress for', dest);
+      try {
+        event.sender.send('to_download', { fn: 'error', download_id: downloadId, msg: { message: 'Download already in progress' } });
+      } catch (err) { /* ignore */ }
+      return;
+    }
+  }
+
+  const request = require('request');
+  const state = { request: null, partialPath, sidecarPath, cancelled: false };
+  activeDownloads.set(downloadId, state);
+
+  let hash = crypto.createHash('md5');
+  let resumed = false;
+  let stream = null;
+  let downloadedBytes = 0;
+  let totalBytes = 0;
+  let responseEtag = '';
+
+  const send = (fn, msg) => {
+    try {
+      event.sender.send('to_download', { fn, download_id: downloadId, msg });
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const dropPartial = () => {
+    activeDownloads.delete(downloadId);
+    try { if (stream && !stream.destroyed) stream.destroy(); } catch (err) { /* ignore */ }
+    try { if (fs.existsSync(partialPath)) fs.unlinkSync(partialPath); } catch (err) { /* ignore */ }
+    try { if (fs.existsSync(sidecarPath)) fs.unlinkSync(sidecarPath); } catch (err) { /* ignore */ }
+  };
+
+  const finishPartial = (finalHash) => {
+    // A racing cancel already cleaned up + notified — never emit success
+    // for a download the user aborted (and whose partial is likely gone).
+    if (state.cancelled || !activeDownloads.has(downloadId)) return;
+    activeDownloads.delete(downloadId);
+    try {
+      if (fs.existsSync(partialPath)) {
+        fs.renameSync(partialPath, dest); // atomic-ish finalize
+      }
+      if (fs.existsSync(sidecarPath)) fs.unlinkSync(sidecarPath);
+    } catch (err) {
+      console.error('[download] finalize failed:', err);
+      send('error', { message: 'Download finalize failed: ' + (err.message || '') });
+      return;
+    }
+    // Only claim success when the final file actually exists — otherwise the
+    // renderer would mark the model as downloaded with nothing on disk.
+    if (!fs.existsSync(dest)) {
+      send('error', { message: 'Download finalize failed: output file missing' });
+      return;
+    }
+    send('success', { hash: finalHash, resumed, etag: responseEtag });
+  };
+
+  // The download can restart itself (etag mismatch) — each attempt gets its
+  // own request and its error handler ignores itself once superseded.
+  function beginDownload(headers, resumeBase, isResumed) {
+    downloadedBytes = resumeBase;
+    totalBytes = resumeBase;
+    hash = crypto.createHash('md5');
+    resumed = isResumed;
+    responseEtag = '';
+
+    const req = request.get({
       url,
-      headers: requestHeaders,
+      headers,
       followRedirect: true,
       rejectUnauthorized: false, // ignore SSL certificate errors,
       timeout: timeoutMs,
-    })
-    .on('response', response => {
-      const totalBytes = parseInt(response.headers['content-length'], 10);
+    });
+    state.request = req;
+
+    req.on('response', response => {
+      responseEtag = normalize_etag(response.headers['etag'] || response.headers['x-linked-etag']);
+
+      // 416 Range Not Satisfiable → the partial already contains the whole file.
+      if (response.statusCode === 416) {
+        if (resumeBase > 0) {
+          if (expectedMd5) {
+            try {
+              const full = crypto.createHash('md5');
+              const rd = fs.createReadStream(partialPath);
+              rd.on('data', (c) => full.update(c));
+              rd.on('end', () => finishPartial(full.digest('hex')));
+              rd.on('error', () => dropPartial());
+            } catch (err) {
+              dropPartial();
+            }
+          } else {
+            finishPartial(null);
+          }
+        } else {
+          send('error', { message: 'Download failed: ' + response.statusCode });
+        }
+        return;
+      }
+
+      if (response.statusCode === 206) {
+        // Blind-append protection: refuse to append a resumed tail unless the
+        // recorded etag still matches. A missing/mismatched etag means we can't
+        // prove the bytes are contiguous — discard the partial and restart.
+        const etagMismatch = Boolean(sidecar.etag) && (!responseEtag || sidecar.etag !== responseEtag);
+        if (resumeBase > 0 && etagMismatch) {
+          // The partial belongs to a different revision (or the server stopped
+          // sending etags) — discard it and start over with a fresh (no-Range)
+          // request. The 206 body is only the tail, so it can't be reused.
+          try { if (fs.existsSync(partialPath)) fs.unlinkSync(partialPath); } catch (err) { /* ignore */ }
+          try { if (fs.existsSync(sidecarPath)) fs.unlinkSync(sidecarPath); } catch (err) { /* ignore */ }
+          existingSize = 0;
+          sidecar = {};
+          req.abort();
+          beginDownload(cleanHeaders, 0, false);
+          return;
+        }
+        stream = fs.createWriteStream(partialPath, { flags: 'a' });
+      } else if (response.statusCode === 200) {
+        // Server ignored Range (or no partial) → full download, overwrite partial.
+        existingSize = 0;
+        sidecar = {};
+        resumed = false;
+        stream = fs.createWriteStream(partialPath, { flags: 'w' });
+      } else {
+        req.abort();
+        dropPartial();
+        send('error', { message: 'Unexpected HTTP ' + response.statusCode });
+        return;
+      }
+
+      // Record the etag once, from the first real response, for future resumes.
+      if (responseEtag && !sidecar.etag) {
+        sidecar.etag = responseEtag;
+        try { fs.writeFileSync(sidecarPath, JSON.stringify(sidecar)); } catch (err) { /* ignore */ }
+      }
+
+      const contentLength = parseInt(response.headers['content-length'], 10);
+      const rangeMatch = /bytes (\d+)-(\d+)\/(\d+)/.exec(String(response.headers['content-range'] || ''));
+      const rangeTotal = rangeMatch ? parseInt(rangeMatch[3], 10) : NaN;
+      totalBytes = Number.isFinite(rangeTotal)
+        ? rangeTotal
+        : (Number.isFinite(contentLength) && contentLength >= 0 ? resumeBase + contentLength : -1);
       const hasKnownTotal = Number.isFinite(totalBytes) && totalBytes > 0;
-      let downloadedBytes = 0;
 
       response.on('data', chunk => {
         downloadedBytes += chunk.length;
-        hash.update(chunk);
+        // Fresh downloads hash the whole stream; resumed ones re-verify below.
+        if (!resumed) hash.update(chunk);
         // Some servers (HF LFS, chunked/streaming responses) omit Content-Length.
         // Guard against NaN progress, which used to surface as "NaN%" in the UI.
         const progress = hasKnownTotal
           ? Math.round(Math.min(100, (downloadedBytes / totalBytes) * 100))
           : -1;
-        try { 
-           event.sender.send(`to_download`, {fn:'progress' , download_id: downloadId , msg:progress });
-        } catch (err) {
-            console.log(err)
-        }
-        
+        send('progress', progress);
       });
 
-      response.pipe(file);
-
-    })
-    .on('error', err => {
-      fs.unlink(dest, () => {});
-
-        try {
-           event.sender.send(`to_download`, {fn:'error' , download_id: downloadId , msg:err.message  });
-        } catch (err) {
-           console.log(err)
+      stream.on('finish', () => {
+        if (expectedMd5 && resumed) {
+          // Incremental md5 over only the tail is meaningless — re-read the
+          // whole file and verify before finalizing.
+          try {
+            const full = crypto.createHash('md5');
+            const rd = fs.createReadStream(partialPath);
+            rd.on('data', (c) => full.update(c));
+            rd.on('end', () => finishPartial(full.digest('hex')));
+            rd.on('error', () => dropPartial());
+          } catch (err) {
+            dropPartial();
+          }
+        } else {
+          finishPartial(expectedMd5 ? hash.digest('hex') : null);
         }
-        
-      
-    })
-    .on('end', () => {
+      });
 
-        const hashValue = hash.digest('hex');
-        
-        try {
-           event.sender.send(`to_download`, {fn:'success' , download_id: downloadId , msg: hashValue  });
-        } catch (err) {
-           console.log(err)
+      stream.on('error', () => {
+        if (!activeDownloads.has(downloadId)) return; // already handled
+        if (state.cancelled) {
+          dropPartial();
+          send('cancelled', { message: 'cancelled' });
+          return;
         }
-        
+        send('error', { message: 'Failed to write download' });
+        dropPartial();
+      });
+
+      response.pipe(stream);
     });
+
+    req.on('error', err => {
+      // Superseded by an internal restart (etag mismatch) — a newer request
+      // owns the download now.
+      if (state.request !== req) return;
+      // Already handled (e.g. download-cancel cleaned up and notified).
+      if (!activeDownloads.has(downloadId)) return;
+      if (state.cancelled) {
+        // User cancelled: remove the partial so the next attempt starts clean.
+        dropPartial();
+        send('cancelled', { message: 'cancelled' });
+        return;
+      }
+      // Transient failure: KEEP the partial so a retry resumes instead of
+      // restarting from zero. If nothing was written yet, drop the empty file.
+      let curSize = 0;
+      try { curSize = fs.statSync(partialPath).size; } catch (err) { curSize = 0; }
+      activeDownloads.delete(downloadId);
+      if (curSize > 0) {
+        send('error', { message: err.message || 'Download failed' });
+      } else {
+        dropPartial();
+        send('error', { message: err.message || 'Download failed' });
+      }
+    });
+  }
+
+  // Headers used for a fresh (no-Range) attempt.
+  const cleanHeaders = Object.assign({}, requestHeaders);
+  delete cleanHeaders.Range;
+
+  if (existingSize > 0) {
+    beginDownload(Object.assign({}, requestHeaders, { Range: `bytes=${existingSize}-` }), existingSize, true);
+  } else {
+    beginDownload(cleanHeaders, 0, false);
+  }
 });
 
 

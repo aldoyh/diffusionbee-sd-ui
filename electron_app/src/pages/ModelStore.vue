@@ -60,7 +60,7 @@ import { open_popup } from '../utils.js'
 import DownloadButton from "../components/DownloadButton.vue"
 import MoonLoader from 'vue-spinner/src/MoonLoader.vue'
 const { isModelDownloadAllowed, getModelDownloadBlockMessage } = require("../utils/app_version.js")
-const { mergeFlux2IntoCatalog, isGeneratableModelType } = require("../utils/flux2_catalog.js")
+const { mergeFlux2IntoCatalog, resolveModelCapability, isDownloadableModel } = require("../utils/flux2_catalog.js")
 const { getHfTokenSync } = require("../utils/hf_auth.js")
 
 const ModelStore ={
@@ -96,13 +96,17 @@ const ModelStore ={
     },
     methods: {
         canDownloadModel(model) {
-            return isModelDownloadAllowed(model);
+            // Generatability predicate, not a version gate: never offer a
+            // download the running backend can't possibly use (FLUX.2 is
+            // `unsupported`). FLUX.1 (`unverified`) stays downloadable on the
+            // packaged binary but is badged download-only.
+            return isModelDownloadAllowed(model) && isDownloadableModel(model);
         },
         // The active backend can't run every catalog model (FLUX.1/FLUX.2 need
         // a FLUX engine this build doesn't ship). Show those as download-only
         // rather than pretending they're generatable — the "🔵" pattern.
         isRunnableModel(model) {
-            return Boolean(model && model.model_meta_data && isGeneratableModelType(model.model_meta_data.type));
+            return resolveModelCapability(model) === 'runnable';
         },
         modelNotRunnableMessage() {
             return this.app.app_state.isArabic

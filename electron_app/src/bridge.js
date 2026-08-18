@@ -10,6 +10,11 @@ var last_few_err = ""
 
 let RESTART_BACKEND_ON_CLOSE = false
 
+// Which backend branch was spawned — drives the renderer's capability manifest
+// fallback (M0.3). 'packaged-binary' = frozen PyInstaller binary; 'dev-tf' =
+// the source TensorFlow script under venv311.
+let backend_kind = 'unknown'
+
 function start_bridge() {
 
     console.log("starting bridge")
@@ -51,7 +56,9 @@ function start_bridge() {
 
     if (bin_path && fs.existsSync(bin_path)) {
         python = require('child_process').spawn(bin_path);
+        backend_kind = String(bin_path).endsWith('.py') ? 'dev-tf' : 'packaged-binary';
     } else if (app.isPackaged) {
+        backend_kind = 'packaged-binary';
         if (fs.existsSync(backend_path)) {
             python = require('child_process').spawn(backend_path);
         } else if (fs.existsSync(backend_path_nested)) {
@@ -63,9 +70,11 @@ function start_bridge() {
             console.error("Backend not found in packaged core at: " + backend_path);
         }
     } else if (fs.existsSync(dev_script_path)) {
+        backend_kind = 'dev-tf';
         let pythonBin = resolvePythonBin(path.dirname(dev_script_path));
         python = require('child_process').spawn(pythonBin, [dev_script_path]);
     } else if (fs.existsSync(backend_path)) {
+        backend_kind = 'packaged-binary';
         python = require('child_process').spawn(backend_path);
     } else {
         console.error("Backend not found at: " + dev_script_path);
@@ -189,6 +198,10 @@ ipcMain.on('to_python_async', (event, arg) => {
     if (python) {
         python.stdin.write("b2py " + arg.toString() + "\n")
     }
+})
+
+ipcMain.on('get_backend_kind', (event) => {
+    event.returnValue = backend_kind;
 })
 
 

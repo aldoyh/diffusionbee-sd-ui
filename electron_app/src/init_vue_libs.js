@@ -9,7 +9,8 @@ import { faChevronRight, faStopCircle, faPlayCircle , faPlus , faChevronLeft ,
 	faFileImage  , faFileAudio , faFile , faBars , faAngleDown , faTrash, faChevronDown ,
 	faGlobe, faFolder, faCamera, faKeyboard,
 	faMusic , faMicrophone , faTimes , faCheck , faHandPaper , faExpandArrowsAlt, faEraser , faUndo , faRedo, faImage, faMicrochip , faCube , 
-	faMagic, faSave, faHistory, faCubes, faImages, faHome , faPaintBrush, faCircle , faMask, faTools, faThList, faEllipsisV, faInbox, faTableColumns} from '@fortawesome/free-solid-svg-icons'
+	faMagic, faSave, faHistory, faCubes, faImages, faHome , faPaintBrush, faCircle , faMask, faTools, faThList, faEllipsisV, faInbox, faTableColumns,
+	faSearchPlus, faDownload, faCloudUploadAlt, faSlidersH, faCopy, faArrowsAlt, faClone} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 library.add(faBars)
@@ -56,6 +57,13 @@ library.add(faThList)
 library.add(faEllipsisV)
 library.add(faInbox)
 library.add(faTableColumns)
+library.add(faSearchPlus)
+library.add(faDownload)
+library.add(faCloudUploadAlt)
+library.add(faSlidersH)
+library.add(faCopy)
+library.add(faArrowsAlt)
+library.add(faClone)
 
 Vue.component('font-awesome-icon', FontAwesomeIcon)
 Vue.config.productionTip = false

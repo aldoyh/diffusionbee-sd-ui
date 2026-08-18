@@ -20,12 +20,13 @@ ipcRenderer.on("to_renderer", (e, data) => { // the msg channel which is used fo
 });
 
 
-function bind_ipc_download_on( download_id,  fn_progress , fn_success, fn_error ) {
+function bind_ipc_download_on( download_id,  fn_progress , fn_success, fn_error, fn_cancelled ) {
     console.log("gineded " + download_id)
     bind_ipc_download_on_fns[download_id] = {
         "progress" : fn_progress,
         "success" : fn_success,
         "error" : fn_error,
+        "cancelled" : fn_cancelled,
     }
 }
 

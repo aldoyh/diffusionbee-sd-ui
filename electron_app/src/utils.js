@@ -158,6 +158,14 @@ function ensure_lightbox_style() {
         .dbee-lightbox-next { right: 16px; }
         .dbee-lightbox-nav[hidden] { display: none; }
         .dbee-lightbox-btn[hidden] { display: none; }
+        /* RTL mirrors: close + nav flip sides, caption border flips. */
+        [dir="rtl"] .dbee-lightbox-close { right: auto; left: 16px; }
+        [dir="rtl"] .dbee-lightbox-prev { left: auto; right: 16px; }
+        [dir="rtl"] .dbee-lightbox-next { right: auto; left: 16px; }
+        [dir="rtl"] .dbee-lightbox-caption {
+            border-left: none; border-right: 1px solid rgba(255, 255, 255, 0.2);
+            padding-left: 0; padding-right: 10px; margin-left: 0; margin-right: 4px;
+        }
         .dbee-lightbox-text {
             max-width: 70vw; color: rgba(255, 255, 255, 0.92);
             font-size: 16px; line-height: 1.6; text-align: center;
@@ -195,6 +203,25 @@ function gallery_item_context(image_item_data) {
 function open_popup(img_url, text, images) {
     if (lightbox_state) destroy_lightbox();
     ensure_lightbox_style();
+
+    // The lightbox is plain DOM (not a Vue component), so it reads the current
+    // locale from the html element, which App.vue keeps in sync with isArabic.
+    const isAr = (document.documentElement && document.documentElement.lang) === 'ar';
+    const L = isAr ? {
+        prev: 'السابق', next: 'التالي', close: 'إغلاق',
+        zoomOut: 'تصغير', zoomIn: 'تكبير', reset: 'إعادة ضبط',
+        open: 'فتح', save: 'حفظ', openTitle: 'فتح في العارض الافتراضي', saveTitle: 'حفظ الصورة',
+        closeTitle: 'إغلاق (Esc)', prevTitle: 'السابق (←)', nextTitle: 'التالي (→)',
+        zoomOutTitle: 'تصغير (−)', zoomInTitle: 'تكبير (+)', resetTitle: 'إعادة ضبط التكبير (0)',
+        loadError: 'تعذر تحميل الصورة',
+    } : {
+        prev: 'Previous', next: 'Next', close: 'Close',
+        zoomOut: 'Zoom out', zoomIn: 'Zoom in', reset: 'Reset zoom',
+        open: 'Open', save: 'Save', openTitle: 'Open in default viewer', saveTitle: 'Save image',
+        closeTitle: 'Close (Esc)', prevTitle: 'Previous (←)', nextTitle: 'Next (→)',
+        zoomOutTitle: 'Zoom out (−)', zoomInTitle: 'Zoom in (+)', resetTitle: 'Reset zoom (0)',
+        loadError: 'Could not load image',
+    };
 
     const norm = (u) => String(u || '').replace(/^file:\/\//, '');
 
@@ -253,32 +280,43 @@ function open_popup(img_url, text, images) {
     const prevBtn = document.createElement('button');
     prevBtn.className = 'dbee-lightbox-nav dbee-lightbox-prev';
     prevBtn.innerHTML = '&#8249;';
-    prevBtn.title = 'Previous (←)';
+    prevBtn.title = L.prevTitle;
+    prevBtn.setAttribute('aria-label', L.prev);
     const nextBtn = document.createElement('button');
     nextBtn.className = 'dbee-lightbox-nav dbee-lightbox-next';
     nextBtn.innerHTML = '&#8250;';
-    nextBtn.title = 'Next (→)';
+    nextBtn.title = L.nextTitle;
+    nextBtn.setAttribute('aria-label', L.next);
 
     const toolbar = document.createElement('div');
     toolbar.className = 'dbee-lightbox-toolbar';
     const zoomOutBtn = document.createElement('button');
     zoomOutBtn.className = 'dbee-lightbox-btn';
     zoomOutBtn.textContent = '−';
-    zoomOutBtn.title = 'Zoom out (−)';
+    zoomOutBtn.title = L.zoomOutTitle;
+    zoomOutBtn.setAttribute('aria-label', L.zoomOut);
     const zoomInBtn = document.createElement('button');
     zoomInBtn.className = 'dbee-lightbox-btn';
     zoomInBtn.textContent = '+';
-    zoomInBtn.title = 'Zoom in (+)';
+    zoomInBtn.title = L.zoomInTitle;
+    zoomInBtn.setAttribute('aria-label', L.zoomIn);
     const zoomResetBtn = document.createElement('button');
     zoomResetBtn.className = 'dbee-lightbox-btn';
     zoomResetBtn.textContent = '1:1';
-    zoomResetBtn.title = 'Reset zoom (0)';
+    zoomResetBtn.title = L.resetTitle;
+    zoomResetBtn.setAttribute('aria-label', L.reset);
     // Only shown for local files (hidden for remote/data URLs) — lets the
     // user open the full-resolution file in the OS default viewer.
     const openBtn = document.createElement('button');
     openBtn.className = 'dbee-lightbox-btn dbee-lightbox-open';
-    openBtn.textContent = 'Open';
-    openBtn.title = 'Open in default viewer';
+    openBtn.textContent = L.open;
+    openBtn.title = L.openTitle;
+    // Copy the image file to a user-chosen location (same flow as the gallery's
+    // "Save Image" menu action).
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'dbee-lightbox-btn dbee-lightbox-save';
+    saveBtn.textContent = L.save;
+    saveBtn.title = L.saveTitle;
     const counter = document.createElement('span');
     counter.className = 'dbee-lightbox-counter';
     const caption = document.createElement('span');
@@ -289,14 +327,15 @@ function open_popup(img_url, text, images) {
     toolbar.appendChild(zoomInBtn);
     toolbar.appendChild(zoomResetBtn);
     toolbar.appendChild(openBtn);
+    toolbar.appendChild(saveBtn);
     toolbar.appendChild(counter);
     toolbar.appendChild(caption);
 
     const closeBtn = document.createElement('button');
     closeBtn.className = 'dbee-lightbox-close';
     closeBtn.innerHTML = '&times;';
-    closeBtn.title = 'Close (Esc)';
-    closeBtn.setAttribute('aria-label', 'Close preview');
+    closeBtn.title = L.closeTitle;
+    closeBtn.setAttribute('aria-label', L.close);
 
     stage.appendChild(loading);
     stage.appendChild(errorEl);
@@ -371,9 +410,11 @@ function open_popup(img_url, text, images) {
         counter.textContent = (i + 1) + ' / ' + state.images.length;
         prevBtn.hidden = state.images.length < 2;
         nextBtn.hidden = state.images.length < 2;
-        // 'Open in default viewer' only makes sense for local files.
+        // 'Open in default viewer' / 'Save' only make sense for local files.
         const curUrl = toFileUrl(item.image_url);
-        openBtn.hidden = !(curUrl && curUrl.startsWith('file://'));
+        const isLocal = Boolean(curUrl && curUrl.startsWith('file://'));
+        openBtn.hidden = !isLocal;
+        saveBtn.hidden = !isLocal;
 
         imgEl.onload = () => {
             loading.style.display = 'none';
@@ -381,7 +422,7 @@ function open_popup(img_url, text, images) {
         };
         imgEl.onerror = () => {
             loading.style.display = 'none';
-            errorEl.textContent = 'Could not load image';
+            errorEl.textContent = L.loadError;
             errorEl.style.display = 'block';
         };
         imgEl.src = toFileUrl(item.image_url);
@@ -431,10 +472,12 @@ function open_popup(img_url, text, images) {
             destroy_lightbox();
         } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') {
             e.preventDefault();
-            nav(1);
+            // RTL flips the on-screen nav buttons (next sits on the left), so
+            // the arrow keys flip to match: in RTL, ArrowLeft = next.
+            nav(isAr ? -1 : 1);
         } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
             e.preventDefault();
-            nav(-1);
+            nav(isAr ? 1 : -1);
         } else if (e.key === '+' || e.key === '=') {
             e.preventDefault();
             zoom_by(1.25);
@@ -468,6 +511,17 @@ function open_popup(img_url, text, images) {
         if (window.ipcRenderer && typeof window.ipcRenderer.sendSync === 'function') {
             window.ipcRenderer.sendSync('open_path', url);
         }
+    });
+    saveBtn.addEventListener('click', () => {
+        const item = state.images[state.index];
+        const url = toFileUrl(item.image_url);
+        if (!url || !url.startsWith('file://')) return;
+        if (!window.ipcRenderer || typeof window.ipcRenderer.sendSync !== 'function') return;
+        const suggested = (item.description || 'Image').substring(0, 100);
+        const outPath = window.ipcRenderer.sendSync('save_dialog', suggested);
+        if (!outPath) return;
+        const orgPath = String(item.image_url).replace(/^file:\/\//, '').split('?')[0];
+        window.ipcRenderer.sendSync('save_file', orgPath + '||' + outPath);
     });
 
     // Clicking the backdrop (outside the image) closes the preview.

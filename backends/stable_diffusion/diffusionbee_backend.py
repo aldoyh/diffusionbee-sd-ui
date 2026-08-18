@@ -153,6 +153,25 @@ def diffusion_bee_main():
 
     print("sdbk mdld")
 
+    # Self-report the backend's capability contract (M0.2). The renderer
+    # normalizes this to the same `families` shape as its JS capability
+    # manifest, keyed by model type. The frozen binary never emits this, so the
+    # renderer falls back to its backend_kind manifest there.
+    try:
+        avail_models = list(getattr(ModelInterface, "avail_models", []))
+        families = {}
+        for model_name in avail_models:
+            if model_name in ("sd_1x", "sd_2x"):
+                families.setdefault("sd_model", {"sd_types": [], "status": "runnable"})
+                families["sd_model"]["sd_types"].append(model_name)
+            elif model_name == "sd_1x_inpaint":
+                families["sd_model_inpaint"] = {"sd_types": [], "status": "runnable"}
+            # sd_1x_controlnet and anything else are intentionally omitted —
+            # the renderer has no selectable path for them.
+        print("sdbk caps " + json.dumps({"families": families}))
+    except Exception as e:
+        print("sdbk caps " + json.dumps({"families": {}}))
+
     while True:
         print("sdbk inrd") # input ready
 

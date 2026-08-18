@@ -12,16 +12,18 @@ import Vue from 'vue'
 // contextBridge.exposeInMainWorld('ipcRenderer_on', ipcRenderer.on)
 
 
-function download_file(url, dest, md5_hash , onProgress, onSuccess, onError, downloadOptions) {
+function download_file(url, dest, md5_hash , onProgress, onSuccess, onError, downloadOptions, onCancelled) {
     const downloadId = Date.now().toString() + Math.random().toString().substr(2);
     const skipChecksum = Boolean(downloadOptions && downloadOptions.skip_checksum);
     window.bind_ipc_download_on(downloadId, function(m){
-        // progresss
+        // progress
         onProgress(m);
-    }, function(file_hash){
-        // sucdesss 
-        if(skipChecksum || !md5_hash || md5_hash == file_hash){
-            onSuccess(file_hash)
+    }, function(result){
+        // success — main now reports { hash, resumed, etag } so a resumed
+        // download's hash (full-file re-read) verifies correctly
+        const fileHash = (result && typeof result === 'object') ? result.hash : result;
+        if(skipChecksum || !md5_hash || md5_hash == fileHash){
+            onSuccess(result)
         } else{
             onError("failed to match checksum")
         }
@@ -31,8 +33,14 @@ function download_file(url, dest, md5_hash , onProgress, onSuccess, onError, dow
         // error 
         window.unbind_ipc_download_on(downloadId)
         onError(m)
+    }, function(m){
+        // cancelled (real abort — the stream is stopped in the main process)
+        window.unbind_ipc_download_on(downloadId)
+        if(onCancelled)
+            onCancelled(m)
     } )
     window.ipcRenderer.send('download-file', url, dest, downloadId, downloadOptions || null);
+    return downloadId;
 }
 
 
@@ -41,7 +49,11 @@ export default {
     props: {},
     components: {},
     mounted() {
-
+        // Intentionally NO startup `.partial` sweep. A surviving `.partial` +
+        // its `.partial.json` sidecar is the cross-restart resume signal — the
+        // download-file handler resumes from the byte offset and verifies the
+        // ETag before appending (see native_functions.js). Sweeping them here
+        // turned every app quit/crash mid-download into a full restart.
     },
     data() {
         let downloaded_assets_storage = {};
@@ -204,6 +216,11 @@ export default {
             if(this.downloading[asset_id] && this.downloading[asset_id].status == 'done' ){
                 return;
             }
+            // Dedup: a second Download click mid-flight must not spawn a second
+            // writer to the same `.partial` (interleaved corruption).
+            if(this.downloading[asset_id] && this.downloading[asset_id].status == 'downloading' ){
+                return;
+            }
 
             // const path = require('path');
             let dir = window.ipcRenderer.sendSync('get_assets_dir') 
@@ -264,8 +281,15 @@ export default {
             }
 
             function on_error(error ){
+                error = (error && error.message) ? error.message : error
                 Vue.set( that.downloading[asset_id] , 'status' , 'error')
                 Vue.set( that.downloading[asset_id] , 'error' , error )
+            }
+
+            function on_cancelled(){
+                // Drop the entry entirely — the tile falls back to the plain
+                // Download button (the main process already removed the partial).
+                Vue.delete( that.downloading , asset_id )
             }
 
             Vue.set( that.downloading  , asset_id , asset_details)
@@ -275,10 +299,23 @@ export default {
                 skip_checksum: Boolean(asset_details.skip_checksum),
                 hf_auth: Boolean(asset_details.hf_auth_required || asset_details.download_source === 'huggingface'),
                 timeout_ms: asset_details.download_source === 'huggingface' ? 0 : 20000,
+                expected_md5: asset_hash || '',
             };
 
-            download_file( asset_details.url , dest_path , asset_hash  , on_progress , on_success ,  on_error , downloadOptions )
+            let downloadId = download_file( asset_details.url , dest_path , asset_hash  , on_progress , on_success ,  on_error , downloadOptions , on_cancelled )
+            Vue.set( that.downloading[asset_id] , 'download_id' , downloadId )
 
+        },
+
+        cancel_download(asset_id){
+            let dl = this.downloading[asset_id]
+            if(!dl || !dl.download_id)
+                return
+            if (window.ipcRenderer && typeof window.ipcRenderer.sendSync === 'function') {
+                window.ipcRenderer.sendSync('download-cancel', dl.download_id)
+            }
+            // Status flips to 'cancelled' (and the entry clears) when the
+            // main-process abort event comes back.
         }
             
     },

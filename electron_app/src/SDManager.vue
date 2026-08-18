@@ -95,6 +95,13 @@ export default {
         },
 
         finish_current_job(){
+            // Defensive: stop_all() (or a late callback after teardown) may
+            // already have cleared the current group — never throw here.
+            if (!this.queue.current_group) {
+                this.current_group_id = undefined;
+                this.current_job_index = undefined;
+                return;
+            }
             // if the whole group is finished
             let is_group_done = true;
 
@@ -178,42 +185,42 @@ export default {
                     let aug_img_path = img.aux_output_image_path
 
                     console.log("on img " + that.current_group_id + " " + that.current_job_index)
-                    if(that.current_group_id == undefined){
-                        console.log("whoops 1")
-                        return;
+
+                    const gid = that.current_group_id;
+                    const jobIndex = that.current_job_index;
+                    const group = that.queue.current_group;
+
+                    if (gid !== undefined && jobIndex !== undefined && group && group.jobs[jobIndex]) {
+                        group.jobs[jobIndex].generated_img = img_path;
+                        group.jobs[jobIndex].aux_output_img = aug_img_path;
+                        group.jobs[jobIndex].job_state = "done";
+                        console.log("an image done " + group.jobs[jobIndex].job_state);
+
+                        const gallery = that.group_gallery_mapping[gid];
+                        if (gallery) {
+                            const gallery_group = gallery.get_group(gid);
+                            if (gallery_group) {
+                                const el_to_update = gallery_group.imgs[group.jobs[jobIndex].image_no];
+                                if (el_to_update) {
+                                    el_to_update.image_url = img_path;
+                                    el_to_update.aux_img_url = aug_img_path;
+                                    el_to_update.description = job.prompt.slice(0, 250);
+                                    el_to_update.params = JSON.parse(JSON.stringify(job));
+
+                                    gallery.update_group(gallery_group);
+
+                                    if (typeof that.app.functions.broadcast_gallery_group === 'function') {
+                                        that.app.functions.broadcast_gallery_group(gallery_group, gallery)
+                                    }
+                                }
+                            }
+                        }
                     }
 
-                    if(that.current_job_index == undefined){
-                        console.log("whoops 2")
-                        return
-                    }
-
-                    that.queue.current_group.jobs[that.current_job_index].generated_img = img_path ;
-                    that.queue.current_group.jobs[that.current_job_index].aux_output_img = aug_img_path ;
-                    that.queue.current_group.jobs[that.current_job_index].job_state = "done"
-                    console.log("an image done "+ that.queue.current_group.jobs[that.current_job_index].job_state )
-                    let gallery = that.group_gallery_mapping[that.current_group_id]
-                    if (!gallery) {
-                        console.warn('No gallery mapped for group', that.current_group_id)
-                        return
-                    }
-                    let gallery_group = gallery.get_group( that.current_group_id )
-                    if (!gallery_group) {
-                        console.warn('No gallery group for', that.current_group_id)
-                        return
-                    }
-                    let el_to_update = gallery_group.imgs[ that.queue.current_group.jobs[that.current_job_index].image_no ]
-                    el_to_update.image_url = img_path ;
-                    el_to_update.aux_img_url = aug_img_path ;
-                    el_to_update.description = job.prompt.slice(0, 250 ) ;
-                    el_to_update.params = JSON.parse(JSON.stringify(job)) ;
-
-                    gallery.update_group( gallery_group  )
-
-                    if (typeof that.app.functions.broadcast_gallery_group === 'function') {
-                        that.app.functions.broadcast_gallery_group(gallery_group, gallery)
-                    }
-
+                    // ALWAYS advance the queue, even when the gallery ref is
+                    // gone (user navigated away mid-generation). The old
+                    // early-returns left the job `doing`, so the next `inrd`
+                    // re-dispatched it (queue stall / double generation).
                     that.finish_current_job()
 
                 },
@@ -250,18 +257,28 @@ export default {
                 },
                 on_err(err){
                     console.log("errorrr ")
-                    that.queue.current_group.jobs[that.current_job_index].generated_img = "ERROR" ;
-                    that.queue.current_group.jobs[that.current_job_index].job_state = "done";
-                    that.backend_error = err;
 
-                    let gallery = that.group_gallery_mapping[that.current_group_id]
-                    let gallery_group = gallery.get_group( that.current_group_id )
-                    let el_to_update = gallery_group.imgs[ that.queue.current_group.jobs[that.current_job_index].image_no ]
-                    console.log("errorrr 0")
+                    const gid = that.current_group_id;
+                    const jobIndex = that.current_job_index;
+                    const group = that.queue.current_group;
 
-                    el_to_update.image_url = "ERROR" ;
-                    el_to_update.description = err ;
+                    if (gid !== undefined && jobIndex !== undefined && group && group.jobs[jobIndex]) {
+                        group.jobs[jobIndex].generated_img = "ERROR";
+                        group.jobs[jobIndex].job_state = "done";
+                        that.backend_error = err;
 
+                        const gallery = that.group_gallery_mapping[gid];
+                        const gallery_group = gallery ? gallery.get_group(gid) : null;
+                        const el_to_update = gallery_group ? gallery_group.imgs[group.jobs[jobIndex].image_no] : null;
+
+                        if (el_to_update) {
+                            el_to_update.image_url = "ERROR";
+                            el_to_update.description = err;
+                        }
+                        if (gallery && gallery_group) {
+                            gallery.update_group(gallery_group);
+                        }
+                    }
 
                     that.finish_current_job()
 
@@ -314,23 +331,39 @@ export default {
 
 
         stop_all(){
-            if(this.queue.current_group != undefined &&    this.current_job_index != undefined){
-                console.log("jjj1")
-                for(let job of this.queue.current_group.jobs  ){
-                    job.job_state = "done"
+            // Cancel semantics = DROP: clear the queue without writing a
+            // zero/partial-image group to history. The old path marked every
+            // job done then called finish_current_job(), which fired
+            // add_to_history with an empty group and polluted history.
+
+            // Drop the in-flight group (if any) + its gallery placeholder.
+            if (this.queue.current_group != undefined) {
+                const gid = this.current_group_id;
+                const gallery = this.group_gallery_mapping[gid];
+                if (gallery && typeof gallery.delete_group === 'function') {
+                    try { gallery.delete_group(gid); } catch (e) { /* gallery already gone */ }
                 }
-                console.log("jjj")
-                this.finish_current_job()
+                delete this.group_gallery_mapping[gid];
+                this.queue.current_group = undefined;
             }
+            this.current_group_id = undefined;
+            this.current_job_index = undefined;
 
-            for(let group of this.queue.groups_todo){
-                let gallery = this.group_gallery_mapping[group.group_id];
-                gallery.delete_group(group.group_id)
+            // Drop queued groups + their gallery placeholders.
+            for (let group of this.queue.groups_todo) {
+                const gallery = this.group_gallery_mapping[group.group_id];
+                if (gallery && typeof gallery.delete_group === 'function') {
+                    try { gallery.delete_group(group.group_id); } catch (e) { /* ignore */ }
+                }
+                delete this.group_gallery_mapping[group.group_id];
             }
-            Vue.set(this.queue , 'groups_todo' , [] ) 
+            Vue.set(this.queue, 'groups_todo', []);
 
-            this.stable_diffusion.interupt();
-
+            // Stop the backend mid-inference and drop the callback slot so the
+            // late `nwim`/`errr` is ignored.
+            if (this.stable_diffusion) {
+                this.stable_diffusion.interupt();
+            }
         },
     },
 

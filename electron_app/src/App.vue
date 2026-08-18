@@ -121,7 +121,7 @@
                             <div class="optional-model-info">
                                 <div class="optional-model-title">{{ model.title || model.id }}</div>
                                 <div class="optional-model-desc">{{ model.description || 'Image generation model' }}</div>
-                                <div class="optional-model-meta">{{ format_model_meta(model) }} · {{ formatBytes(model.size_bytes || 0) }}</div>
+                                <div class="optional-model-meta">{{ format_model_meta(model) }} · {{ format_model_size(model) }}</div>
                                 <div v-if="optional_downloads_in_progress && optional_download_progress[model.id] !== undefined" class="optional-model-progress">
                                     <div class="progress-bar-track" style="height: 4px; margin: 6px 0 4px;">
                                         <div class="progress-bar-fill" :style="{ width: Math.min(optional_download_progress[model.id], 100) + '%' }"></div>
@@ -185,7 +185,7 @@ import Vue from "vue"
 import { setLocale, getLocale } from "./i18n.js"
 import { bindHistoryToApp } from "./history_service.js"
 const { getMachineProfile, pickOptimalOnboardingModel, isSelectableOnboardingModel } = require("./utils/model_selection.js")
-const { mergeFlux2IntoCatalog } = require("./utils/flux2_catalog.js")
+const { mergeFlux2IntoCatalog, setActiveBackendKind } = require("./utils/flux2_catalog.js")
 const { getHfTokenSync } = require("./utils/hf_auth.js")
 
 native_alert;
@@ -220,6 +220,17 @@ export default
         this.applyLocaleAttributes();
 
         bind_app_component(this);
+        // Resolve the running backend's capability manifest as early as
+        // possible (M0.3). The dev backend also self-reports via `sdbk caps`;
+        // the frozen binary relies on this backend_kind fallback.
+        try {
+            if (window.ipcRenderer && typeof window.ipcRenderer.sendSync === 'function') {
+                const kind = window.ipcRenderer.sendSync('get_backend_kind');
+                setActiveBackendKind(kind);
+            }
+        } catch (e) {
+            console.warn('Could not resolve backend kind:', e);
+        }
         bindHistoryToApp(this);
         const { registerGenerationBroadcast } = require('./generation_broadcast.js');
         registerGenerationBroadcast(this);
@@ -485,7 +496,12 @@ export default
 
         cancelGeneration() {
             console.log('Generation cancelled by user');
-            if (this.stable_diffusion) {
+            // Stop the whole queue, not just the in-flight backend call. The
+            // old `interupt()` only cleared callbacks + sent __stop__ — the job
+            // stayed queued and re-dispatched on the next `sdbk inrd`.
+            if (this.stable_diffusion_manager && typeof this.stable_diffusion_manager.stop_all === 'function') {
+                this.stable_diffusion_manager.stop_all();
+            } else if (this.stable_diffusion) {
                 this.stable_diffusion.interupt();
             }
         },
@@ -601,11 +617,10 @@ export default
                     profile: machineProfile,
                     hasHfToken: Boolean(hfToken),
                 }));
-                // NOTE: `preferFlux2` is deliberately not passed — the active
-                // backend has no FLUX inference, so onboarding must never
-                // recommend a FLUX model (see GENERATABLE_MODEL_TYPES in
-                // flux2_catalog.js — the single gate that flips when a real
-                // FLUX backend ships).
+                // NOTE: `preferFlux2` is deliberately not passed — onboarding
+                // must only ever recommend a model the *running* backend can
+                // run. `resolveModelCapability` (flux2_catalog.js) filters
+                // FLUX/SDXL-unsupported entries per backend kind.
                 let default_model = pickOptimalOnboardingModel(downloadableModels, machineProfile, {
                     hasHfToken: Boolean(hfToken),
                 });
@@ -699,6 +714,13 @@ export default
         },
 
         dismiss_model_setup() {
+            // Real cancel: stop the in-flight model download in the main
+            // process. Previously this was cosmetic — dismissing the dialog
+            // stopped the poller but the stream kept writing to disk.
+            if (this.is_downloading_model && this.model_to_download && this.assets_manager) {
+                this.assets_manager.cancel_download(this.model_to_download.id);
+                this.is_downloading_model = false;
+            }
             console.log('User dismissed model setup.');
             this.show_model_setup = false;
             this.model_download_error = '';
@@ -772,9 +794,9 @@ export default
                 const installedIds = new Set(Object.keys(this.assets_manager.all_avail_assets));
 
                 // Curated list: high-quality SD/SDXL models only. FLUX.2 used
-                // to be curated here, but the active backend can't run FLUX —
-                // recommending the 7.75GB download was the "FLUX trap" (see
-                // GENERATABLE_MODEL_TYPES in flux2_catalog.js).
+                // to be curated here, but no shipped backend can run it —
+                // recommending the 7.75GB download was the "FLUX trap". The
+                // per-backend `resolveModelCapability` now keeps it out.
                 const candidateIds = [
                     'DreamShaper_6_baked_vae',
                     'CyberRealistic__v3.1',
@@ -1021,6 +1043,23 @@ export default
             if (model.model_meta_data.sd_type) parts.push(model.model_meta_data.sd_type);
             if (model.model_meta_data.float_type) parts.push(model.model_meta_data.float_type);
             return parts.join(' · ');
+        },
+
+        format_model_size(model) {
+            // Honest size projection (fixes the "0 B" bug): the live catalog
+            // carries no size_bytes for legacy SD models, so fall back to the
+            // on-disk size once installed, and never fabricate a byte count.
+            let bytes = (model && model.size_bytes) ? Number(model.size_bytes) : 0;
+            if ((!Number.isFinite(bytes) || bytes <= 0) && model && model.id && this.assets_manager && this.assets_manager.all_avail_assets) {
+                const installed = this.assets_manager.all_avail_assets[model.id];
+                if (installed && Number(installed.size_bytes) > 0) {
+                    bytes = Number(installed.size_bytes);
+                }
+            }
+            if (!Number.isFinite(bytes) || bytes <= 0) {
+                return this.app_state.isArabic ? 'الحجم غير معروف' : 'Size unknown';
+            }
+            return this.formatBytes(bytes);
         },
  
 

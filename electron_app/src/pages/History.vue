@@ -95,7 +95,7 @@
 import {native_confirm} from "../native_functions_vue_bridge.js";
 import {share_on_arthub} from '../utils.js'
 import GalleryPane from "../components_bare/GalleryPane.vue"
-import {image_manu_functions} from "../components/image_menu_functions.js"
+import {image_manu_functions, build_image_menu_items} from "../components/image_menu_functions.js"
 import {open_popup, gallery_item_context , form_params_to_text , form_params_to_readable_dict, toFileUrl} from "../utils"
 import { historyStore, addToHistory, deleteEntry, clearHistory } from "../history_service.js"
 
@@ -114,25 +114,20 @@ const History =  {
         this.app.functions.add_to_history = this.add_to_history
     },
     data() {
-        let menu_items = []
-        for(let fn of Object.keys(image_manu_functions)){
-            if(fn != "use_params_current_page")
-            {
-                menu_items.push({id: fn , text: image_manu_functions[fn].text })
-            }
-        }
-
-
         return {
             app_state : this.app.app_state,
             searchText: '',
             currentPage: 1,
             show_history_in_oldest_first : false,
-            menu_items :menu_items,
         };
     },
 
     computed: {
+      // Reactive so menu labels follow the UI language (see image_menu_functions.js).
+      menu_items() {
+          const isArabic = Boolean(this.app && this.app.app_state && this.app.app_state.isArabic)
+          return build_image_menu_items(['use_params_current_page'], isArabic)
+      },
       history() {
           return historyStore.entries
       },

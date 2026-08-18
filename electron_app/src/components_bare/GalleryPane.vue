@@ -3,7 +3,7 @@
 
 
         <div class="inner_pane" :style="inner_pane_style">
-            <GalleryImage  v-for="img in image_data_with_extra" :key="img.job_id"  :image_url="img.image_url" :aux_img_url="img.aux_img_url" :description="img.description" :img_w="img_w" :img_h="img_h" :done_percentage="img.done_percentage" :menu_items="menu_items" :on_menu_item_click="on_menu_item_click" :on_image_click="on_image_click" :params="img.params"> </GalleryImage>
+            <GalleryImage  v-for="img in image_data_with_extra" :key="img.job_id"  :image_url="img.image_url" :aux_img_url="img.aux_img_url" :description="img.description" :img_w="img_w" :img_h="img_h" :done_percentage="img.done_percentage" :menu_items="menu_items" :on_menu_item_click="on_menu_item_click" :on_image_click="on_image_click" :params="img.params" :group_id="group_id" :image_key="img_key(img)" :selected="is_image_selected(img)" :selectable="enable_selection" :dimmed="selection_active && !is_image_selected(img)" :on_image_select="on_image_select"> </GalleryImage>
         </div>
 
     </div>
@@ -26,6 +26,12 @@ export default {
         menu_items : Array,
         on_menu_item_click : Function, 
         on_image_click:Function,
+
+        // ── multi-select (Ctrl/Cmd+Click) ─────────────────────────────────
+        group_id: String,
+        enable_selection: Boolean,
+        selected_keys: Array,
+        on_image_select: Function,
 
     },
     components: {GalleryImage},
@@ -56,7 +62,12 @@ export default {
             }
 
             return this.image_data.concat(extra)
-        }
+        },
+        // True when any image in this pane is selected — used to dim the
+        // unselected tiles so the selection set reads as a group.
+        selection_active(){
+            return !!(this.enable_selection && this.selected_keys && this.selected_keys.length > 0)
+        },
     },
 
     data() {
@@ -97,6 +108,19 @@ export default {
     },
 
     methods: {
+        // Stable composite key for a tile: "<group_id>::<job_id>". Job ids are
+        // unique within a group and survive update_group deep-copies, so keys
+        // stay valid across progress ticks. Placeholder slots (job_id
+        // 'placeholder-N') never match a real selection.
+        img_key(img){
+            return (this.group_id || 'g') + '::' + (img && img.job_id ? img.job_id : '')
+        },
+
+        is_image_selected(img){
+            if (!this.enable_selection || !this.selected_keys) return false
+            return this.selected_keys.indexOf(this.img_key(img)) !== -1
+        },
+
         on_resize(){
 
 
@@ -199,11 +223,13 @@ export default {
 .gallery_pane{
 /*    height: calc( 100vh - var(--titlebar-height) - 30px );*/
     width: calc( 100% - 30px);
-    background-color: rgba(0,0,0,0.06);
-    margin: 15px; 
+    background: linear-gradient(180deg, var(--color-bg-elevated), var(--color-bg));
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-lg);
+    margin: 15px;
     display: grid;
     place-items: center;
-    border-radius: 5px;
+    border-radius: var(--radius-xl);
     position: relative;
 
 }

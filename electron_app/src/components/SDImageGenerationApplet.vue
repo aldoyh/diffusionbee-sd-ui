@@ -47,7 +47,7 @@
             
             
             
-            <GenerationGallery  :app="app" ref="gallery"> </GenerationGallery>
+            <GenerationGallery  :app="app" ref="gallery" :enable_selection="true" :on_selection_action="onGallerySelectionAction"> </GenerationGallery>
         </template>
 
     </BasicSDApplet>
@@ -182,6 +182,42 @@ export default {
                 this.$refs.gallery,
                 groupId
             )
+        },
+
+        // Gallery multi-select "Re-run": the stored params ARE the job options
+        // SDManager saved on the image, so the applet-shaped batch item wraps
+        // them (minus transient job bookkeeping) plus the raw form state for
+        // seed/model provenance. ControlNet paths and the seed ride along.
+        buildBatchItemFromImage(img) {
+            const p = img.params || {};
+            if (!p.prompt) return null;
+            const stripKeys = [
+                'job_id', 'job_state', 'image_no', 'done_percentage',
+                'generated_img', 'aux_output_img', 'prompt_tokens',
+                'negative_prompt_tokens', 'raw_form_options',
+            ];
+            const genOptions = {};
+            for (const k of Object.keys(p)) {
+                if (stripKeys.indexOf(k) === -1) {
+                    genOptions[k] = JSON.parse(JSON.stringify(p[k]));
+                }
+            }
+            if (genOptions.num_imgs === undefined || genOptions.num_imgs === null) {
+                genOptions.num_imgs = 1;
+            }
+            const rawFormOptions = (p.raw_form_options && typeof p.raw_form_options === 'object')
+                ? JSON.parse(JSON.stringify(p.raw_form_options))
+                : { prompt: p.prompt };
+            return {
+                id: Math.random().toString(),
+                gen_options: genOptions,
+                raw_form_options: rawFormOptions,
+                promptLabel: this.truncateLabel(p.prompt),
+                sizeLabel: (p.img_width || '?') + '×' + (p.img_height || '?'),
+                countLabel: '×1',
+                state: 'pending',
+                group_id: null,
+            };
         },
 
         getBatchGallery(){

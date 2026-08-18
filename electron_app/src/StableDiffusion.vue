@@ -7,6 +7,7 @@ import { send_to_py } from "./py_vue_bridge.js"
 import {getClipTokenIds} from './prompt_utils.js'
 import {compute_time_remaining} from "./utils.js"
 const moment = require('moment')
+const { setActiveBackendCaps } = require('./utils/flux2_catalog.js')
 
 let notification_sound = new Audio(require('@/assets/notification.mp3'))
 
@@ -69,6 +70,17 @@ export default {
             let msg_code = msg.substring(0, 4);
             if(msg_code == "mdld"){
                 this.is_backend_loaded = true;
+            }
+            if(msg_code == "caps"){
+                // Backend self-report of its capability contract (M0.2/M0.3).
+                // The frozen binary never emits this, so the backend_kind
+                // manifest fallback stays in effect there.
+                try {
+                    let caps = JSON.parse(msg.substring(5).trim());
+                    setActiveBackendCaps(caps && caps.families ? caps.families : caps);
+                } catch (e) {
+                    console.warn('Could not parse backend caps:', e);
+                }
             }
             if(msg_code == "mldn"){
                 this.is_model_downloading = false;
@@ -204,7 +216,15 @@ export default {
 
             if(!this.is_input_avail)
                 return;
-            
+
+            // Single-owner guard (M3): never clobber an in-flight generation's
+            // callbacks — a queued job vs a racing applet would silently drop
+            // one consumer's on_img/on_err.
+            if (this.attached_cbs) {
+                console.warn('run_applet: generation already in flight; ignoring');
+                return;
+            }
+
             this.is_stopping = false
 
             // See text_to_img: keep applet-driven generation uncensored too.
@@ -222,6 +242,13 @@ export default {
         text_to_img(prompt_params, callbacks, generated_by){
             if(!this.is_input_avail)
                 return;
+            // Single-owner guard (M3): only one generation can own
+            // `attached_cbs` at a time — prevents a late applet from dropping a
+            // queued job's callbacks.
+            if (this.attached_cbs) {
+                console.warn('text_to_img: generation already in flight; ignoring');
+                return;
+            }
             this.is_stopping = false
             prompt_params.prompt_tokens = getClipTokenIds(prompt_params.prompt);
 
