@@ -67,8 +67,6 @@ Real backend output — not an empty UI placeholder:
 
 ### Homepage (Arabic)
 
-![Homepage Arabic](docs/screenshots/08-homepage-arabic.png)
-
 Screenshots are regenerated and verified by `./scripts/ensure_doc_screenshots.sh`, which fails
 if any screenshot lacks real image content. To capture against the installed app instead of the
 Electron dev process, run it with `APP_PROCESS_NAME=diffusion-sd-ui`.
