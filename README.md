@@ -47,8 +47,6 @@ The welcome carousel uses six locally generated sample images bundled under `ele
 
 Real backend output — not an empty UI placeholder:
 
-![Generation history](docs/screenshots/07-history.png)
-
 ![Sample generation](docs/screenshots/sample-generation.png)
 
 ### Image to image
