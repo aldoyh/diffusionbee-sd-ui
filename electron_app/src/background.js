@@ -5,6 +5,12 @@ import { app, protocol, BrowserWindow, nativeTheme, Menu} from 'electron'
 import createProtocol from 'vue-cli-plugin-electron-builder/lib/createProtocol'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
+// Optional DevTools protocol endpoint for automated UI tests (headless probe
+// scripts). Only active when REMOTE_DEBUG_PORT is set — never in normal runs.
+if (process.env.REMOTE_DEBUG_PORT) {
+    app.commandLine.appendSwitch('remote-debugging-port', process.env.REMOTE_DEBUG_PORT)
+}
+
 // Single-instance guarantee. Without this, relaunching the app while an old
 // window is still around (e.g. a session started before a reinstall, or a
 // zombie from a crash) silently focuses the OLD window — which may run stale

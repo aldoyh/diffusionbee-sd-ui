@@ -1,6 +1,6 @@
 <template>
 
-    <span>
+    <span @update:value="handleUpdate">
         <component   :is="config.component" :config="config"  :form_values="form_values" ></component>
     </span>
 
@@ -19,6 +19,7 @@ import OutputText from "./OutputText.vue"
 import OutputImage from "./OutputImage.vue"
 import BetterSelector from "./BetterSelector.vue"
 import ModelSelectorInput from "./ModelSelectorInput.vue"
+import Vue from 'vue'
 
 
 export default {
@@ -40,7 +41,9 @@ export default {
         return {};
     },
     methods: {
-
+        handleUpdate(val) {
+            Vue.set(this.form_values, this.config.id, val);
+        }
     },
 }
 </script>

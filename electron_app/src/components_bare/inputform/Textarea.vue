@@ -3,7 +3,8 @@
    <div> 
 
         <textarea 
-            v-model="form_values[config.id]" 
+            :value="form_values[config.id]" 
+            @input="onInput"
             style="border-radius: 5px 5px 5px 5px; width: calc(100%); resize: none; " 
             class="form-control"  
             :placeholder="config.placeholder || '' " 
@@ -38,7 +39,11 @@ export default {
         };
     },
     methods: {
-
+        onInput(event) {
+            const val = event.target.value;
+            this.$emit('update:value', val);
+            this.on_input_changed();
+        }
     },
 }
 </script>

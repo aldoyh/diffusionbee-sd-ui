@@ -42,14 +42,18 @@ module.exports = {
 
     devServer: {
         client: {
+            // CRITICAL: the WDS client overlay renders as a full-screen,
+            // topmost (z-index 2147483647) iframe. When it mounts "empty" —
+            // e.g. a filtered runtimeError or a boot-time warning — the
+            // invisible iframe still swallows every mouse click, making the
+            // prompt box (and everything else) unclickable. Only surface hard
+            // compile errors (also visible in the terminal); never warnings or
+            // runtime errors, whose filter callbacks leave the empty blocking
+            // iframe behind.
             overlay: {
-                runtimeErrors: (error) => {
-                    const message = error && error.message ? error.message : '';
-                    if (message.includes('ResizeObserver loop')) {
-                        return false;
-                    }
-                    return true;
-                },
+                warnings: false,
+                errors: true,
+                runtimeErrors: false,
             },
         },
     },

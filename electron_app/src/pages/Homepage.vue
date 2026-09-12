@@ -425,18 +425,18 @@ const PUBLIC_BASE = (typeof process !== 'undefined' && process.env && process.en
 const PENDING_MAX_ATTEMPTS = 100;
 
 const WELCOME_ASSET_REQUIRES = {
-    'welcome_anime_tokyo_alley.png': require('../assets/welcome/welcome_anime_tokyo_alley.png'),
-    'welcome_glass_pavilion.png': require('../assets/welcome/welcome_glass_pavilion.png'),
-    'welcome_oil_still_life.png': require('../assets/welcome/welcome_oil_still_life.png'),
-    'welcome_street_food.png': require('../assets/welcome/welcome_street_food.png'),
-    'welcome_pixel_ramen.png': require('../assets/welcome/welcome_pixel_ramen.png'),
-    'welcome_underwater_kelp.png': require('../assets/welcome/welcome_underwater_kelp.png'),
-    'welcome_samurai_peak.png': require('../assets/welcome/welcome_samurai_peak.png'),
-    'welcome_desert_highway.png': require('../assets/welcome/welcome_desert_highway.png'),
-    'welcome_northern_lights.png': require('../assets/welcome/welcome_northern_lights.png'),
-    'welcome_lavender_fields.png': require('../assets/welcome/welcome_lavender_fields.png'),
-    'welcome_cyberpunk_city.png': require('../assets/welcome/welcome_cyberpunk_city.png'),
-    'welcome_coastal_lighthouse.png': require('../assets/welcome/welcome_coastal_lighthouse.png'),
+    'welcome_anime_tokyo_alley.png': 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=600&q=80',
+    'welcome_glass_pavilion.png': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80',
+    'welcome_oil_still_life.png': 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=600&q=80',
+    'welcome_street_food.png': 'https://images.unsplash.com/photo-1511407397940-d57f68e81203?w=600&q=80',
+    'welcome_pixel_ramen.png': 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=600&q=80',
+    'welcome_underwater_kelp.png': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80',
+    'welcome_samurai_peak.png': 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=600&q=80',
+    'welcome_desert_highway.png': 'https://images.unsplash.com/photo-1511407397940-d57f68e81203?w=600&q=80',
+    'welcome_northern_lights.png': 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=600&q=80',
+    'welcome_lavender_fields.png': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80',
+    'welcome_cyberpunk_city.png': 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=600&q=80',
+    'welcome_coastal_lighthouse.png': 'https://images.unsplash.com/photo-1511407397940-d57f68e81203?w=600&q=80',
 };
 
 function getPublicWelcomePath(assetKey) {
@@ -1671,20 +1671,19 @@ button:focus-visible {
 .chat-box {
     display: flex;
     flex-direction: column;
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(30px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 24px;
     padding: 10px 10px 10px 16px;
     box-shadow: 
         0 25px 50px -12px rgba(0, 0, 0, 0.5),
         0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .chat-box:focus-within {
     border-color: rgba(255, 255, 255, 0.4);
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.08);
     box-shadow: 
         0 30px 60px -12px rgba(0, 0, 0, 0.6),
         0 0 0 1px rgba(255, 255, 255, 0.1) inset,
@@ -1710,6 +1709,10 @@ button:focus-visible {
     line-height: 1.5;
     min-height: 48px;
     max-height: 160px;
+    pointer-events: auto;
+    -webkit-user-select: text;
+    user-select: text;
+    z-index: 1;
 }
 
 .chat-input::placeholder {
