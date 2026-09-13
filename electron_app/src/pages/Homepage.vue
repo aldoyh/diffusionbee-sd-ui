@@ -90,6 +90,8 @@
                             v-model="promptText"
                             @keydown.meta.enter="submitPrompt"
                             @keydown.ctrl.enter="submitPrompt"
+                            @keydown.enter.exact="submitPrompt"
+                            @keydown.shift.enter="promptText += '\n'"
                             @input="onPromptInput"
                             :placeholder="app.app_state.isArabic ? 'صف ما تريد رؤيته...' : 'Describe what you want to see...'"
                             class="chat-input"
@@ -1553,14 +1555,15 @@ button:focus-visible {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 20px 20px 16px;
+    padding: 12px 20px 12px;
     min-height: auto;
+    gap: 0;
 }
 
 .welcome-title {
     font-size: 2.2rem;
     font-weight: 800;
-    margin-bottom: 6px;
+    margin-bottom: 2px;
     text-align: center;
     background: linear-gradient(135deg, #ffffff 0%, #a0a0a0 100%);
     -webkit-background-clip: text;
@@ -1584,8 +1587,8 @@ button:focus-visible {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 12px;
-    margin: 10px 0 18px;
+    gap: 8px;
+    margin: 6px 0 10px;
 }
 
 .mode-pill {
@@ -1593,8 +1596,8 @@ button:focus-visible {
     align-items: center;
     gap: 12px;
     flex: 0 1 auto;
-    min-height: 68px;
-    padding: 12px 16px;
+    min-height: 48px;
+    padding: 8px 14px;
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.04);
@@ -1654,7 +1657,7 @@ button:focus-visible {
 .inspiration-text {
     font-size: 1rem;
     color: rgba(255, 255, 255, 0.5);
-    margin: 12px 0 18px;
+    margin: 6px 0 8px;
     font-style: italic;
     transition: opacity 0.5s ease;
     height: 1.5rem;

@@ -87,6 +87,16 @@ export default {
             }
             if(msg_code == "inrd"){
                 console.log("cps unset inrd ")
+                // `sdbk mdld` is printed once, before the backend's main loop,
+                // while `sdbk inrd` is (re-)emitted on every loop cycle. A
+                // renderer that (re)attaches after a warm start — page reload,
+                // dev hot-reload, macOS dock-icon window re-creation — never
+                // sees the single `mdld`, leaving is_backend_loaded false and
+                // the PagesRouter v-if gate (`is_ready()`) closed forever:
+                // a fully blank app with zero console errors. `inrd` is only
+                // ever printed after the model-load path has run, so it
+                // implies the backend is loaded.
+                this.is_backend_loaded = true;
                 this.is_stopping = false
                 this.reset_generation_progress()
                 this.is_input_avail = true; // note : is_input_avail can be watched so set this at last pls
