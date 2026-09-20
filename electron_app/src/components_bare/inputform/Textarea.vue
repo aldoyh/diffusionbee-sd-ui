@@ -41,6 +41,7 @@ export default {
     methods: {
         onInput(event) {
             const val = event.target.value;
+            Vue.set(this.form_values, this.config.id, val);
             this.$emit('update:value', val);
             this.on_input_changed();
         }

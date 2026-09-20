@@ -6,7 +6,7 @@
 	"inputs" : [
 		{
 	        "id" : "prompt",
-	        "component": "Textarea",
+	        "component": "TextareaInput",
 	        "placeholder" : "custom applet "
 	    },
 	    {

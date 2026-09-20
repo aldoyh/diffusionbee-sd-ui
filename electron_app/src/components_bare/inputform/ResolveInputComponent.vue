@@ -1,7 +1,7 @@
 <template>
 
-    <span @update:value="handleUpdate">
-        <component   :is="config.component" :config="config"  :form_values="form_values" ></component>
+    <span>
+        <component   :is="config.component" :config="config"  :form_values="form_values" @update:value="handleUpdate" ></component>
     </span>
 
 </template>

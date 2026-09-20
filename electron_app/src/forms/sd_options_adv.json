@@ -10,7 +10,7 @@
     },
     {
         "id" : "prompt",
-        "component": "Textarea",
+        "component": "TextareaInput",
         "icon": "sparkles",
         "placeholder" : "Enter your prompt here",
         "default_value" : ""
@@ -18,7 +18,7 @@
 
     {
         "id" : "negative_prompt",
-        "component": "Textarea",
+        "component": "TextareaInput",
         "icon": "sliders",
         "placeholder" : "Enter your negative prompt here",
         "is_small" : true,

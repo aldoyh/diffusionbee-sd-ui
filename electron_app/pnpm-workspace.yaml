@@ -4,7 +4,7 @@ allowBuilds:
   bootstrap-vue: true
   core-js: true
   electron: true
-  electron-winstaller: set this to true or false
+  electron-winstaller: true
   fsevents: true
   ttf2woff2: true
   yorkie: true
