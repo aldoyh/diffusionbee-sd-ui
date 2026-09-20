@@ -9,8 +9,8 @@ APP_PROCESS_NAME="${APP_PROCESS_NAME:-Electron}"
 mkdir -p "$OUT_DIR"
 
 # Calibrated cliclick indices (32px row stride from sidebar top).
-# 0 Home | 1 Txt2Img | 3 Img2Img | 4 Inpainting | 6 Upscaler | 7 Models | 9 History
-SIDEBAR_INDICES=(0 1 3 4 6 7 9)
+# Sidebar order: 0 Home | 1 Txt2Img | 2 Img2Img | 3 Inpainting | 4 Upscaler | 5 Models | 6 History | 7 Prompt Library
+SIDEBAR_INDICES=(0 1 2 3 4 5 6)
 
 focus_app() {
   osascript -e "tell application \"System Events\" to set frontmost of process \"$APP_PROCESS_NAME\" to true" >/dev/null
@@ -75,7 +75,7 @@ click_sidebar_index() {
   x="$(echo "$bounds" | cut -d, -f1)"
   y="$(echo "$bounds" | cut -d, -f2)"
   local click_x=$((x + 100))
-  local click_y=$((y + 104 + index * 32))
+  local click_y=$((y + 134 + index * 32))
   cliclick "c:${click_x},${click_y}"
   sleep 1.5
 }

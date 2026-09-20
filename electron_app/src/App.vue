@@ -158,6 +158,7 @@
                 <!-- Footer with attribution -->
                 <div class="model-setup-attribution">
                     <p>{{ app_state.isArabic ? 'صُنع بحب ❤️ في البحرين 🇧🇭' : 'Made with Love ❤️ in Bahrain 🇧🇭' }}</p>
+                    <p class="model-setup-attribution-revamp">{{ app_state.isArabic ? 'بتطوير: حسن الدوي — البحرين · Grok · FreeBuff' : 'Revamped by: Hasan AlDoy — Bahrain · Grok · FreeBuff' }}</p>
                 </div>
 
             </div>
@@ -585,6 +586,32 @@ export default
             }
 
             console.log('No models found — onboarding is available from the Home screen.');
+
+            // Auto-download onboarding: on a fresh install with no models,
+            // immediately start downloading the best model for this machine
+            // (from Hugging Face) instead of waiting for a click. The setup
+            // dialog opens so the user sees live progress and can still skip.
+            if (!onboardingCompleted && !this.auto_model_download_attempted && !this.show_model_setup) {
+                this.auto_model_download_attempted = true;
+                this.show_model_setup = true;
+                this.model_download_error = '';
+                this.model_download_completed = false;
+                this.is_downloading_model = false;
+                this.autoStartBestModelDownload();
+            }
+        },
+
+        async autoStartBestModelDownload() {
+            try {
+                await this.fetch_models_list();
+            } catch (e) {
+                console.warn('Auto model download: catalog fetch failed:', e);
+                return; // error state is already reflected in the dialog
+            }
+            if (this.model_to_download && !this.is_downloading_model && !this.model_download_completed) {
+                console.log('Auto-starting download of best model:', this.model_to_download.id);
+                this.start_model_download();
+            }
         },
 
         async fetch_models_list() {
@@ -1114,6 +1141,7 @@ export default
 
             // First-run model setup state
             show_model_setup: false,
+            auto_model_download_attempted: false,
             model_to_download: null,
             is_downloading_model: false,
             model_download_progress: 0,
@@ -1524,6 +1552,12 @@ body {
 
 .model-setup-attribution:hover p {
     color: var(--color-text-secondary, #a3a3a3);
+}
+
+.model-setup-attribution-revamp {
+    margin-top: 4px;
+    font-size: 11px !important;
+    font-weight: 600;
 }
 
 /* Improved Open button for welcome screen */

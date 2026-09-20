@@ -30,8 +30,14 @@
              </div>
 
             <div class="sidebar_footer" aria-hidden="false">
-                <span class="sidebar_footer_text sidebar_footer_text--en">Made with Love ❤️ in Bahrain 🇧🇭</span>
-                <span class="sidebar_footer_text sidebar_footer_text--ar">صُنع بحب ❤️ في البحرين 🇧🇭</span>
+                <div class="sidebar_footer_made">
+                    <span class="sidebar_footer_text sidebar_footer_text--en">Made with Love ❤️ in Bahrain 🇧🇭</span>
+                    <span class="sidebar_footer_text sidebar_footer_text--ar">صُنع بحب ❤️ في البحرين 🇧🇭</span>
+                </div>
+                <div class="sidebar_footer_revamp">
+                    <span class="sidebar_footer_text sidebar_footer_revamp_text sidebar_footer_text--en">Revamped by: <strong>Hasan AlDoy</strong> — Bahrain · Grok · FreeBuff</span>
+                    <span class="sidebar_footer_text sidebar_footer_revamp_text sidebar_footer_text--ar">بتطوير: <strong>حسن الدوي</strong> — البحرين · Grok · FreeBuff</span>
+                </div>
             </div>
         </div>
 
@@ -722,6 +728,21 @@ html[dir="rtl"] .sidebar_footer_text--en{
 html[dir="rtl"] .sidebar_footer_text--ar{
     display: inline-block;
     font-family: 'Tajawal', var(--font-family-arabic, sans-serif);
+}
+
+.sidebar_footer_revamp{
+    margin-top: 4px;
+}
+
+.sidebar_footer_revamp .sidebar_footer_text{
+    font-size: 10px;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.sidebar_footer_revamp strong{
+    font-weight: 700;
+    color: var(--text-color-solid, var(--color-text-secondary, #525252));
 }
 
 .sidebar_item:hover{
