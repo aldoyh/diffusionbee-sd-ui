@@ -344,5 +344,5 @@ Stable Diffusion is released under the [CreativeML OpenRAIL-M license](https://g
 5. [huggingface/diffusers](https://github.com/huggingface/diffusers)
 
 ===
-  <small>DESIGNED & DEVELOPED WITH LOVE ❤️ IN BAHRAIN 🇧🇭 BY HASAN ALDOY @aldoyh - <a href="https://doy.tech">doy.tech</a></small>
-===
+
+<small>DESIGNED & DEVELOPED WITH LOVE ❤️ IN BAHRAIN 🇧🇭 BY HASAN ALDOY @aldoyh - <a href="https://doy.tech">doy.tech</a></small>
