@@ -185,7 +185,7 @@ import LoaderModal from './components_bare/LoaderModal.vue'
 import Vue from "vue"
 import { setLocale, getLocale } from "./i18n.js"
 import { bindHistoryToApp } from "./history_service.js"
-const { getMachineProfile, pickOptimalOnboardingModel, isSelectableOnboardingModel } = require("./utils/model_selection.js")
+const { getMachineProfile, pickOptimalOnboardingModel, enrichOnboardingCandidatesWithHuggingFace, isSelectableOnboardingModel } = require("./utils/model_selection.js")
 const { mergeFlux2IntoCatalog, setActiveBackendKind } = require("./utils/flux2_catalog.js")
 const { getHfTokenSync } = require("./utils/hf_auth.js")
 
@@ -648,6 +648,18 @@ export default
                 // must only ever recommend a model the *running* backend can
                 // run. `resolveModelCapability` (flux2_catalog.js) filters
                 // FLUX/SDXL-unsupported entries per backend kind.
+                // Cross-check the live Hugging Face Hub listing for the most
+                // popular image-generation checkpoint that fits this machine
+                // (RAM / Apple-Silicon aware). HF candidates are appended to the
+                // pool before the synchronous picker re-ranks everything by
+                // score + machine fit. Network/DNS failures degrade silently to
+                // the existing catalog (SD1.5 default).
+                try {
+                    downloadableModels = await enrichOnboardingCandidatesWithHuggingFace(downloadableModels, machineProfile);
+                } catch (e) {
+                    console.warn('Hugging Face onboarding enrichment failed, using catalog only:', e);
+                }
+
                 let default_model = pickOptimalOnboardingModel(downloadableModels, machineProfile, {
                     hasHfToken: Boolean(hfToken),
                 });

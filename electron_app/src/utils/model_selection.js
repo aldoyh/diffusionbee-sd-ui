@@ -272,6 +272,21 @@ function pickOptimalStableDiffusionModel(models, profile = getMachineProfile()) 
   return sorted.length > 0 ? sorted[0] : null;
 }
 
+// `pickOptimalOnboardingModel` is the synchronous entry point used by the
+// setup overlay. Because the HF lookup is async/network-bound, the caller is
+// expected to `await enrichOnboardingCandidatesWithHuggingFace(profile)` first
+// (it returns a *new* models array that already includes HF-sourced candidates
+// ranked by download popularity + machine fit). The synchronous picker then
+// just treats them like any other catalog entry.
+async function enrichOnboardingCandidatesWithHuggingFace(models = [], profile = getMachineProfile()) {
+  const hfModels = await fetchBestHuggingFaceImageModel(profile);
+  if (hfModels.length === 0) return models || [];
+  // HF candidates go first (popular + fit-checked) but the synchronous picker's
+  // scoring still re-ranks; we keep them in the pool so catalog/SD1.5 can win if
+  // their score is higher for this machine.
+  return [...hfModels, ...(models || [])];
+}
+
 function pickOptimalOnboardingModel(models, profile = getMachineProfile(), options = {}) {
   const hasHfToken = Boolean(options.hasHfToken);
   // FLUX preference is DISABLED while no backend can run FLUX. Flip to
@@ -296,6 +311,123 @@ function pickOptimalOnboardingModel(models, profile = getMachineProfile(), optio
   return pickOptimalStableDiffusionModel(sdCandidates.length > 0 ? sdCandidates : candidates, profile);
 }
 
+// ── Hugging Face Hub integration ────────────────────────────────────────────
+// Onboarding cross-checks the live HF Hub listing for the best image-generation
+// model that fits the user's machine (RAM / Apple-Silicon aware). The Hub is a
+// *recommendation source only* — the pick is still gated by resolveModelCapability
+// and min_ram/size fit, and we fall back to the bundled catalog + SD1.5 default.
+
+const HF_API_BASE = 'https://huggingface.co/api';
+
+// Models we never want to surface from a blind Hub search (too large, unsafe,
+// or not consumable by the backend even if popular).
+const HF_BLOCKLIST_SUBSTRINGS = ['flux-1-dev', 'flux1-dev', 'sdxl-turbo', 'lcm'];
+
+function getHfHeaders() {
+  const headers = { Accept: 'application/json' };
+  // Best-effort: a user-provided token (env only) widens gated-model access.
+  try {
+    if (typeof process !== 'undefined' && process && process.env && process.env.HF_TOKEN) {
+      headers.Authorization = `Bearer ${process.env.HF_TOKEN}`;
+    }
+  } catch (error) {
+    // ignore — anonymous access is fine for public models
+  }
+  return headers;
+}
+
+async function fetchJson(url, timeoutMs = 8000) {
+  if (typeof fetch !== 'function') return null;
+  const controller = typeof AbortController === 'function' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+  try {
+    const res = await fetch(url, { headers: getHfHeaders(), signal: controller ? controller.signal : undefined });
+    if (!res || !res.ok) return null;
+    return await res.json();
+  } catch (error) {
+    return null;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+// Parse usable safetensors/size metadata from an HF model card + siblings.
+function extractHfModelSizeBytes(model) {
+  if (!model) return 0;
+  let bytes = 0;
+  const siblings = Array.isArray(model.siblings) ? model.siblings : [];
+  for (const s of siblings) {
+    if (s && /\.safetensors$/i.test(s.rfilename || '')) {
+      const lfs = s.lfs || {};
+      const size = Number.isFinite(lfs.size) ? lfs.size : 0;
+      if (size > bytes) bytes = size;
+    }
+  }
+  // Fallback: some cards expose total size on the model object.
+  if (!bytes && Number.isFinite(model.usedStorageBytes)) {
+    bytes = model.usedStorageBytes;
+  }
+  return bytes;
+}
+
+// Map an HF repo into the same shape isSelectableOnboardingModel expects.
+function normalizeHfModel(model, profile = getMachineProfile()) {
+  if (!model || !model.id) return null;
+  const id = String(model.id);
+  const lowerId = id.toLowerCase();
+
+  if (HF_BLOCKLIST_SUBSTRINGS.some((s) => lowerId.includes(s))) return null;
+  // Only consider checkpoints that are clearly Stable Diffusion / SDXL.
+  if (!/(sd|sdxl|stable[-_]?diffusion|dreamshaper|deliberate|realvis|juggernaut|epicrealism|cyberrealistic)/i.test(lowerId)) {
+    return null;
+  }
+  if (/(flux|controlnet|embedding|lora|inpaint|refiner|vae|upscaler|animatediff)/i.test(lowerId)) {
+    return null;
+  }
+
+  const sizeBytes = extractHfModelSizeBytes(model);
+  const sizeGB = sizeBytes / (1024 * 1024 * 1024);
+  // Conservative RAM budget: the checkpoint plus runtime overhead.
+  const estimatedRamGb = sizeGB > 0 ? sizeGB * 1.6 + 2 : 8;
+  if (sizeGB > 0 && estimatedRamGb > profile.totalMemGB * 0.85) {
+    return null; // would likely OOM on this machine
+  }
+
+  const isSdxl = /(sdxl|xl)/i.test(lowerId);
+  const sdType = isSdxl ? 'SDXL_base' : 'SD_1x';
+  const base = isSdxl ? 'sdxl' : 'sd15';
+
+  return {
+    id: `hf:${id}`,
+    hf_id: id,
+    url: `${HF_API_BASE.replace(/\/api$/, '')}/${id}/resolve/main/${isSdxl ? 'sd_xl_base_1.0.safetensors' : 'v1-5-pruned-emaonly.safetensors'}`,
+    title: id.split('/').pop().replace(/[-_]/g, ' '),
+    description: model.description || '',
+    size_bytes: sizeBytes,
+    estimated_ram_gb: estimatedRamGb,
+    is_locally_imported: false,
+    is_stock_model: false,
+    model_meta_data: { type: 'sd_model', float_type: 'float16', sd_type: sdType, source: 'huggingface', base },
+    downloads: Number.isFinite(model.downloads) ? model.downloads : 0,
+    hf_source: true,
+  };
+}
+
+// Fetch + rank the top HF models fit for this machine. Returns [] on any failure.
+async function fetchBestHuggingFaceImageModel(profile = getMachineProfile()) {
+  const query = encodeURIComponent('stable diffusion sdxl');
+  const url = `${HF_API_BASE}/models?search=${query}&sort=downloads&direction=-1&limit=30&full=false`;
+  const list = await fetchJson(url);
+  if (!Array.isArray(list) || list.length === 0) return [];
+
+  const ranked = list
+    .map((m) => normalizeHfModel(m, profile))
+    .filter(Boolean)
+    .sort((a, b) => b.downloads - a.downloads);
+
+  return ranked;
+}
+
 function getFallbackDefaultStableDiffusionAsset() {
   return JSON.parse(JSON.stringify(FALLBACK_SD15_MODEL));
 }
@@ -309,6 +441,8 @@ module.exports = {
   isFlux2Model,
   isSelectableOnboardingModel,
   isSelectableStableDiffusionModel,
+  enrichOnboardingCandidatesWithHuggingFace,
+  fetchBestHuggingFaceImageModel,
   pickOptimalOnboardingModel,
   pickOptimalStableDiffusionModel,
   scoreFlux2Model,

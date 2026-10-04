@@ -11,6 +11,7 @@
     >   
         
         <template v-slot:input_buttons>
+            <div @click="enhancePrompt" class="l_button button_medium" style="float:right; margin-right:6px;" :class="{ 'disabled-action': is_enhancing }" title="Enhance prompt">{{ is_enhancing ? '⏳ Enhancing...' : '✨ Enhance' }}</div>
             <div @click="randomPromptAndGenerate" class="l_button button_medium" style="float:right; margin-right:6px;" :class="{ 'disabled-action': is_random_prompt_generating }" :title="is_random_prompt_generating ? ((app && app.app_state && app.app_state.isArabic) ? 'جارٍ إنشاء موجه...' : 'Generating prompt...') : ((app && app.app_state && app.app_state.isArabic) ? 'توليد موجه عشوائي' : 'Generate a random creative prompt and auto-generate')">{{ is_random_prompt_generating ? ((app && app.app_state && app.app_state.isArabic) ? '⏳' : '⏳') : ((app && app.app_state && app.app_state.isArabic) ? '🎲 عشوائي' : '🎲 Random') }}</div>
 
             <div v-if="app.stable_diffusion_manager.is_ready" @click="generate" class="l_button button_colored button_medium" style="float:right">{{ (app && app.app_state && app.app_state.isArabic) ? 'توليد' : 'Generate' }}</div>
@@ -91,9 +92,48 @@ export default {
             is_input_changed_after_last_run : false, 
             is_mounted : false,
             is_random_prompt_generating: false,
+            is_enhancing: false,
         };
     },
     methods: {
+        async enhancePrompt() {
+            if (this.is_enhancing) return;
+            
+            const options = this.get_sd_form_outputs();
+            const prompt = options.prompt;
+            if (!prompt || prompt.trim() === '') {
+                this.app.show_toast(this.app.app_state && this.app.app_state.isArabic 
+                    ? 'يرجى إدخال موجه أولاً لتحسينه' 
+                    : 'Please enter a prompt first to enhance it');
+                return;
+            }
+
+            this.is_enhancing = true;
+            try {
+                // We use the Ollama service to "enhance" the prompt.
+                // We wrap the user prompt in a request for a high-quality SD prompt.
+                const enhancementRequest = `Enhance the following Stable Diffusion prompt to be more detailed, artistic, and high-quality, while keeping the core subject. Return only the enhanced prompt text: ${prompt}`;
+                
+                const generated = await generatePromptWithOllama({
+                    sourcePrompt: enhancementRequest,
+                    locale: this.app && this.app.app_state && this.app.app_state.isArabic ? 'ar' : 'en',
+                });
+                
+                const enhanced = normalizeGeneratedPrompt(generated.prompt) || prompt;
+                this.$refs.basic_sd_applet.load_options({ prompt: enhanced });
+                
+                this.app.show_toast(this.app.app_state && this.app.app_state.isArabic 
+                    ? 'تم تحسين الموجه بنجاح!' 
+                    : 'Prompt enhanced successfully!');
+            } catch (error) {
+                console.error('Prompt enhancement failed:', error);
+                this.app.show_toast(this.app.app_state && this.app.app_state.isArabic 
+                    ? 'فشل تحسين الموجه. يرجى المحاولة مرة أخرى.' 
+                    : 'Failed to enhance prompt. Please try again.');
+            } finally {
+                this.is_enhancing = false;
+            }
+        },
         generate(){
 
             this.is_input_changed_after_last_run = false
