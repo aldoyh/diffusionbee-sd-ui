@@ -1,6 +1,10 @@
 from PIL import Image, ImageOps, ImageFilter
 import numpy as np
 
+# Pillow 10 removed the pre-9.0 ``Image.ANTIALIAS`` alias; LANCZOS is the same
+# filter and is present in every supported Pillow version.
+RESAMPLE_FILTER = Image.LANCZOS
+
 def process_inp_img(input_image, image_size="legacy_auto",new_w=None , new_h=None , only_read_alpha=False):
     input_image = Image.open(input_image)
 
@@ -19,10 +23,10 @@ def process_inp_img(input_image, image_size="legacy_auto",new_w=None , new_h=Non
             new_h = 512
             new_w  = round((w * new_h / h)/64)*64
 
-    input_image_downscaled = ImageOps.fit(input_image, (new_w//8, new_h//8), method = Image.ANTIALIAS ,
+    input_image_downscaled = ImageOps.fit(input_image, (new_w//8, new_h//8), method = RESAMPLE_FILTER ,
                    bleed = 0.0, centering =(0.5, 0.5))
 
-    input_image = ImageOps.fit(input_image, (new_w, new_h), method = Image.ANTIALIAS ,
+    input_image = ImageOps.fit(input_image, (new_w, new_h), method = RESAMPLE_FILTER ,
                    bleed = 0.0, centering =(0.5, 0.5))
     input_image = np.array(input_image)[... , :3]
     input_image_downscaled = np.array(input_image_downscaled)[... , :3]

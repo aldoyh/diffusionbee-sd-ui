@@ -146,10 +146,11 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    -webkit-user-select: none;
-    -webkit-app-region: drag;
     background: #0a0a0f;
     font-family: 'Tajawal', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    /* NOTE: never apply -webkit-app-region: drag to a full-screen overlay — it
+       turns every pixel into a window-drag handle and swallows all clicks and
+       keystrokes behind it. Selection is re-enabled globally via ApplicationFrame. */
 }
 
 /* ── Animated Gradient Orbs ── */

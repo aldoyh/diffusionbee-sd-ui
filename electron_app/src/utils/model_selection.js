@@ -77,7 +77,7 @@ function isSelectableStableDiffusionModel(model) {
   // it is no longer hidden by a flat allowlist that also hid a working feature).
   if (resolveModelCapability(model) !== 'runnable') return false;
   if (isFlux2Model(model)) return false;
-  if (text.includes('flux')) return false;
+  if (text.includes('flux_schnell') || text.includes('flux_dev')) return false;
   if (text.includes('controlnet')) return false;
   if (text.includes('embedding')) return false;
   if (text.includes('lora')) return false;
@@ -214,6 +214,9 @@ function scoreStableDiffusionModel(model, profile = getMachineProfile()) {
     ['xl base', 20],
     ['photoreal', 12],
     ['cinematic', 10],
+    ['qwen-image', 50],
+    ['flux.3', 55],
+    ['flux3', 55],
   ];
 
   for (const [needle, bonus] of positiveKeywords) {
@@ -226,7 +229,9 @@ function scoreStableDiffusionModel(model, profile = getMachineProfile()) {
     ['inpaint', 70],
     ['refiner', 80],
     ['controlnet', 40],
-    ['flux', 1000],
+    ['flux_schnell', 1000],
+    ['flux_dev', 1000],
+    ['flux1', 1000],
     ['lcm', 16],
     ['lightning', 18],
     ['turbo', 12],

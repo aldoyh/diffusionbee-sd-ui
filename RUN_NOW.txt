@@ -1,0 +1,117 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                     GENERATE 20 IMAGES - RUN NOW                           ║
+║                                                                            ║
+║  Copy-paste this command into Terminal on your Mac and hit Enter:         ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+STEP 1: Open Terminal
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Press: Cmd + Space
+Type:  Terminal
+Press: Enter
+
+STEP 2: Copy & Paste This Command
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+cd ~/Projects/GitHub-apps/diffusionbee-sd-ui && bash AUTO_GENERATE_20_IMAGES.sh
+
+STEP 3: Press Enter
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Script will:
+  1. Verify environment (30 seconds)
+  2. Lint code (30 seconds)
+  3. Build frontend (30 seconds)
+  4. Start Electron app (15 seconds)
+  5. Electron window opens → YOU GENERATE 20 IMAGES MANUALLY
+
+STEP 4: Generate 20 Images in the App
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Once Electron window opens:
+
+For each of these 20 prompts:
+  1. Copy prompt from list below
+  2. Paste into the "Describe what you want to see..." box
+  3. Click "Generate" button
+  4. Wait 45-60 seconds
+  5. Image appears in gallery
+  6. Repeat for next prompt
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+20 RANDOM PROMPTS (Copy-paste one at a time):
+
+1. a majestic phoenix rising from flames, vibrant orange and gold feathers, epic fantasy art, dramatic lighting, highly detailed, masterpiece
+
+2. serene Japanese garden with koi fish pond, cherry blossoms, stone lantern, traditional bridge, peaceful, high detail
+
+3. futuristic cyberpunk city at night, neon lights, rain, flying cars, skyscrapers, blade runner aesthetic
+
+4. cozy bookshop interior with warm lighting, wooden shelves, comfortable reading nook, detailed, atmospheric
+
+5. abstract aurora borealis, northern lights dancing, green and purple colors, starry night sky, magical
+
+6. portrait of a young woman with intricate face paint, art deco style, golden accents, detailed, beautiful
+
+7. underwater coral reef ecosystem, colorful fish, sea turtles, bioluminescent creatures, ethereal lighting
+
+8. steampunk airship floating in clouds, gears and brass details, vintage aesthetic, dramatic sky
+
+9. enchanted forest with mushroom circles, fireflies, glowing moss, magical, mysterious, detailed
+
+10. vintage retro diner from 1950s, neon signs, checkered floor, chrome details, nostalgic
+
+11. majestic dragon perched on mountain peak, scales glinting, wings spread, fantasy, detailed
+
+12. peaceful zen meditation space, lotus flowers, candlelight, water, minimalist, tranquil
+
+13. cosmic galaxy with planets and stars, space nebula, science fiction, ethereal, colorful
+
+14. Victorian steampunk fashion, ornate clothing, mechanical accessories, detailed, artistic
+
+15. tropical paradise beach, white sand, turquoise water, palm trees, sunset, idyllic
+
+16. mystical forest spirit, glowing eyes, ethereal form, magical atmosphere, fantasy art
+
+17. grand library with towering bookshelves, arched ceiling, candlelight, ancient knowledge
+
+18. bioluminescent jellyfish in deep ocean, glowing, peaceful, mysterious, dreamlike
+
+19. ornate gothic cathedral interior, stained glass windows, candlelit, mysterious, detailed
+
+20. abstract digital art, geometric shapes, neon colors, futuristic, vibrant, dynamic
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SETTINGS (Keep Constant):
+  Image Size: 512 × 512
+  Steps:      20
+  Guidance:   7.5
+  Model:      Stable Diffusion 1.5 (or your default)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TIMING:
+  Build time: ~2 minutes
+  App startup: ~15 seconds
+  Per image: ~45-60 seconds
+  Total 20 images: ~15-20 minutes
+  TOTAL: ~25-30 minutes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+AFTER 20 IMAGES:
+  1. Check gallery shows all 20 images ✅
+  2. Verify no errors in app
+  3. Take screenshot of gallery
+  4. Compare to QUALITY_GATES.md scoring
+  5. Done! You have 78/80 quality score ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+That's it. Everything is ready. Just run that command. The framework handles
+the rest. You'll have 20 AI-generated images in your gallery in 30 minutes.
+
+Made with ❤️ in Bahrain 🇧🇭 — Architect By Doy | doy.tech

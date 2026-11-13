@@ -65,6 +65,34 @@ FLUX2_PRESETS = {
         },
         "requires_hf_token": True,
     },
+    "qwen-image-2.1-uc": {
+        "model_id": "abenzerps/Qwen-Image-2.1-Uncensored-Quantized",
+        "filename": "qwen-image-2.1-UC-Q4_K_M.gguf",
+        "output_name": "Qwen-Image-2.1-Uncensored",
+        "title": "Qwen-Image 2.1 Uncensored (Q4_K_M)",
+        "description": "Quantized Qwen-Image 2.1 for local text-to-image generation. 4.6 GB GGUF.",
+        "model_meta_data": {
+            "type": "qwen_image_model",
+            "float_type": "q4_k_m",
+            "sd_type": "qwen_image_2_1",
+            "family": "qwen_image",
+        },
+        "requires_hf_token": False,
+    },
+    "flux3-image-klein": {
+        "model_id": "black-forest-labs/flux-3-image-klein",
+        "filename": "model.safetensors",
+        "output_name": "FLUX.3-Image-Klein",
+        "title": "FLUX.3 Image Klein (Distilled)",
+        "description": "5.6B open-weight FLUX.3 Image Klein distilled model from Black Forest Labs. 16-step generation.",
+        "model_meta_data": {
+            "type": "flux3_model",
+            "float_type": "bfloat16",
+            "sd_type": "flux3_klein",
+            "family": "flux3",
+        },
+        "requires_hf_token": True,
+    },
 }
 
 

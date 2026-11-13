@@ -228,10 +228,19 @@ export default {
 
 
 html {
-    user-select: none;
-    -moz-user-select: none;
-    -webkit-user-select: none;
-    -ms-user-select: none;
+    /* Never disable selection on the root element. A global user-select: none
+       swallows text input and caret behavior on <input>/<textarea>/<select>
+       throughout the entire Electron window — this is the root cause of the
+       chronic "cannot type in the prompt box" bug. Selection is disabled only
+       on non-interactive chrome (images, title bar, sidebar) where it makes
+       sense, never on the document root. */
+}
+
+input, textarea, select, button, [contenteditable], [role="textbox"] {
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
 }
 
 body {
@@ -488,16 +497,26 @@ img {
 .title_bar {
     height: var(--titlebar-height);
     width: calc( 100vw - var(--sidebar-width) );
-    /*background: red;*/
     margin-left : var(--sidebar-width);
     -webkit-user-select: none;
-    -webkit-app-region: drag;
+    /* NOTE: the native macOS/Windows title bar already provides window dragging.
+       -webkit-app-region: drag on web content is REMOVED because it creates an
+       invisible drag layer that swallows every click and keystroke on anything
+       beneath it — this is the root cause of the chronic "cannot type in the
+       prompt box" bug. Dragging is handled by the OS title bar. */
     border-width: 0px;
     border-bottom-width: 1px;
     border-style: solid;
     border-color: var( --thin-border-color);
+    z-index: 200;
 
     transition: margin-left 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), width 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.title_bar_icons, .app_title, .app_title_sidebar_collapsed {
+    -webkit-app-region: no-drag;
+    user-select: text;
+    -webkit-user-select: text;
 }
 
 .title_bar_icons{
@@ -516,8 +535,8 @@ img {
 
 .sidebar_drag{
     -webkit-user-select: none;
-    -webkit-app-region: drag;
     height: var(--titlebar-height);
+    /* Removed -webkit-app-region: drag — native title bar handles window dragging. */
 }
 
 .app_title_sidebar_collapsed{
@@ -752,9 +771,11 @@ html[dir="rtl"] .sidebar_footer_text--ar{
 
 .tab_content_frame{
     position: absolute;
+    top: var(--titlebar-height);
     margin-left: var(--sidebar-width);
     height: calc( 100vh - var(--titlebar-height) );
     width: calc(100% - var(--sidebar-width) );
+    -webkit-app-region: no-drag;
 
     transition: margin-left 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), width 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }

@@ -1,420 +1,514 @@
 <template>
-    <div class="main_container dark-theme">
-        <div class="welcome-section" ref="composerSection">
-            <h1 class="welcome-title" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
-                {{ app.app_state.isArabic ? 'ماذا ستصنع اليوم؟' : 'What will you create today?' }}
-            </h1>
+    <div class="home" :class="{ 'home--rtl': isArabic }" :dir="isArabic ? 'rtl' : 'ltr'">
+        <div class="home-inner">
 
-            <div v-if="needsOnboarding" class="onboarding-banner" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
-                <div class="onboarding-banner-copy">
-                    <p class="onboarding-banner-kicker">{{ app.app_state.isArabic ? 'الإعداد الأولي' : 'First-time setup' }}</p>
-                    <h2 class="onboarding-banner-title">{{ app.app_state.isArabic ? 'لنثبت نموذجًا واحدًا لتبدأ التوليد' : 'Install one model to start generating' }}</h2>
-                    <p class="onboarding-banner-desc">{{ app.app_state.isArabic ? 'سنختار أفضل نموذج لجهازك ونحمّله بنقرة واحدة — بدون أي إعداد.' : 'We will pick the best model for your machine and download it in one click — no setup needed.' }}</p>
+            <!-- ── Page header ─────────────────────────────────────────── -->
+            <header class="home-header" ref="composerSection">
+                <div class="home-header-copy">
+                    <p class="home-eyebrow">{{ isArabic ? 'مساحة العمل' : 'Workbench' }}</p>
+                    <h1 class="home-title">{{ isArabic ? 'ماذا ستصنع اليوم؟' : 'What will you create today?' }}</h1>
+                    <p class="home-subtitle">
+                        {{ isArabic
+                            ? 'اكتب وصفًا بأي لغة، اختر النموذج والأبعاد، ثم اضغط توليد.'
+                            : 'Describe an image in any language, choose a model and canvas, then generate.' }}
+                    </p>
                 </div>
-                <div class="onboarding-banner-actions">
-                    <button type="button" class="onboarding-primary-btn" @click="downloadDefaultModel">
-                        {{ app.app_state.isArabic ? 'تحميل النموذج الافتراضي' : 'Download default model' }}
-                    </button>
-                    <button type="button" class="onboarding-secondary-btn" @click="openPage('ModelStore')">
-                        {{ app.app_state.isArabic ? 'اختيار يدوي' : 'Choose manually' }}
-                    </button>
-                </div>
-            </div>
-
-            <div class="mode-switcher" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
-                <button
-                    type="button"
-                    v-for="mode in homeModes"
-                    :key="mode.id"
-                    class="mode-pill"
-                    :class="{ 'mode-pill--active': activeHomeMode === mode.id }"
-                    @click="focusHomeSection(mode.target, mode.id)"
-                    :title="homeModeTitle(mode)"
-                >
-                    <span class="mode-pill-icon">{{ mode.icon }}</span>
-                    <span class="mode-pill-copy">
-                        <span class="mode-pill-title">{{ homeModeLabel(mode) }}</span>
-                        <span class="mode-pill-desc">{{ homeModeDescription(mode) }}</span>
+                <div class="home-header-side">
+                    <span class="status-pill" :class="'status-pill--' + statusTone">
+                        <span class="status-dot" aria-hidden="true"></span>
+                        {{ statusLabel }}
                     </span>
-                </button>
-            </div>
-
-            <p class="carousel-heading" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
-                {{ app.app_state.isArabic ? 'عينات ملهمة' : 'Inspiration samples' }}
-                <span class="sample-count-badge">{{ welcomeTiles.length }}</span>
-            </p>
-
-            <div class="carousel-shell">
-                <button
-                    class="carousel-nav"
-                    type="button"
-                    @click="scrollSamples(-1)"
-                    :title="app.app_state.isArabic ? 'تمرير العينات لليسار' : 'Scroll samples left'"
-                    :aria-label="app.app_state.isArabic ? 'تمرير العينات لليسار' : 'Scroll samples left'"
-                >
-                    ‹
-                </button>
-
-                <div class="welcome-samples" ref="welcomeSamples" dir="ltr" @wheel.prevent="onWelcomeSamplesWheel">
-                    <div
-                        v-for="(img, idx) in welcomeTiles"
-                        :key="img.assetKey || ('welcome-' + idx)"
-                        class="welcome-sample-tile"
-                        :title="img.prompt"
-                        v-bind:style="{ 'background-image': 'url(' + img.src + ')' }"
-                        @click="useWelcomePrompt(img.prompt)"
+                    <button
+                        type="button"
+                        class="btn btn-ghost btn-sm lang-btn"
+                        @click="toggleLanguage"
+                        :lang="isArabic ? 'en' : 'ar'"
                     >
-                        <span class="welcome-sample-label" :class="{ 'arabic-text': app.app_state.isArabic }">{{ sampleLabel(img, idx) }}</span>
-                    </div>
+                        {{ isArabic ? 'English' : 'العربية' }}
+                    </button>
                 </div>
+            </header>
 
-                <button
-                    class="carousel-nav"
-                    type="button"
-                    @click="scrollSamples(1)"
-                    :title="app.app_state.isArabic ? 'تمرير العينات لليمين' : 'Scroll samples right'"
-                    :aria-label="app.app_state.isArabic ? 'تمرير العينات لليمين' : 'Scroll samples right'"
-                >
-                    ›
-                </button>
-            </div>
+            <!-- ── First-run setup ─────────────────────────────────────── -->
+            <section v-if="needsOnboarding" class="setup-card" aria-labelledby="setup-title">
+                <div class="setup-icon" aria-hidden="true"><AppIcon name="wand" :size="22" /></div>
+                <div class="setup-copy">
+                    <h2 id="setup-title" class="setup-title">
+                        {{ isArabic ? 'ثبّت نموذجًا واحدًا لتبدأ التوليد' : 'Install one model to start generating' }}
+                    </h2>
+                    <p class="setup-desc">
+                        {{ isArabic
+                            ? 'سنختار أفضل نموذج لجهازك ونحمّله بنقرة واحدة — بدون أي إعداد.'
+                            : 'We pick the best model for this machine and download it in one click — no setup needed.' }}
+                    </p>
+                </div>
+                <div class="setup-actions">
+                    <button type="button" class="btn btn-primary" @click="downloadDefaultModel">
+                        <AppIcon name="download" :size="16" />
+                        {{ isArabic ? 'تحميل النموذج الافتراضي' : 'Download default model' }}
+                    </button>
+                    <button type="button" class="btn btn-secondary" @click="openPage('ModelStore')">
+                        {{ isArabic ? 'اختيار يدوي' : 'Choose manually' }}
+                    </button>
+                </div>
+            </section>
 
-            <p class="inspiration-text" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
-                {{ currentInspiration }}
+            <p v-if="pendingPrompt" class="pending-note" role="status">
+                {{ isArabic
+                    ? 'تمت إضافة الطلب. سيتم التوليد تلقائيًا عند جاهزية النموذج والمحرك.'
+                    : 'Prompt queued. Generation starts automatically as soon as the model and engine are ready.' }}
             </p>
 
-            <div class="chat-container">
-                <div class="chat-box" :class="{ 'chat-box--has-neg': showNegativePrompt }" :dir="app.app_state.isArabic ? 'rtl' : 'ltr'">
-                    <div class="chat-input-wrap">
+            <!-- ── Composer + settings ─────────────────────────────────── -->
+            <div class="workbench">
+                <section class="composer" aria-labelledby="composer-label">
+                    <div class="composer-head">
+                        <label id="composer-label" class="composer-label" for="prompt-textarea">
+                            <AppIcon name="sparkles" :size="15" />
+                            {{ jsonMode ? (isArabic ? 'JSON للدفعة' : 'JSON batch') : (isArabic ? 'الموجه' : 'Prompt') }}
+                        </label>
+
+                        <div class="composer-head-meta">
+                            <div class="recent-wrap" v-if="recentPrompts.length > 0">
+                                <button
+                                    type="button"
+                                    class="meta-btn"
+                                    :class="{ 'meta-btn--active': showRecentPrompts }"
+                                    @click="showRecentPrompts = !showRecentPrompts"
+                                    :aria-expanded="showRecentPrompts ? 'true' : 'false'"
+                                    aria-haspopup="true"
+                                >
+                                    <AppIcon name="clock" :size="14" />
+                                    {{ isArabic ? 'الأخيرة' : 'Recent' }}
+                                </button>
+
+                                <div v-if="showRecentPrompts" class="recent-menu" v-click-outside="closeRecentPrompts" role="group" aria-label="Recent prompts">
+                                    <div class="recent-menu-head">
+                                        <span>{{ isArabic ? 'الموجهات الأخيرة' : 'Recent prompts' }}</span>
+                                        <button type="button" class="meta-btn" @click="clearRecentPrompts">
+                                            {{ isArabic ? 'مسح' : 'Clear' }}
+                                        </button>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        v-for="(rp, ri) in recentPrompts"
+                                        :key="'rp-' + ri"
+                                        class="recent-item"
+                                        @click="useRecentPrompt(rp)"
+                                    >
+                                        <AppIcon name="arrow-right" :size="13" />
+                                        <span class="recent-item-text" dir="auto">{{ truncatePrompt(rp, 90) }}</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <span
+                                class="token-meter"
+                                :class="tokenMeterClass"
+                                role="progressbar"
+                                aria-valuemin="0"
+                                aria-valuemax="75"
+                                :aria-valuenow="clipTokenCount"
+                                id="prompt-token-meter"
+                                :aria-label="isArabic ? 'عدد رموز CLIP' : 'CLIP token count'"
+                                :title="isArabic ? 'عدد رموز CLIP (الحد 75)' : 'CLIP token count (limit 75)'"
+                            >
+                                <span class="token-meter-bar" aria-hidden="true">
+                                    <span class="token-meter-fill" :style="{ width: tokenPercent + '%' }"></span>
+                                </span>
+                                <span class="token-meter-value">{{ clipTokenCount }}/75</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <textarea
+                        id="prompt-textarea"
+                        v-model="promptText"
+                        @keydown.enter.exact="onEnterSubmit"
+                        @input="onPromptInput"
+                        :placeholder="promptPlaceholder"
+                        class="prompt-input"
+                        :class="{ 'prompt-input--mono': jsonMode, 'rtl-input': isArabic }"
+                        rows="3"
+                        ref="promptTextarea"
+                        aria-describedby="prompt-token-meter"
+                        spellcheck="false"
+                    ></textarea>
+
+                    <p v-if="jsonMode" class="json-hint" :class="{ 'json-hint--invalid': !jsonBatchInfo.valid }">
+                        {{ jsonBatchInfo.valid
+                            ? (isArabic
+                                ? 'سيدخل ' + jsonBatchInfo.totalPrompts + ' موجه إلى قائمة الانتظار.'
+                                : jsonBatchInfo.totalPrompts + ' prompt(s) will be queued.')
+                            : (isArabic ? 'أدخل مصفوفة JSON من النصوص.' : 'Enter a JSON array of prompt strings.') }}
+                    </p>
+
+                    <div v-if="showNegativePrompt" class="neg-area">
+                        <label class="neg-label" for="negative-prompt">
+                            {{ isArabic ? 'الموجه السلبي' : 'Negative prompt' }}
+                        </label>
                         <textarea
-                            v-model="promptText"
-                            @keydown.meta.enter="submitPrompt"
-                            @keydown.ctrl.enter="submitPrompt"
-                            @keydown.enter.exact="submitPrompt"
-                            @keydown.shift.enter="promptText += '\n'"
-                            @input="onPromptInput"
-                            :placeholder="app.app_state.isArabic ? 'صف ما تريد رؤيته...' : 'Describe what you want to see...'"
-                            class="chat-input"
-                            :class="{ 'rtl-text': app.app_state.isArabic }"
+                            id="negative-prompt"
+                            v-model="negativePrompt"
+                            :placeholder="isArabic ? 'ما الذي لا تريد رؤيته؟ (اختياري)' : 'What should the image avoid? (optional)'"
+                            class="prompt-input prompt-input--sm"
+                            :class="{ 'rtl-input': isArabic }"
                             rows="2"
-                            ref="promptTextarea"
+                            ref="negPromptTextarea"
                         ></textarea>
-                        <div class="chat-input-tools">
-                            <div class="prompt-token-counter" :class="tokenCounterClass" :title="app.app_state.isArabic ? 'عدد رموز CLIP' : 'CLIP token count'">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                                <span>{{ clipTokenCount }}/75</span>
-                            </div>
-                        </div>
                     </div>
 
-                    <div class="chat-actions">
-                        <!-- Recent Prompts Dropdown -->
-                        <div class="recent-prompts-dropdown" v-if="recentPrompts.length > 0">
-                            <button type="button" @click="showRecentPrompts = !showRecentPrompts" class="chat-action-btn" :title="app.app_state.isArabic ? 'الموجهات الأخيرة' : 'Recent prompts'" :class="{ 'chat-action-btn--active': showRecentPrompts }">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <!-- Modifier chips while writing -->
+                    <div v-if="promptText.trim() && !jsonMode" class="chips">
+                        <span class="chips-label">{{ isArabic ? 'إضافات' : 'Refine' }}</span>
+                        <button
+                            type="button"
+                            v-for="mod in promptModifiers"
+                            :key="mod.label"
+                            class="chip"
+                            :class="{ 'chip--active': promptIncludes(mod.label) }"
+                            :aria-pressed="promptIncludes(mod.label) ? 'true' : 'false'"
+                            @click="toggleModifier(mod)"
+                        >
+                            {{ isArabic ? mod.labelArabic : mod.label }}
+                        </button>
+                    </div>
+
+                    <!-- Starter ideas while the composer is empty -->
+                    <div v-else-if="!jsonMode" class="chips">
+                        <span class="chips-label">{{ isArabic ? 'جرّب' : 'Try' }}</span>
+                        <button
+                            type="button"
+                            v-for="(chip, ci) in inspirationChips"
+                            :key="'insp-' + ci"
+                            class="chip chip--idea"
+                            @click="useInspirationChip(chip)"
+                        >
+                            <AppIcon name="plus" :size="12" />
+                            {{ isArabic ? chip.textAr : chip.text }}
+                        </button>
+                    </div>
+
+                    <div class="composer-foot">
+                        <div class="foot-tools">
+                            <button
+                                type="button"
+                                class="btn btn-ghost btn-sm"
+                                :class="{ 'is-active': showNegativePrompt }"
+                                @click="toggleNegativePrompt"
+                                :aria-pressed="showNegativePrompt ? 'true' : 'false'"
+                            >
+                                <AppIcon name="circle-slash" :size="15" />
+                                {{ isArabic ? 'سلبي' : 'Negative' }}
                             </button>
-                            <div v-if="showRecentPrompts" class="recent-prompts-menu" @mouseleave="showRecentPrompts = false">
-                                <div class="recent-prompts-header">
-                                    <span>{{ app.app_state.isArabic ? 'الموجهات الأخيرة' : 'Recent Prompts' }}</span>
-                                    <button type="button" @click="clearRecentPrompts" class="recent-clear-btn">{{ app.app_state.isArabic ? 'مسح' : 'Clear' }}</button>
-                                </div>
-                                <div v-for="(rp, ri) in recentPrompts" :key="'rp-'+ri" class="recent-prompt-item" @click="useRecentPrompt(rp)">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-                                    <span class="recent-prompt-text">{{ truncatePrompt(rp, 80) }}</span>
-                                </div>
-                            </div>
+                            <button
+                                type="button"
+                                class="btn btn-ghost btn-sm"
+                                @click="randomPrompt"
+                                :disabled="is_random_prompt_generating"
+                            >
+                                <AppIcon name="shuffle" :size="15" />
+                                {{ is_random_prompt_generating
+                                    ? (isArabic ? 'جارٍ الكتابة…' : 'Writing…')
+                                    : (isArabic ? 'فاجئني' : 'Surprise me') }}
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-ghost btn-sm"
+                                :class="{ 'is-active': jsonMode }"
+                                @click="toggleJsonMode"
+                                :aria-pressed="jsonMode ? 'true' : 'false'"
+                                :title="isArabic ? 'لصق مصفوفة JSON من الموجهات' : 'Paste a JSON array of prompts'"
+                            >
+                                <AppIcon name="braces" :size="15" />
+                                JSON
+                            </button>
                         </div>
 
-                        <!-- Negative Prompt Toggle -->
-                        <button type="button" @click="showNegativePrompt = !showNegativePrompt" class="chat-action-btn" :title="app.app_state.isArabic ? 'الموجه السلبي' : 'Negative prompt'" :class="{ 'chat-action-btn--active': showNegativePrompt }">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                        </button>
-
-                        <!-- Random Prompt -->
-                        <button type="button" @click="randomPrompt" class="chat-action-btn" :disabled="is_random_prompt_generating" :title="is_random_prompt_generating ? (app.app_state.isArabic ? 'جارٍ إنشاء موجه...' : 'Generating prompt...') : (app.app_state.isArabic ? 'توليد موجه عشوائي' : 'Generate random prompt')">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
-                                <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
-                                <line x1="4" y1="4" x2="9" y2="9"/>
-                            </svg>
-                        </button>
-
-                        <!-- JSON Mode Toggle -->
-                        <button type="button" @click="toggleJsonMode" class="chat-action-btn" :class="{ 'chat-action-btn--active': jsonMode }" :title="app.app_state.isArabic ? 'وضع JSON للموجهات المدعومة للدفعة' : 'JSON batch mode'">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                                <line x1="9" y1="9" x2="15" y2="15"/>
-                                <line x1="15" y1="9" x2="9" y2="15"/>
-                            </svg>
-                        </button>
-
-                        <!-- Submit -->
-                        <button type="button" @click="submitPrompt" class="chat-submit" :disabled="!promptText.trim()" :title="app.app_state.isArabic ? 'إرسال للتوليد' : 'Submit for generation'">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                            </svg>
-                        </button>
-
-                        <!-- Batch queue: snapshot the current request without generating -->
-                        <button type="button" @click="addToBatch" class="chat-action-btn" :disabled="!promptText.trim()" :title="app.app_state.isArabic ? 'أضف الطلب الحالي إلى قائمة الدفعة (بدون توليد)' : 'Add current request to batch queue (no generation yet)'">📋</button>
-                        <button v-if="batch_queue.length > 0" type="button" @click="runBatch" class="chat-action-btn chat-action-btn--run" :class="{ 'disabled-action': batchPendingCount === 0 }" :title="app.app_state.isArabic ? (batchHasActive ? 'جارٍ التنفيذ...' : 'نفّذ طلبات الدفعة بالتسلسل') : (batchHasActive ? 'Running...' : 'Execute the pending batch requests sequentially')">{{ batchHasActive ? '⏳' : '▶' }}{{ batchPendingCount }}</button>
-                        <button v-if="batch_queue.length > 0" type="button" @click="clearBatch" class="chat-action-btn" :title="app.app_state.isArabic ? 'مسح قائمة الدفعة' : 'Clear batch queue'">🗑</button>
-                    </div>
-                </div>
-
-                <!-- Batch queue list (requests collected without generating) -->
-                <div v-if="batch_queue.length > 0" class="home-batch-panel" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
-                    <div class="home-batch-head">
-                        <span class="home-batch-title">{{ app.app_state.isArabic ? 'قائمة الدفعة' : 'Batch queue' }}</span>
-                        <span class="home-batch-count">{{ batch_queue.length }} {{ app.app_state.isArabic ? 'طلب' : 'request(s)' }}</span>
-                    </div>
-                    <div v-for="(item, idx) in batch_queue" :key="item.id" class="home-batch-item">
-                        <span class="home-batch-index">{{ idx + 1 }}</span>
-                        <span class="home-batch-prompt" :title="item.prompt">{{ truncatePrompt(item.prompt, 70) }}</span>
-                        <span class="home-batch-meta">{{ item.img_width }}×{{ item.img_height }} · ×{{ item.num_imgs }}</span>
-                        <span class="home-batch-status" :class="'home-batch-status--' + (item.state || 'pending')">{{ stateLabel(item.state) }}</span>
-                        <button type="button" class="home-batch-remove" @click="removeFromBatch(item.id)" :disabled="item.state === 'queued' || item.state === 'running'" :title="app.app_state.isArabic ? 'إزالة من الدفعة' : 'Remove from batch'">✕</button>
-                    </div>
-                </div>
-
-                <!-- Negative Prompt Area -->
-                <transition name="neg-fade">
-                    <div v-if="showNegativePrompt" class="negative-prompt-area">
-                        <div class="negative-prompt-box" :dir="app.app_state.isArabic ? 'rtl' : 'ltr'">
-                            <textarea
-                                v-model="negativePrompt"
-                                :placeholder="app.app_state.isArabic ? 'ما الذي لا تريد رؤيته؟ (اختياري)' : 'What do you NOT want to see? (optional)'"
-                                class="chat-input neg-input"
-                                :class="{ 'rtl-text': app.app_state.isArabic }"
-                                rows="1"
-                                ref="negPromptTextarea"
-                            ></textarea>
+                        <div class="foot-actions">
+                            <span class="foot-hint" aria-hidden="true">{{ isArabic ? '↵ توليد · ⇧↵ سطر جديد' : '↵ generate · ⇧↵ new line' }}</span>
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                @click="addToBatch"
+                                :disabled="!promptText.trim() || is_batch_running"
+                                :title="isArabic ? 'أضف الطلب الحالي إلى قائمة الدفعة' : 'Add this request to the batch queue'"
+                            >
+                                <AppIcon name="list-plus" :size="16" />
+                                <span class="btn-label">{{ isArabic ? 'إلى الدفعة' : 'Add to batch' }}</span>
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-primary btn-generate"
+                                @click="submitPrompt"
+                                :disabled="!canSubmit"
+                            >
+                                <AppIcon name="send" :size="15" />
+                                {{ submitLabel }}
+                            </button>
                         </div>
                     </div>
-                </transition>
+                </section>
 
-                <!-- Quick Modifier Chips -->
-                <div class="prompt-modifiers" v-if="promptText.trim()">
-                    <span class="modifiers-label">{{ app.app_state.isArabic ? 'أضف:' : 'Add:' }}</span>
-                    <button
-                        type="button"
-                        v-for="mod in promptModifiers"
-                        :key="mod.label"
-                        class="modifier-chip"
-                        :class="{ 'modifier-chip--active': promptIncludes(mod.label) }"
-                        @click="toggleModifier(mod)"
-                    >
-                        {{ app.app_state.isArabic ? mod.labelArabic : mod.label }}
-                    </button>
-                </div>
-
-                <!-- Inspiration Chips Row -->
-                <div class="inspiration-chips-row" v-if="!promptText.trim()">
-                    <button
-                        type="button"
-                        v-for="(chip, ci) in inspirationChips"
-                        :key="'insp-'+ci"
-                        class="inspiration-chip"
-                        @click="useInspirationChip(chip)"
-                    >
-                        <span class="inspiration-chip-icon">{{ chip.icon }}</span>
-                        <span>{{ chip.text }}</span>
-                    </button>
-                </div>
-
-                <button type="button" class="lang-toggle" @click="app.app_state.isArabic = !app.app_state.isArabic" :class="{ 'arabic-text': app.app_state.isArabic }">
-                    {{ app.app_state.isArabic ? 'English' : 'العربية' }}
-                </button>
-                <div v-if="pendingPrompt" class="pending-generation-note" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
-                    {{ app.app_state.isArabic ? 'تمت إضافة الطلب. سيتم التوليد تلقائيًا عند جاهزية النموذج والمحرك.' : 'Prompt queued. We\u2019ll generate automatically as soon as model and backend are ready.' }}
-                </div>
-            </div>
-
-            <div class="quick-controls-card" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
-                <div class="quick-controls-head">
-                    <div>
-                        <p class="quick-controls-kicker">{{ app.app_state.isArabic ? 'إعدادات سريعة' : 'Quick settings' }}</p>
-                        <h2 class="quick-controls-title">{{ app.app_state.isArabic ? 'غيّر النموذج والإعدادات هنا' : 'Change the model and generation options here' }}</h2>
-                    </div>
-                    <button class="quick-controls-link quick-controls-link--ghost" type="button" @click="openPage('ModelStore')">
-                        {{ app.app_state.isArabic ? 'إدارة النماذج' : 'Manage models' }}
-                    </button>
-                </div>
-
-                <div class="quick-model-picker" v-if="availableModels.length > 0">
-                    <label class="quick-controls-label" id="home-model-select-label">{{ app.app_state.isArabic ? 'النموذج' : 'Model' }}</label>
-                    <div class="quick-model-picker-row" role="group" aria-labelledby="home-model-select-label">
+                <!-- Settings rail -->
+                <aside class="settings" :aria-label="isArabic ? 'إعدادات التوليد' : 'Generation settings'">
+                    <div class="settings-block">
+                        <div class="settings-label-row">
+                            <span class="settings-label" id="home-model-label">{{ isArabic ? 'النموذج' : 'Model' }}</span>
+                            <button type="button" class="link-btn" @click="openPage('ModelStore')">
+                                {{ isArabic ? 'إدارة' : 'Manage' }}
+                            </button>
+                        </div>
                         <ModelSelector
+                            v-if="availableModels.length > 0"
                             :models="availableModels"
                             v-model="selectedModelId"
-                            :is-arabic="app.app_state.isArabic"
+                            :is-arabic="isArabic"
                             @change="onModelSelectChange"
                         />
-                    </div>
-                </div>
-                <div class="quick-model-picker quick-model-picker--empty" v-else>
-                    <span class="quick-controls-label">{{ app.app_state.isArabic ? 'النموذج' : 'Model' }}</span>
-                    <button type="button" class="onboarding-primary-btn onboarding-primary-btn--compact" @click="downloadDefaultModel">
-                        {{ app.app_state.isArabic ? 'تحميل النموذج الافتراضي' : 'Download default model' }}
-                    </button>
-                </div>
-
-                <div class="quick-options-grid">
-                    <div class="quick-option-group">
-                        <span class="quick-controls-label">{{ app.app_state.isArabic ? 'الحجم' : 'Canvas' }}</span>
                         <button
-                            v-for="preset in resolutionPresets"
-                            :key="preset.id"
-                            class="quick-chip"
-                            :class="{ 'quick-chip--active': selectedResolutionPresetId === preset.id }"
+                            v-else
                             type="button"
-                            @click="selectedResolutionPresetId = preset.id"
-                            :title="resolutionPresetTooltip(preset)"
+                            class="btn btn-secondary btn-sm btn-block"
+                            @click="downloadDefaultModel"
                         >
-                            {{ resolutionPresetLabel(preset) }}
+                            <AppIcon name="download" :size="15" />
+                            {{ isArabic ? 'تحميل النموذج الافتراضي' : 'Download default model' }}
                         </button>
                     </div>
-                    <div class="quick-option-group">
-                        <span class="quick-controls-label">{{ app.app_state.isArabic ? 'الجودة' : 'Quality' }}</span>
-                        <button
-                            v-for="preset in qualityPresets"
-                            :key="preset.id"
-                            class="quick-chip"
-                            :class="{ 'quick-chip--active': selectedQualityPresetId === preset.id }"
-                            type="button"
-                            @click="selectedQualityPresetId = preset.id"
-                            :title="qualityPresetTooltip(preset)"
-                        >
-                            {{ qualityPresetLabel(preset) }}
-                        </button>
-                    </div>
-                    <div class="quick-option-group">
-                        <span class="quick-controls-label">{{ app.app_state.isArabic ? 'الدفعة' : 'Batch' }}</span>
-                        <button
-                            v-for="count in batchPresetOptions"
-                            :key="count"
-                            class="quick-chip"
-                            :class="{ 'quick-chip--active': selectedBatchCount === count }"
-                            type="button"
-                            @click="selectedBatchCount = count"
-                            :title="app.app_state.isArabic ? 'توليد ' + count + ' صور' : 'Generate ' + count + ' images'"
-                        >
-                            {{ count }}&times;
-                        </button>
-                    </div>
-                </div>
-            </div>
 
-            <div class="gallery-section gallery-section--prominent" v-if="app.is_mounted" ref="latestSection">
-                <div class="gallery-section-header">
-                    <h2 class="category-title gallery-section-title">
-                        {{ app.app_state.isArabic ? 'نتائج التوليد' : 'Your generations' }}
-                        <span class="generation-stats-badge" v-if="totalGeneratedCount > 0">{{ totalGeneratedCount }}</span>
-                    </h2>
-                    <div class="gallery-section-actions">
-                        <button class="gallery-nav-button" type="button" @click="scrollHomeGallery(-1)" :title="app.app_state.isArabic ? 'السابق' : 'Previous'">
-                            &lsaquo;
-                        </button>
-                        <button class="gallery-nav-button" type="button" @click="scrollHomeGallery(1)" :title="app.app_state.isArabic ? 'التالي' : 'Next'">
-                            &rsaquo;
-                        </button>
-                        <button class="gallery-nav-button gallery-nav-button--ghost" type="button" @click="scrollHomeGalleryToTop" :title="app.app_state.isArabic ? 'العودة للأعلى' : 'Scroll to top'">
-                            &uarr;
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Thumbnail strip of recent generated images -->
-                <transition-group
-                    tag="div"
-                    name="thumb-pop"
-                    class="home-thumbnail-strip"
-                    v-if="recentThumbnails.length > 0"
-                    ref="thumbStrip"
-                >
-                    <div
-                        v-for="thumb in recentThumbnails"
-                        :key="thumb.job_id"
-                        class="home-thumbnail-item"
-                        @click="useThumbnailPrompt(thumb)"
-                        :title="thumb.prompt || (app.app_state.isArabic ? 'انقر لاستخدام هذا الموجه' : 'Click to reuse this prompt')"
-                    >
-                        <img
-                            :src="toFileUrl(thumb.image_url)"
-                            class="home-thumbnail-img"
-                            loading="lazy"
-                            alt="generated image"
-                        />
-                        <div class="home-thumbnail-overlay">
-                            <span class="home-thumbnail-prompt">{{ truncatePrompt(thumb.prompt || thumb.description, 60) }}</span>
+                    <div class="settings-block">
+                        <span class="settings-label">{{ isArabic ? 'الأبعاد' : 'Canvas' }}</span>
+                        <div class="segmented" role="group" :aria-label="isArabic ? 'أبعاد الصورة' : 'Image aspect ratio'">
+                            <button
+                                type="button"
+                                v-for="preset in resolutionPresets"
+                                :key="preset.id"
+                                class="segmented-btn"
+                                :class="{ 'segmented-btn--active': selectedResolutionPresetId === preset.id }"
+                                :aria-pressed="selectedResolutionPresetId === preset.id ? 'true' : 'false'"
+                                @click="selectedResolutionPresetId = preset.id"
+                                :title="resolutionPresetTooltip(preset)"
+                            >
+                                <span class="ratio-shape" :data-shape="preset.id" aria-hidden="true"></span>
+                                {{ resolutionPresetLabel(preset) }}
+                            </button>
                         </div>
                     </div>
-                </transition-group>
 
-                <GenerationGallery ref="homeGallery" :app="app" :n_to_keep="10" :menu_items_skip="['use_params_current_page']" :compact="true" :fixed_col_size="280" :enable_selection="true" :on_selection_action="onGallerySelectionAction"></GenerationGallery>
+                    <div class="settings-block">
+                        <span class="settings-label">{{ isArabic ? 'الجودة' : 'Quality' }}</span>
+                        <div class="segmented" role="group" :aria-label="isArabic ? 'جودة التوليد' : 'Generation quality'">
+                            <button
+                                type="button"
+                                v-for="preset in qualityPresets"
+                                :key="preset.id"
+                                class="segmented-btn"
+                                :class="{ 'segmented-btn--active': selectedQualityPresetId === preset.id }"
+                                :aria-pressed="selectedQualityPresetId === preset.id ? 'true' : 'false'"
+                                @click="selectedQualityPresetId = preset.id"
+                                :title="qualityPresetTooltip(preset)"
+                            >
+                                {{ qualityPresetLabel(preset) }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="settings-block">
+                        <span class="settings-label">{{ isArabic ? 'عدد الصور' : 'Images' }}</span>
+                        <div class="segmented segmented--numeric" role="group" :aria-label="isArabic ? 'عدد الصور لكل طلب' : 'Images per request'">
+                                <button
+                                    type="button"
+                                    v-for="count in batchPresetOptions"
+                                    :key="count"
+                                    class="segmented-btn"
+                                    :class="{ 'segmented-btn--active': selectedBatchCount === count }"
+                                    :aria-pressed="selectedBatchCount === count ? 'true' : 'false'"
+                                    @click="selectedBatchCount = count"
+                                    :title="isArabic ? 'توليد ' + count + ' صورة' : 'Generate ' + count + ' image(s)'"
+                                >
+                                    {{ count }}×
+                                </button>
+                        </div>
+                    </div>
+
+                    <p class="settings-summary">
+                        <bdi>{{ canvasDimensions.width }} × {{ canvasDimensions.height }}</bdi>
+                        <span aria-hidden="true"> · </span>
+                        <bdi>{{ selectedQualitySteps }}</bdi> {{ isArabic ? 'خطوة' : 'steps' }}
+                        <span aria-hidden="true"> · </span>
+                        <bdi>CFG {{ selectedQualityGuidance }}</bdi>
+                        <span aria-hidden="true"> · </span>
+                        <bdi>{{ selectedBatchCount }}×</bdi>
+                    </p>
+                </aside>
             </div>
 
-        </div>
-
-        <div class="styles-section" ref="stylesSection">
-            <div class="prompt-library-strip" :class="{ 'rtl-text': app.app_state.isArabic, 'arabic-text': app.app_state.isArabic }">
-                <div>
-                    <p class="quick-controls-kicker">{{ app.app_state.isArabic ? 'مكتبة الموجهات' : 'Prompt Library' }}</p>
-                    <h2 class="prompt-library-title">{{ app.app_state.isArabic ? 'استعرض، عدّل، واستخدم الموجهات من هنا' : 'Browse, tweak, and use prompts from here' }}</h2>
-                    <p class="prompt-library-copy">{{ app.app_state.isArabic ? 'ابدأ من مكتبة الموجهات، ثم ارجع مباشرة إلى التوليد دون مغادرة الشاشة الرئيسية.' : 'Start from the prompt library and jump back into generation without leaving the home screen.' }}</p>
+            <!-- ── Batch queue ─────────────────────────────────────────── -->
+            <section v-if="batch_queue.length > 0" class="batch-panel" aria-labelledby="batch-title">
+                <div class="batch-head">
+                    <div class="batch-head-copy">
+                        <h2 id="batch-title" class="section-title">{{ isArabic ? 'قائمة الدفعة' : 'Batch queue' }}</h2>
+                        <span class="section-meta">
+                            {{ batch_queue.length }} {{ isArabic ? 'طلب' : (batch_queue.length === 1 ? 'request' : 'requests') }}
+                            · {{ batchPendingCount }} {{ isArabic ? 'معلق' : 'pending' }}
+                        </span>
+                    </div>
+                    <div class="batch-actions">
+                        <button type="button" class="btn btn-secondary btn-sm" @click="clearBatch" :disabled="batchHasActive">
+                            <AppIcon name="trash" :size="14" />
+                            {{ isArabic ? 'مسح' : 'Clear' }}
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-primary btn-sm"
+                            @click="runBatch"
+                            :disabled="batchPendingCount === 0 || batchHasActive"
+                        >
+                            <AppIcon name="play" :size="14" />
+                            {{ batchHasActive ? (isArabic ? 'جارٍ التنفيذ…' : 'Running…') : (isArabic ? 'تشغيل الدفعة' : 'Run batch') }}
+                        </button>
+                    </div>
                 </div>
-                <div class="prompt-library-actions">
-                    <button class="quick-controls-link" type="button" @click="openPage('PromptLibrary')">
-                        {{ app.app_state.isArabic ? 'فتح المكتبة' : 'Open library' }}
-                    </button>
-                    <button class="quick-controls-link quick-controls-link--ghost" type="button" @click="scrollToHomeSection('toolsSection')">
-                        {{ app.app_state.isArabic ? 'الأوضاع' : 'Modes' }}
+
+                <ol class="batch-list">
+                    <li v-for="(item, idx) in batch_queue" :key="item.id" class="batch-row">
+                        <span class="batch-index">{{ idx + 1 }}</span>
+                        <span class="batch-prompt" dir="auto" :title="item.prompt">{{ truncatePrompt(item.prompt, 110) }}</span>
+                        <span class="batch-dims">{{ item.img_width }}×{{ item.img_height }} · ×{{ item.num_imgs }}</span>
+                        <span class="batch-state" :class="'batch-state--' + (item.state || 'pending')">
+                            <span class="batch-state-dot" aria-hidden="true"></span>
+                            {{ stateLabel(item.state) }}
+                        </span>
+                        <button
+                            type="button"
+                            class="batch-remove"
+                            @click="removeFromBatch(item.id)"
+                            :disabled="item.state === 'queued' || item.state === 'running'"
+                            :aria-label="isArabic ? 'إزالة من الدفعة' : 'Remove from batch'"
+                        >
+                            <AppIcon name="x" :size="14" />
+                        </button>
+                    </li>
+                </ol>
+            </section>
+
+            <!-- ── Samples ─────────────────────────────────────────────── -->
+            <HomeSampleStrip :tiles="sampleTiles" :is-arabic="isArabic" @select="useSample" />
+
+            <!-- ── Generations ─────────────────────────────────────────── -->
+            <section class="generations" ref="latestSection" aria-labelledby="generations-title">
+                <div class="section-head">
+                    <div class="section-head-copy">
+                        <h2 id="generations-title" class="section-title">
+                            {{ isArabic ? 'صورك' : 'Your generations' }}
+                            <span v-if="generatedCount > 0" class="section-count">{{ generatedCount }}</span>
+                        </h2>
+                        <p class="section-meta">
+                            {{ isArabic ? 'آخر ما ولّدته في هذا الجهاز.' : 'Everything you have generated on this machine.' }}
+                        </p>
+                    </div>
+                    <div class="section-actions" v-if="generatedCount > 0">
+                        <button type="button" class="btn btn-secondary btn-icon btn-sm" @click="scrollHomeGallery(-1)" :aria-label="isArabic ? 'السابق' : 'Previous'">
+                            <AppIcon name="chevron-left" :size="16" />
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-icon btn-sm" @click="scrollHomeGallery(1)" :aria-label="isArabic ? 'التالي' : 'Next'">
+                            <AppIcon name="chevron-right" :size="16" />
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="generatedCount === 0" class="empty-state">
+                    <AppIcon name="image" :size="26" />
+                    <p class="empty-title">{{ isArabic ? 'لا توجد صور بعد' : 'Nothing generated yet' }}</p>
+                    <p class="empty-copy">
+                        {{ isArabic
+                            ? 'اكتب وصفًا بالأعلى واضغط توليد — ستظهر الصور هنا تلقائيًا.'
+                            : 'Describe something above and hit generate — your images will land here.' }}
+                    </p>
+                </div>
+
+                <div class="gallery-host" :class="{ 'gallery-host--empty': generatedCount === 0 }" v-if="app.is_mounted">
+                    <GenerationGallery
+                        ref="homeGallery"
+                        :app="app"
+                        :n_to_keep="10"
+                        :menu_items_skip="['use_params_current_page']"
+                        :compact="true"
+                        :fixed_col_size="280"
+                        :enable_selection="true"
+                        :on_selection_action="onGallerySelectionAction"
+                    ></GenerationGallery>
+                </div>
+            </section>
+
+            <!-- ── Prompt library & styles ─────────────────────────────── -->
+            <section class="library" ref="stylesSection" aria-labelledby="library-title">
+                <div class="library-copy">
+                    <p class="home-eyebrow">{{ isArabic ? 'مكتبة الموجهات' : 'Prompt library' }}</p>
+                    <h2 id="library-title" class="section-title">
+                        {{ isArabic ? 'ابدأ من موجه جاهز' : 'Start from a prompt that already works' }}
+                    </h2>
+                    <p class="library-desc">
+                        {{ isArabic
+                            ? 'استعرض الموجهات المحفوظة، عدّلها، وارجع إلى التوليد دون مغادرة الشاشة الرئيسية.'
+                            : 'Browse saved prompts, remix them, and jump straight back into generation without leaving this screen.' }}
+                    </p>
+                    <button type="button" class="btn btn-secondary" @click="openPage('PromptLibrary')">
+                        <AppIcon name="library" :size="15" />
+                        {{ isArabic ? 'فتح المكتبة' : 'Open library' }}
                     </button>
                 </div>
-            </div>
 
-            <h2 class="category-title">{{ app.app_state.isArabic ? 'استكشف الأنماط' : 'Explore Styles' }}</h2>
-            <div class="styles-grid">
-                <button type="button" v-for="style in displayedStyles" :key="style.name" class="style-chip" @click="applyStyle(style.name)">
-                    <span class="style-icon">{{ style.icon }}</span>
-                    <span class="style-name">{{ app.app_state.isArabic ? style.nameArabic : style.name }}</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="tools-sections" ref="toolsSection">
-            <div v-for="category in categories" :key="category[0]" class="tools-section">
-                <h2 class="category-title"> {{category[1]}} </h2>
-                <div class="icon_container">
-                    <button type="button" v-for="item in all_icons(category[0]) " 
-                        :key="item.id" 
-                        v-bind:style="{ 'background-image': 'url(' +( item.img_icon || default_img )+ ')' }"
-                        @click="app.functions.switch_page(item.id)" 
-                        class="select_app"> 
-                        <span class="select_app_desc"> 
-                            <h2>  {{item.text}}</h2> 
-                            <p> {{item.description}} </p>
-                            <span class="l_button button_colored" style="margin-top: 10px;"> Open </span>
-                        </span> 
-                    </button>
+                <div class="library-styles">
+                    <div class="library-styles-head">
+                        <span class="settings-label">{{ isArabic ? 'الأنماط' : 'Styles' }}</span>
+                        <span class="section-meta">{{ isArabic ? 'تُضاف إلى الموجه' : 'Appended to your prompt' }}</span>
+                    </div>
+                    <div class="style-chips">
+                        <button
+                            type="button"
+                            v-for="style in stylePresets"
+                            :key="style.name"
+                            class="chip chip--style"
+                            :class="{ 'chip--active': promptIncludes(style.name) }"
+                            :aria-pressed="promptIncludes(style.name) ? 'true' : 'false'"
+                            @click="applyStyle(style.name)"
+                        >
+                            <AppIcon :name="styleIcon(style.name)" :size="13" />
+                            {{ styleName(style) }}
+                        </button>
+                    </div>
                 </div>
-                <br> 
-            </div>
+            </section>
+
+            <!-- ── Tools ───────────────────────────────────────────────── -->
+            <section class="tools" ref="toolsSection" aria-labelledby="tools-title">
+                <div class="section-head">
+                    <div class="section-head-copy">
+                        <h2 id="tools-title" class="section-title">{{ isArabic ? 'كل الأدوات' : 'All tools' }}</h2>
+                        <p class="section-meta">
+                            {{ isArabic ? 'افتح أي وضع للتحويل أو التكبير أو التفريغ.' : 'Open any mode to transform, upscale, or strip out objects.' }}
+                        </p>
+                    </div>
+                </div>
+                <HomeToolGrid :groups="toolGroups" @open="openPage" />
+            </section>
         </div>
-        <hr style="border-color: rgba(255,255,255,0.1)">
     </div>
 </template>
 
 <script>
-import { getRandomPrompt, getInspireLines, rememberPrompt } from "../prompt_library.js"
+import { getRandomPrompt, rememberPrompt } from "../prompt_library.js"
 import GenerationGallery from "../components/GenerationGallery.vue"
 import ModelSelector from "../components/ModelSelector.vue"
+import HomeSampleStrip from "../components/home/HomeSampleStrip.vue"
+import HomeToolGrid from "../components/home/HomeToolGrid.vue"
+import AppIcon from "../components/ui/AppIcon.vue"
 import { syncGalleryGroup } from "../generation_broadcast.js"
 import { preparePromptForSd, validatePromptLength, countClipContentTokens } from "../prompt_utils.js"
-import { toFileUrl } from "../utils.js"
 import { loadHomepageBatch, saveHomepageBatch } from "../batch_queue_store.js"
 import batchQueueMixin from "../batch_queue_mixin.js"
-import { saveUserPrompt, getUserPrompts } from "../prompt_library.js"
 const { getFallbackDefaultStableDiffusionAsset, sortStableDiffusionModelsBestFirst } = require("../utils/model_selection.js")
 const { resolveModelCapability, isFlux2Model } = require("../utils/flux2_catalog.js")
 const { generatePromptWithOllama, normalizeGeneratedPrompt } = require("../utils/ollama_prompt_service.js")
@@ -502,31 +596,38 @@ const WELCOME_CAROUSEL_META = [
     },
 ];
 
+// Homepage tool groupings. `id` matches `home_category` in pageMeta.js.
+const TOOL_GROUPS = [
+    { id: 'main', title: 'Create', titleArabic: 'إنشاء' },
+    { id: 'pages', title: 'Manage', titleArabic: 'إدارة' },
+    { id: 'tools', title: 'Tools', titleArabic: 'أدوات' },
+    { id: 'misc', title: 'More', titleArabic: 'المزيد' },
+];
+
 const Home = {
     name: 'Home',
-    props: {app:Object, },
+    props: { app: Object },
     mixins: [batchQueueMixin],
-    components: { GenerationGallery, ModelSelector },
+    components: { GenerationGallery, ModelSelector, HomeSampleStrip, HomeToolGrid, AppIcon },
     mounted() {
         this.loadRecentPrompts();
-        this.startInspirationRotation();
+        // Keep the composer's inline height in sync with the viewport: a
+        // height measured at desktop width clips wrapped text after a resize.
+        window.addEventListener('resize', this.handleViewportResize);
         if (this.app.functions.subscribe_generation) {
-            this.app.functions.subscribe_generation((group) => this.onGenerationComplete(group));
+            this.app.functions.subscribe_generation(() => this.onGenerationComplete());
         }
         // Restore any previously collected batch (survives app restarts).
         this.batch_queue = loadHomepageBatch()
         this.startBatchPolling()
         this.$nextTick(() => {
             this.autoSelectModel();
-            this.scrollHomeToTop();
             this.hydrateGalleryFromLastGeneration();
+            this.refreshGalleryStats();
         });
-        setTimeout(() => this.scrollHomeToTop(), 250);
     },
     beforeDestroy() {
-        if (this.inspirationInterval) {
-            clearInterval(this.inspirationInterval);
-        }
+        window.removeEventListener('resize', this.handleViewportResize);
         this.clearPendingGenerationTimer();
         this.stopBatchPolling();
     },
@@ -539,17 +640,15 @@ const Home = {
             recentPrompts: [],
             clipTokenCount: 0,
             selectedModelId: null,
-            inspirationIndex: 0,
-            inspirationInterval: null,
             stylePresets: [
-                { name: "Cinematic", nameArabic: "سينمائي", icon: "\uD83C\uDFAC" },
-                { name: "Cyberpunk", nameArabic: "سايبربانك", icon: "\uD83C\uDF03" },
-                { name: "Oil Painting", nameArabic: "رسم زيتي", icon: "\uD83C\uDFA8" },
-                { name: "Anime", nameArabic: "أنمي", icon: "\uD83C\uDF71" },
-                { name: "Photography", nameArabic: "تصوير فوتوغرافي", icon: "\uD83D\uDCF7" },
-                { name: "3D Render", nameArabic: "رسم ثلاثي الأبعاد", icon: "\uD83E\uDDCA" },
-                { name: "Sketch", nameArabic: "رسم يدوي", icon: "\u270F\uFE0F" },
-                { name: "Fantasy", nameArabic: "خيالي", icon: "\uD83D\uDC09" }
+                { name: "Cinematic", nameArabic: "سينمائي" },
+                { name: "Cyberpunk", nameArabic: "سايبربانك" },
+                { name: "Oil Painting", nameArabic: "رسم زيتي" },
+                { name: "Anime", nameArabic: "أنمي" },
+                { name: "Photography", nameArabic: "تصوير فوتوغرافي" },
+                { name: "3D Render", nameArabic: "رسم ثلاثي الأبعاد" },
+                { name: "Sketch", nameArabic: "رسم يدوي" },
+                { name: "Fantasy", nameArabic: "خيالي" }
             ],
             jsonMode: false,
             jsonBatchInfo: { totalPrompts: 0, totalImages: 0, valid: false },
@@ -562,12 +661,12 @@ const Home = {
                 { label: 'Photorealistic', labelArabic: 'واقعي فوتوغرافي', value: ', photorealistic, hyperdetailed, sharp focus' },
             ],
             inspirationChips: [
-                { icon: '\uD83C\uDF08', text: 'Aurora over fjord', textAr: 'شفق فوق مضيق' },
-                { icon: '\uD83C\uDF0C', text: 'Cyberpunk at night', textAr: 'مدينة سايبربانك ليلاً' },
-                { icon: '\uD83C\uDF3F', text: 'Lavender fields', textAr: 'حقول الخزامى' },
-                { icon: '\uD83C\uDF0A', text: 'Coastal storm', textAr: 'عاصفة ساحلية' },
-                { icon: '\uD83C\uDFF4', text: 'Samurai at dawn', textAr: 'ساموراي عند الفجر' },
-                { icon: '\uD83C\uDF0D', text: 'Desert highway', textAr: 'طريق صحراوي' },
+                { text: 'Aurora over fjord', textAr: 'شفق فوق مضيق' },
+                { text: 'Cyberpunk at night', textAr: 'مدينة سايبربانك ليلاً' },
+                { text: 'Lavender fields', textAr: 'حقول الخزامى' },
+                { text: 'Coastal storm', textAr: 'عاصفة ساحلية' },
+                { text: 'Samurai at dawn', textAr: 'ساموراي عند الفجر' },
+                { text: 'Desert highway', textAr: 'طريق صحراوي' },
             ],
             welcomeTiles: WELCOME_CAROUSEL_META.map((sample) => ({
                 assetKey: sample.assetKey,
@@ -578,112 +677,61 @@ const Home = {
             pendingGenerationReason: '',
             pendingGenerationTimer: null,
             pendingGenerationAttempts: 0,
-            activeHomeMode: 'create',
             selectedResolutionPresetId: 'square',
             selectedQualityPresetId: 'balanced',
             selectedBatchCount: 1,
             is_random_prompt_generating: false,
-            homeModes: [
-                {
-                    id: 'create',
-                    icon: '\u2728',
-                    label: 'Create',
-                    labelArabic: 'إنشاء',
-                    description: 'Prompt, model, and options',
-                    descriptionArabic: 'الموجه والنموذج والإعدادات',
-                    target: 'composerSection',
-                },
-                {
-                    id: 'library',
-                    icon: '\uD83D\uDCDA',
-                    label: 'Prompt Library',
-                    labelArabic: 'مكتبة الموجهات',
-                    description: 'Browse and remix prompts',
-                    descriptionArabic: 'استعرض وامزج الموجهات',
-                    target: 'stylesSection',
-                },
-                {
-                    id: 'models',
-                    icon: '\uD83E\uDDE0',
-                    label: 'Models',
-                    labelArabic: 'النماذج',
-                    description: 'Pick model in quick settings',
-                    descriptionArabic: 'اختر النموذج من الإعدادات السريعة',
-                    target: 'composerSection',
-                },
-                {
-                    id: 'latest',
-                    icon: '\uD83D\uDDBC\uFE0F',
-                    label: 'Latest',
-                    labelArabic: 'الأحدث',
-                    description: 'Latest generated images',
-                    descriptionArabic: 'آخر الصور المولدة',
-                    target: 'latestSection',
-                },
-                {
-                    id: 'tools',
-                    icon: '\uD83D\uDD79\uFE0F',
-                    label: 'Modes',
-                    labelArabic: 'الأوضاع',
-                    description: 'Open any tool quickly',
-                    descriptionArabic: 'افتح أي أداة بسرعة',
-                    target: 'toolsSection',
-                },
-            ],
+            // The gallery shows its images itself, but it exposes its groups
+            // through refs (not reactive state). A computed reading `$refs`
+            // caches once and then never updates, so the count that drives the
+            // empty state lives in data and is refreshed explicitly.
+            generatedCount: 0,
             resolutionPresets: [
-                {
-                    id: 'square',
-                    label: '1:1',
-                    labelArabic: 'مربع',
-                },
-                {
-                    id: 'portrait',
-                    label: '4:5',
-                    labelArabic: 'عمودي',
-                },
-                {
-                    id: 'landscape',
-                    label: '16:9',
-                    labelArabic: 'عريض',
-                },
+                { id: 'square', label: '1:1', labelArabic: 'مربع' },
+                { id: 'portrait', label: '4:5', labelArabic: 'عمودي' },
+                { id: 'landscape', label: '16:9', labelArabic: 'عريض' },
             ],
             qualityPresets: [
-                {
-                    id: 'fast',
-                    label: 'Fast',
-                    labelArabic: 'سريع',
-                    num_steps: 20,
-                    guidance_scale: 6.5,
-                    scheduler: 'ddim',
-                },
-                {
-                    id: 'balanced',
-                    label: 'Balanced',
-                    labelArabic: 'متوازن',
-                    num_steps: 25,
-                    guidance_scale: 7.5,
-                    scheduler: 'karras',
-                },
-                {
-                    id: 'detail',
-                    label: 'Detailed',
-                    labelArabic: 'تفصيلي',
-                    num_steps: 50,
-                    guidance_scale: 8.5,
-                    scheduler: 'karras',
-                    max_steps: 100,
-                },
+                { id: 'fast', label: 'Fast', labelArabic: 'سريع', num_steps: 20, guidance_scale: 6.5, scheduler: 'ddim' },
+                { id: 'balanced', label: 'Balanced', labelArabic: 'متوازن', num_steps: 25, guidance_scale: 7.5, scheduler: 'karras' },
+                { id: 'detail', label: 'Detailed', labelArabic: 'تفصيلي', num_steps: 50, guidance_scale: 8.5, scheduler: 'karras', max_steps: 100 },
             ],
             batchPresetOptions: [1, 2, 4],
-            categories: [
-                ["main" , "All AI Tools"],
-                ["pages" , "Pages"],
-                ["misc" , "Miscellaneous"],
-                ["tools" , "Tools"],
-            ]
         };
     },
     methods: {
+        // ── Navigation & layout ──────────────────────────────────────────
+        toggleLanguage() {
+            if (this.app && this.app.app_state) {
+                this.app.app_state.isArabic = !this.app.app_state.isArabic;
+            }
+        },
+        openPage(pageId) {
+            if (this.app && this.app.functions && this.app.functions.switch_page) {
+                this.app.functions.switch_page(pageId);
+            }
+        },
+        getSectionElement(refName) {
+            const ref = this.$refs[refName];
+            if (!ref) return null;
+            if (Array.isArray(ref)) return ref[0] || null;
+            return ref.$el || ref;
+        },
+        scrollToHomeSection(refName) {
+            const el = this.getSectionElement(refName);
+            if (!el || !el.scrollIntoView) return;
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        },
+        focusPrompt() {
+            const el = this.$refs.promptTextarea;
+            if (el) el.focus();
+        },
+        scrollToComposer() {
+            this.scrollToHomeSection('composerSection');
+            this.$nextTick(this.focusPrompt);
+        },
+
+        // ── Model & generation presets ───────────────────────────────────
         autoSelectModel() {
             let models = this.availableModels;
             if (models.length === 0) return;
@@ -695,59 +743,26 @@ const Home = {
             }
             this.selectedModelId = models[0].id;
         },
-        getSectionElement(refName) {
-            const ref = this.$refs[refName];
-            if (!ref) return null;
-            return Array.isArray(ref) ? ref[0] : ref;
-        },
-        scrollToHomeSection(refName) {
-            const el = this.getSectionElement(refName);
-            if (!el || !el.scrollIntoView) return;
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        },
-        focusHomeSection(refName, modeId) {
-            if (modeId) {
-                this.activeHomeMode = modeId;
-            }
-            this.scrollToHomeSection(refName);
-        },
-        openPage(pageId) {
-            if (this.app && this.app.functions && this.app.functions.switch_page) {
-                this.app.functions.switch_page(pageId);
-            }
-        },
-        homeModeLabel(mode) {
-            return this.app.app_state.isArabic ? (mode.labelArabic || mode.label) : mode.label;
-        },
-        homeModeDescription(mode) {
-            return this.app.app_state.isArabic ? (mode.descriptionArabic || mode.description) : mode.description;
-        },
-        homeModeTitle(mode) {
-            if (this.app.app_state.isArabic) {
-                return (mode.labelArabic || mode.label) + ' — ' + (mode.descriptionArabic || mode.description);
-            }
-            return mode.label + ' — ' + mode.description;
+        onModelSelectChange() {
+            this.autoSelectModel();
         },
         resolutionPresetLabel(preset) {
-            return this.app.app_state.isArabic ? (preset.labelArabic || preset.label) : preset.label;
+            return this.isArabic ? (preset.labelArabic || preset.label) : preset.label;
         },
         resolutionPresetTooltip(preset) {
-            if (this.app.app_state.isArabic) {
-                const names = { square: 'مربع 1:1', portrait: 'عمودي 4:5', landscape: 'عريض 16:9' };
-                return names[preset.id] || preset.label;
-            }
-            const names = { square: 'Square 1:1', portrait: 'Portrait 4:5', landscape: 'Landscape 16:9' };
+            const names = this.isArabic
+                ? { square: 'مربع 1:1', portrait: 'عمودي 4:5', landscape: 'عريض 16:9' }
+                : { square: 'Square 1:1', portrait: 'Portrait 4:5', landscape: 'Landscape 16:9' };
             return names[preset.id] || preset.label;
         },
         qualityPresetLabel(preset) {
-            return this.app.app_state.isArabic ? (preset.labelArabic || preset.label) : preset.label;
+            return this.isArabic ? (preset.labelArabic || preset.label) : preset.label;
         },
         qualityPresetTooltip(preset) {
             const steps = preset.num_steps;
-            if (this.app.app_state.isArabic) {
-                return preset.labelArabic + ' — ' + steps + ' خطوة، توجيه ' + preset.guidance_scale;
-            }
-            return preset.label + ' — ' + steps + ' steps, guidance ' + preset.guidance_scale;
+            return this.isArabic
+                ? preset.labelArabic + ' — ' + steps + ' خطوة، توجيه ' + preset.guidance_scale
+                : preset.label + ' — ' + steps + ' steps, guidance ' + preset.guidance_scale;
         },
         getSelectedModelAsset() {
             return this.availableModels.find((model) => model.id === this.selectedModelId) || this.availableModels[0] || getFallbackDefaultStableDiffusionAsset();
@@ -795,12 +810,8 @@ const Home = {
                 scheduler: quality.scheduler,
             };
         },
-        clearPendingGenerationTimer() {
-            if (this.pendingGenerationTimer) {
-                clearInterval(this.pendingGenerationTimer);
-                this.pendingGenerationTimer = null;
-            }
-        },
+
+        // ── Readiness ────────────────────────────────────────────────────
         isBackendReady() {
             if (!this.app || !this.app.stable_diffusion_manager) return false;
             if (!this.app.stable_diffusion_manager.stable_diffusion) return false;
@@ -837,6 +848,14 @@ const Home = {
                 this.app.assets_manager.download_asset(defaultAsset);
             }
             return false;
+        },
+
+        // ── Pending prompt (waits for model + backend) ───────────────────
+        clearPendingGenerationTimer() {
+            if (this.pendingGenerationTimer) {
+                clearInterval(this.pendingGenerationTimer);
+                this.pendingGenerationTimer = null;
+            }
         },
         queuePromptForAutoGeneration(prompt, reason) {
             let normalizedPrompt = (prompt || '').trim();
@@ -877,8 +896,8 @@ const Home = {
 
             if (isNewPrompt) {
                 this.app.show_toast(this.app.app_state.isArabic
-                    ? '\u062A\u0645\u062A \u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u0637\u0644\u0628 \u0648\u0633\u064A\u0628\u062F\u0623 \u0627\u0644\u062A\u0648\u0644\u064A\u062F \u062A\u0644\u0642\u0627\u0626\u064A\u064B\u0627.'
-                    : 'Prompt queued \u2014 generation will start automatically.');
+                    ? 'تمت إضافة الطلب وسيبدأ التوليد تلقائيًا.'
+                    : 'Prompt queued — generation will start automatically.');
             }
         },
         tryRunPendingPrompt() {
@@ -897,6 +916,8 @@ const Home = {
             this.clearPendingGenerationTimer();
             this.generatePrompt(prompt);
         },
+
+        // ── Generation ───────────────────────────────────────────────────
         generatePrompt(prompt) {
             let modelPath = this.app.assets_manager.get_downloaded_asset_path(this.selectedModelId);
             if (!modelPath) return false;
@@ -918,7 +939,7 @@ const Home = {
 
             if (prepared.wasTranslated) {
                 this.app.show_toast(this.app.app_state.isArabic
-                    ? '\u062A\u0645\u062A \u062A\u0631\u062C\u0645\u0629 \u0627\u0644\u0645\u0648\u062C\u0647 \u0625\u0644\u0649 \u0627\u0644\u0625\u0646\u062C\u0644\u064A\u0632\u064A\u0629 \u0644\u062A\u062D\u0633\u064A\u0646 \u062C\u0648\u062F\u0629 \u0627\u0644\u062A\u0648\u0644\u064A\u062F.'
+                    ? 'تمت ترجمة الموجه إلى الإنجليزية لتحسين جودة التوليد.'
                     : 'Prompt translated to English for better generation quality.');
             }
 
@@ -951,6 +972,32 @@ const Home = {
             this.rememberUsedPrompt(prompt.trim());
             return true;
         },
+        onEnterSubmit(event) {
+            // Never submit while an IME (Arabic, Japanese, Chinese…) is still
+            // composing — Enter there means "commit the candidate".
+            if (event && (event.isComposing || event.keyCode === 229)) return;
+            this.submitPrompt();
+        },
+        submitPrompt() {
+            let prompt = this.promptText.trim();
+            if (!prompt) return;
+
+            if (this.jsonMode) {
+                this.submitJsonBatch();
+                return;
+            }
+
+            if (!this.ensureModelReadyForGeneration() || !this.isBackendReady() || !this.$refs.homeGallery) {
+                this.queuePromptForAutoGeneration(prompt, this.isBackendReady() ? 'model' : 'backend');
+                return;
+            }
+            this.promptText = '';
+            if (!this.generatePrompt(prompt)) {
+                this.queuePromptForAutoGeneration(prompt, 'retry');
+            }
+        },
+
+        // ── Token counter & textarea ─────────────────────────────────────
         onPromptInput() {
             this.$nextTick(() => {
                 this.updateClipTokenCount();
@@ -968,8 +1015,22 @@ const Home = {
             const el = this.$refs.promptTextarea;
             if (!el) return;
             el.style.height = 'auto';
-            el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+            el.style.height = Math.min(el.scrollHeight, 260) + 'px';
         },
+        handleViewportResize() {
+            this.$nextTick(this.autoResizeTextarea);
+        },
+        toggleNegativePrompt() {
+            this.showNegativePrompt = !this.showNegativePrompt;
+            if (this.showNegativePrompt) {
+                this.$nextTick(() => {
+                    const el = this.$refs.negPromptTextarea;
+                    if (el) el.focus();
+                });
+            }
+        },
+
+        // ── Recent prompts ───────────────────────────────────────────────
         loadRecentPrompts() {
             try {
                 const data = window.localStorage.getItem('recent_home_prompts');
@@ -1000,20 +1061,25 @@ const Home = {
             }
             this.showRecentPrompts = false;
         },
-        useRecentPrompt(prompt) {
-            this.promptText = prompt;
+        closeRecentPrompts() {
             this.showRecentPrompts = false;
+        },
+        useRecentPrompt(prompt) {
+            this.setPrompt(prompt);
+        },
+
+        // ── Prompt helpers ───────────────────────────────────────────────
+        setPrompt(prompt) {
+            this.promptText = prompt;
             this.updateClipTokenCount();
             this.$nextTick(() => {
                 this.autoResizeTextarea();
-                if (this.$refs.promptTextarea) {
-                    this.$refs.promptTextarea.focus();
-                }
+                this.focusPrompt();
             });
         },
         truncatePrompt(text, maxLen) {
             if (!text) return '';
-            return text.length > maxLen ? text.substring(0, maxLen) + '\u2026' : text;
+            return text.length > maxLen ? text.substring(0, maxLen) + '…' : text;
         },
         promptIncludes(modLabel) {
             return this.promptText.toLowerCase().includes(modLabel.toLowerCase());
@@ -1031,106 +1097,73 @@ const Home = {
             this.updateClipTokenCount();
         },
         useInspirationChip(chip) {
-            this.promptText = this.app.app_state.isArabic ? chip.textAr : chip.text;
+            this.setPrompt(this.isArabic ? chip.textAr : chip.text);
+        },
+        applyStyle(styleName) {
+            if (this.promptIncludes(styleName)) {
+                this.toggleModifier({ label: styleName, value: ', ' + styleName });
+                return;
+            }
+            this.promptText = this.promptText.trim() ? `${this.promptText}, ${styleName}` : styleName;
             this.updateClipTokenCount();
         },
-        scrollHomeToTop() {
-            const root = this.$el;
-            if (root) root.scrollTop = 0;
+        styleName(style) {
+            return this.isArabic ? (style.nameArabic || style.name) : style.name;
         },
-        scrollToGallery() {
-            this.scrollToHomeSection('latestSection');
-            this.scrollHomeGalleryToTop();
+        styleIcon(name) {
+            const icons = {
+                Cinematic: 'film',
+                Cyberpunk: 'zap',
+                'Oil Painting': 'brush',
+                Anime: 'sparkles',
+                Photography: 'camera',
+                '3D Render': 'box',
+                Sketch: 'pencil',
+                Fantasy: 'moon',
+            };
+            return icons[name] || 'sparkles';
         },
-        hydrateGalleryFromLastGeneration() {
-            const last = this.app.app_state.last_gallery_group;
-            if (!last || !this.$refs.homeGallery) return;
-            if (this.$refs.homeGallery.groups_with_non_zero_imgs.length > 0) return;
-            syncGalleryGroup(this.$refs.homeGallery, last, null);
+        getRandomStylePreset() {
+            if (!this.stylePresets.length) return '';
+            return this.stylePresets[Math.floor(Math.random() * this.stylePresets.length)].name;
         },
-        onGenerationComplete() {
-            this.$nextTick(() => {
-                if (this.app.current_selected_tab === 'Homepage') {
-                    this.scrollToGallery();
+        async randomPrompt() {
+            if (this.is_random_prompt_generating) return;
+            this.is_random_prompt_generating = true;
+
+            const fallbackPrompt = getRandomPrompt();
+            const styleHint = this.getRandomStylePreset();
+
+            try {
+                const generated = await generatePromptWithOllama({
+                    sourcePrompt: fallbackPrompt,
+                    style: styleHint,
+                    locale: this.isArabic ? 'ar' : 'en',
+                });
+                let prompt = normalizeGeneratedPrompt(generated.prompt) || fallbackPrompt;
+                if (!normalizeGeneratedPrompt(generated.prompt)) {
+                    prompt = prompt.trim() ? `${prompt}, ${styleHint}` : styleHint;
                 }
-            });
-        },
-        scrollHomeGallery(direction) {
-            this.scrollToHomeSection('latestSection');
-            if (!this.$refs.homeGallery) return;
-            if (direction < 0 && this.$refs.homeGallery.scroll_previous) {
-                this.$refs.homeGallery.scroll_previous();
-                return;
-            }
-            if (direction > 0 && this.$refs.homeGallery.scroll_next) {
-                this.$refs.homeGallery.scroll_next();
-            }
-        },
-        scrollHomeGalleryToTop() {
-            this.scrollToHomeSection('latestSection');
-            if (!this.$refs.homeGallery) return;
-            if (this.$refs.homeGallery.scroll_to_top) {
-                this.$refs.homeGallery.scroll_to_top();
-            }
-        },
-        scrollSamples(direction) {
-            const el = this.getSectionElement('welcomeSamples');
-            if (!el) return;
-
-            const amount = Math.max(320, Math.floor((el.clientWidth || 0) * 0.72));
-            el.scrollBy({ left: amount * direction, behavior: 'smooth' });
-        },
-        onWelcomeSamplesWheel(event) {
-            const el = this.getSectionElement('welcomeSamples');
-            if (!el) return;
-
-            const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-            if (!delta) return;
-            el.scrollLeft += delta;
-        },
-        sampleLabel(img, idx) {
-            const labels = this.app.app_state.isArabic
-                ? ['أنمي', 'عمارة', 'رسم زيتي', 'طعام', 'بكسل', 'تحت الماء', 'ساموراي', 'صحراء', 'شفق', 'لافندر', 'سايبربانك', 'منارة']
-                : ['Anime', 'Architecture', 'Oil painting', 'Street food', 'Pixel art', 'Underwater', 'Samurai', 'Desert', 'Aurora', 'Lavender', 'Cyberpunk', 'Lighthouse'];
-            return labels[idx] || img.assetKey;
-        },
-        useWelcomePrompt(prompt) {
-            if (!prompt) return;
-            this.promptText = prompt;
-        },
-        useThumbnailPrompt(thumb) {
-            const prompt = thumb.prompt || thumb.description;
-            if (!prompt) return;
-            this.promptText = prompt;
-            this.scrollToHomeSection('composerSection');
-        },
-        toFileUrl(path) {
-            return toFileUrl(path);
-        },
-        submitPrompt() {
-            let prompt = this.promptText.trim();
-            if (!prompt) return;
-
-            if (this.jsonMode) {
-                this.submitJsonBatch();
-                return;
+                rememberPrompt(prompt);
+                this.promptText = prompt;
+            } catch (error) {
+                console.warn('Ollama prompt generation failed, falling back to the local library:', error);
+                let prompt = fallbackPrompt.trim() ? `${fallbackPrompt}, ${styleHint}` : styleHint;
+                rememberPrompt(prompt);
+                this.promptText = prompt;
+            } finally {
+                this.is_random_prompt_generating = false;
             }
 
-            if (!this.ensureModelReadyForGeneration() || !this.isBackendReady() || !this.$refs.homeGallery) {
-                this.queuePromptForAutoGeneration(prompt, this.isBackendReady() ? 'model' : 'backend');
-                return;
-            }
-            this.promptText = '';
-            if (!this.generatePrompt(prompt)) {
-                this.queuePromptForAutoGeneration(prompt, 'retry');
-            }
+            await this.$nextTick();
+            this.submitPrompt();
         },
 
-        // --- JSON batch mode: the textarea holds a JSON array of prompts ---
-
+        // ── JSON batch mode ──────────────────────────────────────────────
         toggleJsonMode() {
             this.jsonMode = !this.jsonMode;
             this.parseJsonBatch();
+            this.$nextTick(this.autoResizeTextarea);
         },
         parseJsonBatch() {
             let totalPrompts = 0;
@@ -1159,14 +1192,14 @@ const Home = {
                     prompts = parsed.map(p => String(p).trim()).filter(Boolean);
                 }
             } catch (e) {
-                this.app.show_toast(this.app.app_state.isArabic
+                this.app.show_toast(this.isArabic
                     ? 'صيغة JSON غير صالحة — أدخل مصفوفة من الموجهات النصية.'
                     : 'Invalid JSON — enter an array of prompt strings.');
                 return;
             }
 
             if (prompts.length === 0) {
-                this.app.show_toast(this.app.app_state.isArabic
+                this.app.show_toast(this.isArabic
                     ? 'لا توجد موجهات صالحة في JSON.'
                     : 'No valid prompts in the JSON array.');
                 return;
@@ -1176,7 +1209,7 @@ const Home = {
                 // Do NOT queue the raw JSON text as a pending prompt — the
                 // auto-retry path would generate an image from the JSON string
                 // literal. Tell the user to retry once the model/backend is ready.
-                this.app.show_toast(this.app.app_state.isArabic
+                this.app.show_toast(this.isArabic
                     ? 'النموذج أو المحرك غير جاهز بعد. حاول مرة أخرى بعد التجهيز.'
                     : 'Model/backend not ready yet. Try again once it is.');
                 return;
@@ -1187,24 +1220,23 @@ const Home = {
             for (const p of prompts) {
                 this.generatePrompt(p);
             }
-            this.app.show_toast(this.app.app_state.isArabic
+            this.app.show_toast(this.isArabic
                 ? ('تمت إضافة ' + prompts.length + ' موجه إلى قائمة الانتظار.')
                 : (prompts.length + ' prompts queued for generation.'));
         },
 
-        // --- Batch queue (collect requests without generating, then run sequentially) ---
-
+        // ── Batch queue ──────────────────────────────────────────────────
         addToBatch() {
             if (this.is_batch_running) return;
             const prompt = this.promptText.trim();
             if (!prompt) {
-                this.app.show_toast(this.app.app_state.isArabic ? 'اكتب موجهًا أولاً.' : 'Write a prompt first.');
+                this.app.show_toast(this.isArabic ? 'اكتب موجهًا أولاً.' : 'Write a prompt first.');
                 return;
             }
 
             const selectedAsset = this.getSelectedModelAsset();
             if (isFlux2Model(selectedAsset)) {
-                this.app.show_toast(this.app.app_state.isArabic
+                this.app.show_toast(this.isArabic
                     ? 'FLUX.2 لا يدعمه محرك التوليد الحالي. اختر نموذج SD.'
                     : 'FLUX.2 is not supported by the current generation backend. Pick an SD model.');
                 return;
@@ -1212,14 +1244,14 @@ const Home = {
 
             const modelPath = this.app.assets_manager.get_downloaded_asset_path(this.selectedModelId);
             if (!modelPath) {
-                this.app.show_toast(this.app.app_state.isArabic
+                this.app.show_toast(this.isArabic
                     ? 'حمّل النموذج أولاً قبل إضافة الطلب إلى الدفعة.'
                     : 'Download the model first before adding to the batch.');
                 return;
             }
 
-            const prepared = preparePromptForSd(prompt, this.app.app_state.isArabic);
-            const validation = validatePromptLength(prepared.prompt, this.app.app_state.isArabic);
+            const prepared = preparePromptForSd(prompt, this.isArabic);
+            const validation = validatePromptLength(prepared.prompt, this.isArabic);
             if (!validation.valid) {
                 this.app.show_toast(validation.message);
                 return;
@@ -1248,13 +1280,10 @@ const Home = {
             this.batch_queue.push(item);
 
             const n = this.batch_queue.length;
-            this.app.show_toast(this.app.app_state.isArabic
+            this.app.show_toast(this.isArabic
                 ? ('أُضيف إلى الدفعة (' + this.batchCountLabel(n) + '). اضغط "تشغيل الدفعة" لبدء التوليد بالتسلسل.')
-                : ('Added to batch (' + this.batchCountLabel(n) + '). Press "Run Batch" to generate sequentially.'));
+                : ('Added to batch (' + this.batchCountLabel(n) + '). Press "Run batch" to generate sequentially.'));
         },
-
-        // --- Batch mixin hooks (shared mechanics live in batch_queue_mixin.js) ---
-
         submitBatchItem(item, groupId) {
             const genOptions = {
                 model_tdict_path: item.model_tdict_path,
@@ -1280,11 +1309,9 @@ const Home = {
             };
             this.app.stable_diffusion_manager.add_job(genOptions, rawFormOptions, this.$refs.homeGallery, groupId);
         },
-
         getBatchGallery() {
             return this.$refs.homeGallery;
         },
-
         // Gallery multi-select "Re-run": map a selected image's stored params
         // (saved by SDManager per job) onto the homepage batch-item shape so
         // the shared FIFO runBatch machinery picks it up unchanged.
@@ -1316,57 +1343,63 @@ const Home = {
                 group_id: null,
             };
         },
-
         persistBatchQueue(queue) {
             saveHomepageBatch(queue);
         },
 
-        applyStyle(styleName) {
-            if (!this.promptText.includes(styleName)) {
-                this.promptText = this.promptText.trim() ? `${this.promptText}, ${styleName}` : styleName;
-            }
+        // ── Samples, thumbnails, gallery ────────────────────────────────
+        sampleLabel(img, idx) {
+            const labels = this.isArabic
+                ? ['أنمي', 'عمارة', 'رسم زيتي', 'طعام', 'بكسل', 'تحت الماء', 'ساموراي', 'صحراء', 'شفق', 'لافندر', 'سايبربانك', 'منارة']
+                : ['Anime', 'Architecture', 'Oil painting', 'Street food', 'Pixel art', 'Underwater', 'Samurai', 'Desert', 'Aurora', 'Lavender', 'Cyberpunk', 'Lighthouse'];
+            return labels[idx] || img.assetKey;
         },
-        getRandomStylePreset() {
-            if (!this.stylePresets.length) return '';
-            return this.stylePresets[Math.floor(Math.random() * this.stylePresets.length)].name;
+        useSample(prompt) {
+            if (!prompt) return;
+            this.setPrompt(prompt);
+            this.scrollToComposer();
         },
-        async randomPrompt() {
-            if (this.is_random_prompt_generating) return;
-            this.is_random_prompt_generating = true;
-
-            const fallbackPrompt = getRandomPrompt();
-            const styleHint = this.getRandomStylePreset();
-
-            try {
-                const generated = await generatePromptWithOllama({
-                    sourcePrompt: fallbackPrompt,
-                    style: styleHint,
-                    locale: this.app.app_state.isArabic ? 'ar' : 'en',
-                });
-                let prompt = normalizeGeneratedPrompt(generated.prompt) || fallbackPrompt;
-                if (!normalizeGeneratedPrompt(generated.prompt)) {
-                    prompt = prompt.trim() ? `${prompt}, ${styleHint}` : styleHint;
+        hydrateGalleryFromLastGeneration() {
+            const last = this.app.app_state.last_gallery_group;
+            if (!last || !this.$refs.homeGallery) return;
+            if (this.$refs.homeGallery.groups_with_non_zero_imgs.length > 0) return;
+            syncGalleryGroup(this.$refs.homeGallery, last, null);
+        },
+        refreshGalleryStats() {
+            const gallery = this.$refs.homeGallery;
+            const groups = (gallery && gallery.groups_with_non_zero_imgs) || [];
+            let count = 0;
+            for (const group of groups) {
+                for (const image of (group.imgs || [])) {
+                    if (image.image_url && image.image_url !== 'ERROR') count += 1;
                 }
-                rememberPrompt(prompt);
-                this.promptText = prompt;
-            } catch (error) {
-                console.warn('Ollama prompt generation failed, falling back to the local library:', error);
-                let prompt = fallbackPrompt.trim() ? `${fallbackPrompt}, ${styleHint}` : styleHint;
-                rememberPrompt(prompt);
-                this.promptText = prompt;
-            } finally {
-                this.is_random_prompt_generating = false;
             }
+            this.generatedCount = count;
+        },
+        onGenerationComplete() {
+            this.refreshGalleryStats();
+            this.$nextTick(() => {
+                if (this.app.current_selected_tab === 'Homepage') {
+                    this.scrollToGallery();
+                }
+            });
+        },
+        scrollToGallery() {
+            this.scrollToHomeSection('latestSection');
+        },
+        scrollHomeGallery(direction) {
+            this.scrollToHomeSection('latestSection');
+            if (!this.$refs.homeGallery) return;
+            if (direction < 0 && this.$refs.homeGallery.scroll_previous) {
+                this.$refs.homeGallery.scroll_previous();
+                return;
+            }
+            if (direction > 0 && this.$refs.homeGallery.scroll_next) {
+                this.$refs.homeGallery.scroll_next();
+            }
+        },
 
-            await this.$nextTick();
-            this.submitPrompt();
-        },
-        selectModel(model) {
-            this.selectedModelId = model.id;
-        },
-        onModelSelectChange() {
-            this.autoSelectModel();
-        },
+        // ── Onboarding & tools ──────────────────────────────────────────
         async downloadDefaultModel() {
             if (!this.app || !this.app.launchOnboarding || !this.app.start_model_download) return;
             // Pick the best default model for this machine (fetches the catalog on demand).
@@ -1384,19 +1417,14 @@ const Home = {
                 this.app.start_model_download();
             }
         },
-        all_icons(category){
+        all_icons(category) {
             let ret = []
-            let items = (this.app.all_pages_ready ) ?  this.app.$refs.router.all_applet_items : [];
-            for(let item of items){
-                if(item.home_category == category)
+            let items = (this.app.all_pages_ready) ? this.app.$refs.router.all_applet_items : [];
+            for (let item of items) {
+                if (item.home_category == category)
                     ret.push(item)
             }
             return ret;
-        },
-        startInspirationRotation() {
-            this.inspirationInterval = setInterval(() => {
-                this.inspirationIndex = (this.inspirationIndex + 1) % this.inspirationLineCount;
-            }, 5000);
         }
     },
     watch: {
@@ -1414,80 +1442,90 @@ const Home = {
             this.tryRunPendingPrompt();
         },
         'app.is_mounted': {
-            handler: function(newValue) {
+            handler: function (newValue) {
                 if (newValue) {
                     this.autoSelectModel();
                     this.tryRunPendingPrompt();
+                    this.$nextTick(this.refreshGalleryStats);
                 }
             }
         },
+        'app.current_selected_tab'(tab) {
+            // Stats are read from the gallery through refs; refresh on return.
+            if (tab === 'Homepage') {
+                this.$nextTick(this.refreshGalleryStats);
+            }
+        },
         'app.stable_diffusion_manager.is_ready': {
-            handler: function() {
+            handler: function () {
                 this.tryRunPendingPrompt();
             }
         },
         'app.assets_manager.downloading': {
-            handler: function() {
+            handler: function () {
                 this.tryRunPendingPrompt();
             },
             deep: true
         },
     },
     computed: {
-        inspirationLineCount() {
-            return getInspireLines(this.app.app_state.isArabic ? 'ar' : 'en').length;
+        isArabic() {
+            return !!(this.app && this.app.app_state && this.app.app_state.isArabic);
         },
-        currentInspiration() {
-            const lines = getInspireLines(this.app.app_state.isArabic ? 'ar' : 'en');
-            return lines[this.inspirationIndex % lines.length];
-        },
-        displayedStyles() {
-            return this.stylePresets;
-        },
-        selectedModelLabel() {
-            const model = this.getSelectedModelAsset();
-            return model ? (model.title || model.id) : '';
-        },
-        tokenCounterClass() {
-            if (this.clipTokenCount > 68) return 'token-counter--danger';
-            if (this.clipTokenCount > 55) return 'token-counter--warn';
-            return 'token-counter--ok';
-        },
-        recentThumbnails() {
-            try {
-                const groups = this.$refs.homeGallery ? this.$refs.homeGallery.groups_with_non_zero_imgs : [];
-                const thumbs = [];
-                for (const g of groups) {
-                    const imgs = g.imgs || [];
-                    for (const im of imgs) {
-                        if (im.image_url && im.image_url !== 'ERROR') {
-                            thumbs.push({
-                                job_id: im.job_id || im.image_url,
-                                image_url: im.image_url,
-                                prompt: im.description || im.params?.prompt || '',
-                                description: im.description || '',
-                            });
-                            if (thumbs.length >= 12) break;
-                        }
-                    }
-                    if (thumbs.length >= 12) break;
-                }
-                return thumbs;
-            } catch (e) {
-                return [];
+        promptPlaceholder() {
+            if (this.jsonMode) {
+                return this.isArabic ? '["موجه أول", "موجه ثاني"]' : '["first prompt", "second prompt"]';
             }
+            return this.isArabic ? 'صف ما تريد رؤيته…' : 'Describe what you want to see…';
         },
-        totalGeneratedCount() {
-            try {
-                const groups = this.$refs.homeGallery ? this.$refs.homeGallery.groups_with_non_zero_imgs : [];
-                let count = 0;
-                for (const g of groups) {
-                    count += (g.imgs || []).filter(im => im.image_url && im.image_url !== 'ERROR').length;
-                }
-                return count;
-            } catch (e) {
-                return 0;
+        sampleTiles() {
+            return this.welcomeTiles.map((tile, idx) => ({
+                key: tile.assetKey || ('welcome-' + idx),
+                src: tile.src,
+                prompt: tile.prompt,
+                label: this.sampleLabel(tile, idx),
+            }));
+        },
+        tokenMeterClass() {
+            if (this.clipTokenCount > 68) return 'token-meter--danger';
+            if (this.clipTokenCount > 55) return 'token-meter--warn';
+            return 'token-meter--ok';
+        },
+        tokenPercent() {
+            return Math.min(100, Math.round((this.clipTokenCount / 75) * 100));
+        },
+        canSubmit() {
+            if (!this.promptText.trim()) return false;
+            if (this.jsonMode) return this.jsonBatchInfo.valid;
+            return true;
+        },
+        submitLabel() {
+            if (this.jsonMode) {
+                return this.jsonBatchInfo.valid
+                    ? (this.isArabic ? 'أضف ' + this.jsonBatchInfo.totalPrompts + ' للدفعة' : 'Queue ' + this.jsonBatchInfo.totalPrompts)
+                    : (this.isArabic ? 'JSON غير صالح' : 'Invalid JSON');
             }
+            return this.isArabic ? 'توليد' : 'Generate';
+        },
+        statusTone() {
+            if (!this.app.is_mounted) return 'idle';
+            if (this.availableModels.length === 0) return 'warn';
+            return this.isBackendReady() ? 'ready' : 'idle';
+        },
+        statusLabel() {
+            if (!this.app.is_mounted) return this.isArabic ? 'جارٍ التحميل…' : 'Loading…';
+            if (this.availableModels.length === 0) return this.isArabic ? 'لا يوجد نموذج' : 'No model installed';
+            if (this.isBackendReady()) return this.isArabic ? 'جاهز للتوليد' : 'Ready to generate';
+            return this.isArabic ? 'جارٍ تجهيز المحرك…' : 'Starting engine…';
+        },
+        canvasDimensions() {
+            return this.getSelectedResolutionDimensions();
+        },
+        selectedQualitySteps() {
+            return this.getSelectedQualityPreset().num_steps;
+        },
+        selectedQualityGuidance() {
+            return this.getSelectedQualityPreset().guidance_scale;
         },
         availableModels() {
             if (!this.app.is_mounted || !this.app.assets_manager) return [];
@@ -1502,8 +1540,19 @@ const Home = {
             const settings = this.app && this.app.app_state && this.app.app_state.app_data && this.app.app_state.app_data.settings;
             return !(settings && settings.onboarding_completed);
         },
-        default_img(){
-            return require("../assets/imgs/page_icon_imgs/default1.png")
+        toolGroups() {
+            return TOOL_GROUPS
+                .map(group => ({
+                    id: group.id,
+                    title: this.isArabic ? group.titleArabic : group.title,
+                    items: this.all_icons(group.id).map(item => ({
+                        id: item.id,
+                        title: item.text || item.title || item.id,
+                        description: item.description || '',
+                        img_icon: item.img_icon || null,
+                    })),
+                }))
+                .filter(group => group.items.length > 0);
         }
     }
 }
@@ -1513,1553 +1562,1087 @@ Home.title = "Home"
 Home.icon = "home"
 Home.home_category = undefined
 Home.sidebar_show = "always"
-
 </script>
 
 <style scoped>
+/* ==========================================================================
+   Homepage workbench
+   One vertical rhythm (var(--space-*)), one radius scale, one focus treatment.
+   No arbitrary pixel values below the surface tokens, and no colour literals
+   outside the scrim on top of photography.
+   ========================================================================== */
 
-/* Button reset — ensure all buttons inherit font and have no default quirks */
-button {
-    font-family: var(--main-font-text), -apple-system, BlinkMacSystemFont, sans-serif;
-    outline: none;
-}
-
-button:focus-visible {
-    outline: 2px solid rgba(62, 123, 250, 0.6);
-    outline-offset: 2px;
-}
-
-.main_container {
-    padding: 0;
+.home {
     width: 100%;
     height: 100%;
     overflow-y: auto;
-    overflow-x: hidden;
-    background-color: var(--sidebar-color);
-    color: var(--text-color-solid);
+    background-color: var(--color-bg);
+    font-family: var(--font-family-sans);
+    color: var(--color-text-primary);
 }
 
-.dark-theme {
-    background-color: #000000;
-    background-image: radial-gradient(circle at 50% 0%, #1a1a2e 0%, #000000 70%);
-    color: #ffffff;
-    animation: bg-pulse 10s infinite alternate ease-in-out;
+.home--rtl {
+    font-family: var(--font-family-arabic);
 }
 
-@keyframes bg-pulse {
-    0% { background-position: 50% 0%; }
-    100% { background-position: 50% 10%; }
-}
-
-.welcome-section {
+.home-inner {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 12px 20px 12px;
-    min-height: auto;
-    gap: 0;
+    gap: var(--space-xxl);
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: var(--space-xxl) var(--space-xl) var(--space-xxxl);
 }
 
-.welcome-title {
-    font-size: 2.2rem;
-    font-weight: 800;
-    margin-bottom: 2px;
-    text-align: center;
-    background: linear-gradient(135deg, #ffffff 0%, #a0a0a0 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0 10px 40px rgba(255,255,255,0.05);
-    letter-spacing: -1px;
+/* ── Header ──────────────────────────────────────────────────────────── */
+
+.home-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-lg);
+    scroll-margin-top: var(--space-lg);
 }
 
-.carousel-heading {
-    font-size: 0.82rem;
-    letter-spacing: 0.12em;
+.home-header-copy {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    min-width: 0;
+}
+
+.home-eyebrow {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.42);
-    margin: 0 0 10px;
-    text-align: center;
+    color: var(--color-text-tertiary);
 }
 
-.mode-switcher {
-    width: 100%;
-    max-width: 1100px;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-    margin: 6px 0 10px;
+.home-title {
+    margin: 0;
+    font-size: var(--font-size-display);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-tight);
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary);
 }
 
-.mode-pill {
+.home-subtitle {
+    margin: 0;
+    max-width: 56ch;
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-relaxed);
+    color: var(--color-text-secondary);
+}
+
+.home-header-side {
     display: flex;
     align-items: center;
-    gap: 12px;
-    flex: 0 1 auto;
-    min-height: 48px;
-    padding: 8px 14px;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.04);
-    color: #fff;
-    text-align: start;
-    cursor: pointer;
-    transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
-}
-
-.mode-pill:hover {
-    transform: translateY(-2px);
-    border-color: rgba(62, 123, 250, 0.35);
-    background: rgba(62, 123, 250, 0.14);
-    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.24);
-}
-
-.mode-pill--active {
-    background: linear-gradient(135deg, rgba(62, 123, 250, 0.28), rgba(62, 123, 250, 0.1));
-    border-color: rgba(62, 123, 250, 0.55);
-    box-shadow: 0 0 0 1px rgba(62, 123, 250, 0.2) inset, 0 20px 40px rgba(0, 0, 0, 0.22);
-}
-
-.mode-pill-icon {
-    font-size: 1.2rem;
+    gap: var(--space-xs);
     flex-shrink: 0;
+    padding-top: var(--space-xs);
 }
 
-.mode-pill-copy {
+.lang-btn {
+    font-family: var(--font-family-arabic);
+    color: var(--color-text-tertiary);
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: 6px var(--space-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    background-color: var(--color-bg-elevated);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    white-space: nowrap;
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-text-placeholder);
+}
+
+.status-pill--ready .status-dot {
+    background-color: var(--color-success);
+}
+
+.status-pill--warn .status-dot {
+    background-color: var(--color-warning);
+}
+
+/* ── Setup card ──────────────────────────────────────────────────────── */
+
+.setup-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-lg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background-color: var(--color-bg-elevated);
+}
+
+.setup-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: var(--radius-lg);
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+}
+
+.setup-copy {
     display: flex;
     flex-direction: column;
     gap: 2px;
-}
-
-.mode-pill-title {
-    font-size: 0.92rem;
-    font-weight: 700;
-    line-height: 1.2;
-}
-
-.mode-pill-desc {
-    font-size: 0.74rem;
-    line-height: 1.3;
-    color: rgba(255, 255, 255, 0.55);
-}
-
-.sample-count-badge {
-    display: inline-block;
-    margin-left: 8px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    background: rgba(62, 123, 250, 0.25);
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 0.72rem;
-    letter-spacing: 0.04em;
-}
-
-.inspiration-text {
-    font-size: 1rem;
-    color: rgba(255, 255, 255, 0.5);
-    margin: 6px 0 8px;
-    font-style: italic;
-    transition: opacity 0.5s ease;
-    height: 1.5rem;
-}
-
-.chat-container {
-    width: 100%;
-    max-width: 800px;
-    margin-bottom: 28px;
-    position: relative;
-    z-index: 10;
-}
-
-.chat-box {
-    display: flex;
-    flex-direction: column;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 24px;
-    padding: 10px 10px 10px 16px;
-    box-shadow: 
-        0 25px 50px -12px rgba(0, 0, 0, 0.5),
-        0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-    transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
-}
-
-.chat-box:focus-within {
-    border-color: rgba(255, 255, 255, 0.4);
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: 
-        0 30px 60px -12px rgba(0, 0, 0, 0.6),
-        0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-        0 0 30px rgba(62, 123, 250, 0.15);
-}
-
-.chat-input-wrap {
-    display: flex;
-    flex-direction: column;
-    position: relative;
-}
-
-.chat-input {
-    flex-grow: 1;
-    background: transparent;
-    border: none;
-    color: white;
-    font-size: 1.1rem;
-    padding: 8px 4px 4px;
-    outline: none;
-    font-family: var(--main-font-text);
-    resize: none;
-    line-height: 1.5;
-    min-height: 48px;
-    max-height: 160px;
-    pointer-events: auto;
-    -webkit-user-select: text;
-    user-select: text;
-    z-index: 1;
-}
-
-.chat-input::placeholder {
-    color: rgba(255, 255, 255, 0.3);
-}
-
-.neg-input {
-    font-size: 0.95rem;
-    padding: 8px 12px;
-    color: rgba(255, 255, 255, 0.7);
-}
-
-.chat-input-tools {
-    display: flex;
-    justify-content: flex-end;
-    padding: 2px 6px 4px;
-}
-
-.prompt-token-counter {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    padding: 3px 8px;
-    border-radius: 8px;
-    letter-spacing: 0.02em;
-    transition: all 0.3s ease;
-}
-
-.token-counter--ok {
-    color: rgba(52, 199, 89, 0.7);
-    background: rgba(52, 199, 89, 0.08);
-}
-
-.token-counter--warn {
-    color: rgba(255, 204, 0, 0.8);
-    background: rgba(255, 204, 0, 0.1);
-}
-
-.token-counter--danger {
-    color: rgba(255, 69, 58, 0.85);
-    background: rgba(255, 69, 58, 0.1);
-}
-
-.chat-actions {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 6px;
-    padding: 4px 0 0;
-}
-
-.chat-action-btn {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 50%;
-    width: 38px;
-    height: 38px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: rgba(255, 255, 255, 0.6);
-    transition: all 0.25s ease;
-    flex-shrink: 0;
-}
-
-.chat-action-btn:hover {
-    background: rgba(62, 123, 250, 0.16);
-    border-color: rgba(62, 123, 250, 0.35);
-    color: rgba(255, 255, 255, 0.9);
-    transform: translateY(-1px);
-}
-
-.chat-action-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.chat-action-btn--active {
-    background: rgba(62, 123, 250, 0.2);
-    border-color: rgba(62, 123, 250, 0.5);
-    color: #fff;
-}
-
-.recent-prompts-dropdown {
-    position: relative;
-}
-
-.recent-prompts-menu {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    right: 0;
-    width: 320px;
-    max-height: 360px;
-    overflow-y: auto;
-    background: rgba(30, 30, 32, 0.98);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-    padding: 8px 0;
-    z-index: 100;
-    animation: menuFadeIn 0.2s ease;
-}
-
-@keyframes menuFadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.recent-prompts-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 14px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.5);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    margin-bottom: 4px;
-}
-
-.recent-clear-btn {
-    background: none;
-    border: none;
-    color: rgba(255, 69, 58, 0.6);
-    cursor: pointer;
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 2px 6px;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-}
-
-.recent-clear-btn:hover {
-    color: #ff453a;
-    background: rgba(255, 69, 58, 0.1);
-}
-
-.recent-prompt-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 10px 14px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-    color: rgba(255, 255, 255, 0.85);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-}
-
-.recent-prompt-item:hover {
-    background: rgba(62, 123, 250, 0.12);
-}
-
-.recent-prompt-item svg {
-    flex-shrink: 0;
-    margin-top: 2px;
-    color: rgba(255, 255, 255, 0.3);
-}
-
-.recent-prompt-text {
-    font-size: 0.82rem;
-    line-height: 1.4;
-    word-break: break-word;
-}
-
-.negative-prompt-area {
-    margin-top: 6px;
-    overflow: hidden;
-}
-
-.neg-fade-enter-active, .neg-fade-leave-active {
-    transition: all 0.25s ease;
-}
-.neg-fade-enter, .neg-fade-leave-to {
-    opacity: 0;
-    max-height: 0;
-}
-.neg-fade-enter-to, .neg-fade-leave {
-    opacity: 1;
-    max-height: 100px;
-}
-
-.negative-prompt-box {
-    background: rgba(255, 69, 58, 0.04);
-    border: 1px solid rgba(255, 69, 58, 0.15);
-    border-radius: 16px;
-    padding: 4px 4px;
-}
-
-.prompt-modifiers {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-top: 10px;
-    padding: 6px 0 0;
-}
-
-.modifiers-label {
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(255, 255, 255, 0.35);
-    margin-right: 4px;
-}
-
-.modifier-chip {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.75);
-    padding: 5px 10px;
-    border-radius: 999px;
-    cursor: pointer;
-    font-size: 0.75rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.modifier-chip:hover {
-    background: rgba(62, 123, 250, 0.1);
-    border-color: rgba(62, 123, 250, 0.3);
-    color: #fff;
-    transform: translateY(-1px);
-}
-
-.modifier-chip--active {
-    background: rgba(62, 123, 250, 0.18);
-    border-color: rgba(62, 123, 250, 0.5);
-    color: #fff;
-}
-
-.inspiration-chips-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 12px;
-    justify-content: center;
-}
-
-.inspiration-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.7);
-    padding: 7px 14px;
-    border-radius: 999px;
-    cursor: pointer;
-    font-size: 0.82rem;
-    font-weight: 500;
-    transition: all 0.25s ease;
-}
-
-.inspiration-chip:hover {
-    background: rgba(62, 123, 250, 0.12);
-    border-color: rgba(62, 123, 250, 0.35);
-    color: #fff;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-}
-
-.inspiration-chip-icon {
-    font-size: 1rem;
-}
-
-.rtl-text {
-    font-family: 'Tajawal', sans-serif !important;
-    direction: rtl;
-    line-height: 1.4;
-}
-
-/* <button> elements don't inherit font-family from an ancestor's !important
-   rule the way plain text elements do, since a `button { font-family: ... }`
-   reset declares it directly on the element — so rtl-text has to be repeated
-   explicitly for button descendants like .mode-pill. */
-.rtl-text .mode-pill {
-    font-family: 'Tajawal', sans-serif !important;
-}
-
-.lang-toggle {
-    display: block;
-    margin: 20px auto 0;
-    padding: 8px 16px;
-    background: none;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 999px;
-    color: rgba(255, 255, 255, 0.3);
-    cursor: pointer;
-    font-family: var(--main-font-text), sans-serif;
-    font-size: 0.85rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    transition: all 0.3s ease;
-    text-align: center;
-}
-
-.lang-toggle:hover {
-    color: rgba(255, 255, 255, 0.9);
-    letter-spacing: 3px;
-    border-color: rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.04);
-    transform: translateY(-1px);
-}
-.gallery-section {
-    width: 100%;
-    max-width: 900px;
-    margin-top: 8px;
-}
-
-.gallery-section--prominent {
-    margin-top: 24px;
-    padding: 18px 14px 10px;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.gallery-section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
-}
-
-.gallery-section-title {
-    margin-bottom: 12px !important;
-    font-size: 1.1rem !important;
-}
-
-.gallery-section-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.generation-stats-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 22px;
-    height: 22px;
-    padding: 0 7px;
-    border-radius: 11px;
-    background: rgba(62, 123, 250, 0.2);
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    margin-left: 8px;
-}
-
-.gallery-nav-button {
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.9);
-    border-radius: 999px;
-    width: 36px;
-    height: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-    font-size: 1.1rem;
-}
-
-.gallery-nav-button:hover {
-    transform: translateY(-1px);
-    background: rgba(62, 123, 250, 0.16);
-    border-color: rgba(62, 123, 250, 0.35);
-}
-
-.gallery-nav-button--ghost {
-    width: 38px;
-}
-
-/* Thumbnail strip */
-.home-thumbnail-strip {
-    display: flex;
-    gap: 10px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 6px 0 14px;
-    margin-bottom: 6px;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-}
-
-.home-thumbnail-strip::-webkit-scrollbar {
-    height: 3px;
-}
-
-.home-thumbnail-strip::-webkit-scrollbar-track {
-    background: rgba(255,255,255,0.03);
-    border-radius: 3px;
-}
-
-.home-thumbnail-strip::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.1);
-    border-radius: 3px;
-}
-
-.home-thumbnail-item {
-    flex: 0 0 120px;
-    height: 120px;
-    border-radius: 14px;
-    overflow: hidden;
-    position: relative;
-    cursor: pointer;
-    border: 1px solid rgba(255,255,255,0.08);
-    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-    scroll-snap-align: start;
-}
-
-/* Deliberate entrance/reorder animation for new thumbnails (transform/opacity only,
-   never layout properties, so it never causes reflow jank). */
-.thumb-pop-enter-active {
-    transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-.thumb-pop-leave-active {
-    transition: opacity 0.25s ease, transform 0.25s ease;
-    position: absolute;
-}
-.thumb-pop-enter,
-.thumb-pop-leave-to {
-    opacity: 0;
-    transform: scale(0.85);
-}
-.thumb-pop-move {
-    transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.home-thumbnail-item:hover {
-    transform: translateY(-4px) scale(1.03);
-    border-color: rgba(62,123,250,0.4);
-    box-shadow: 0 12px 28px rgba(0,0,0,0.4);
-}
-
-.home-thumbnail-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-.home-thumbnail-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 8px 8px;
-    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 60%, transparent 100%);
-    opacity: 0;
-    transition: opacity 0.25s ease;
-}
-
-.home-thumbnail-item:hover .home-thumbnail-overlay {
-    opacity: 1;
-}
-
-.home-thumbnail-prompt {
-    color: #fff;
-    font-size: 0.7rem;
-    line-height: 1.3;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-@media (max-width: 700px) {
-    .home-thumbnail-item {
-        flex: 0 0 90px;
-        height: 90px;
-    }
-}
-
-.pending-generation-note {
-    margin-top: 14px;
-    padding: 10px 14px;
-    border-radius: 12px;
-    font-size: 0.86rem;
-    color: rgba(255, 255, 255, 0.85);
-    background: rgba(62, 123, 250, 0.16);
-    border: 1px solid rgba(62, 123, 250, 0.35);
-    text-align: center;
-}
-
-.quick-controls-card {
-    width: 100%;
-    max-width: 900px;
-    margin-bottom: 22px;
-    padding: 18px 18px 16px;
-    border-radius: 24px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
-}
-
-.quick-controls-head,
-.quick-model-summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.quick-model-summary {
-    margin-top: 12px;
-    padding: 12px 14px;
-    border-radius: 18px;
-    background: rgba(0, 0, 0, 0.18);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-.quick-controls-kicker {
-    margin: 0 0 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.45);
-}
-
-.quick-controls-title {
-    margin: 0;
-    font-size: 1.02rem;
-    color: rgba(255, 255, 255, 0.95);
-}
-
-.quick-controls-label {
-    display: inline-block;
-    margin-bottom: 8px;
-    font-size: 0.72rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.45);
-}
-
-.quick-controls-muted {
-    display: block;
-    margin-top: 4px;
-    font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.5);
-}
-
-.quick-controls-link {
-    border: 1px solid rgba(62, 123, 250, 0.35);
-    background: rgba(62, 123, 250, 0.16);
-    color: #fff;
-    padding: 10px 14px;
-    border-radius: 999px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-}
-
-.quick-controls-link:hover {
-    transform: translateY(-1px);
-    background: rgba(62, 123, 250, 0.24);
-    border-color: rgba(62, 123, 250, 0.55);
-}
-
-.quick-controls-link--ghost {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.12);
-}
-
-.quick-options-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 14px;
-}
-
-.quick-option-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-    justify-content: flex-start;
-}
-
-.quick-chip {
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.88);
-    padding: 8px 12px;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-    font-size: 0.84rem;
-    font-weight: 600;
-}
-
-.quick-chip:hover {
-    transform: translateY(-1px);
-    border-color: rgba(62, 123, 250, 0.3);
-    background: rgba(62, 123, 250, 0.08);
-}
-
-.quick-chip--active {
-    border-color: rgba(62, 123, 250, 0.65);
-    background: rgba(62, 123, 250, 0.2);
-    color: #fff;
-}
-
-.prompt-library-strip {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 18px 18px 16px;
-    margin-bottom: 20px;
-    border-radius: 22px;
-    background: linear-gradient(135deg, rgba(62, 123, 250, 0.16), rgba(255, 255, 255, 0.03));
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.prompt-library-title {
-    margin: 0;
-    font-size: 1.05rem;
-    color: #fff;
-}
-
-.prompt-library-copy {
-    margin: 8px 0 0;
-    max-width: 56ch;
-    color: rgba(255, 255, 255, 0.64);
-}
-
-.prompt-library-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-}
-
-.chat-submit {
-    background: #ffffff;
-    color: #000000;
-    border: none;
-    border-radius: 50%;
-    width: 38px;
-    height: 38px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    flex-shrink: 0;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
-}
-
-.chat-submit:hover:not(:disabled) {
-    transform: rotate(10deg) scale(1.08);
-    background: #f0f0f0;
-    box-shadow: 0 10px 24px rgba(0,0,0,0.35);
-}
-
-.chat-action-btn--run {
-    background: rgba(52, 199, 89, 0.16);
-    color: #34c759;
-    font-weight: 700;
-}
-
-.chat-action-btn--run:hover {
-    background: rgba(52, 199, 89, 0.28);
-    color: #34c759;
-}
-
-.disabled-action {
-    opacity: 0.55;
-    pointer-events: none;
-    filter: saturate(0.8);
-}
-
-/* --- Batch queue panel --- */
-.home-batch-panel {
-    width: 100%;
-    max-width: 800px;
-    margin: 10px auto 0;
-    padding: 12px 14px;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(30px);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-height: 260px;
-    overflow-y: auto;
-    box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.45);
-}
-
-.home-batch-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-}
-
-.home-batch-title {
-    font-size: 0.82rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    color: rgba(255, 255, 255, 0.92);
-}
-
-.home-batch-count {
-    font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.75);
-    background: rgba(62, 123, 250, 0.25);
-    padding: 2px 10px;
-    border-radius: 12px;
-}
-
-.home-batch-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    transition: border-color 0.2s ease, background 0.2s ease;
-}
-
-.home-batch-item:hover {
-    border-color: rgba(62, 123, 250, 0.4);
-    background: rgba(62, 123, 250, 0.08);
-}
-
-.home-batch-index {
-    flex-shrink: 0;
-    width: 22px;
-    height: 22px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: rgba(62, 123, 250, 0.28);
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.7rem;
-    font-weight: 700;
-}
-
-.home-batch-prompt {
     flex: 1;
     min-width: 0;
-    font-size: 0.8rem;
-    line-height: 1.35;
-    color: rgba(255, 255, 255, 0.9);
-    white-space: nowrap;
+}
+
+.setup-title {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-tight);
+}
+
+.setup-desc {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+    color: var(--color-text-secondary);
+}
+
+.setup-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    flex-shrink: 0;
+}
+
+/* ── Workbench grid ──────────────────────────────────────────────────── */
+
+.workbench {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 304px;
+    gap: var(--space-md);
+    align-items: start;
+}
+
+/* ── Composer ────────────────────────────────────────────────────────── */
+
+.composer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-lg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-xl);
+    background-color: var(--card-bg);
+    transition: border-color var(--transition-fast);
+}
+
+.composer:focus-within {
+    border-color: var(--color-border-strong);
+}
+
+.composer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+}
+
+.composer-label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    cursor: text;
+}
+
+.composer:focus-within .composer-label {
+    color: var(--color-text-primary);
+}
+
+.composer:focus-within .composer-label .app-icon {
+    color: var(--color-primary);
+}
+
+.composer-head-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.recent-wrap {
+    position: relative;
+}
+
+.meta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px var(--space-xs);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-tertiary);
+    font-family: inherit;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.meta-btn:hover,
+.meta-btn--active {
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-hover);
+}
+
+.meta-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-primary-light), 0 0 0 1px var(--color-primary);
+}
+
+.recent-menu {
+    position: absolute;
+    top: calc(100% + var(--space-xs));
+    inset-inline-end: 0;
+    z-index: 30;
+    width: min(420px, 70vw);
+    max-height: 320px;
+    overflow-y: auto;
+    padding: var(--space-xxs);
+    border: 1px solid var(--dropdown-border);
+    border-radius: var(--radius-lg);
+    background-color: var(--dropdown-bg);
+    box-shadow: var(--shadow-lg);
+}
+
+.recent-menu-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-xxs) var(--space-xs);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.recent-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    width: 100%;
+    padding: var(--space-xs);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    text-align: start;
+    cursor: pointer;
+}
+
+.recent-item:hover {
+    background-color: var(--color-bg-hover);
+    color: var(--color-text-primary);
+}
+
+.recent-item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-primary) inset;
+}
+
+.recent-item-text {
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-.home-batch-meta {
-    flex-shrink: 0;
-    font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.55);
     white-space: nowrap;
 }
 
-.home-batch-remove {
-    flex-shrink: 0;
-    width: 24px;
-    height: 24px;
+/* Token meter */
+
+.token-meter {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: rgba(255, 255, 255, 0.6);
-    cursor: pointer;
-    font-size: 0.72rem;
-    transition: background 0.2s ease, color 0.2s ease;
+    gap: var(--space-xs);
+    font-size: var(--font-size-xs);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-tertiary);
 }
 
-.home-batch-remove:hover {
-    background: rgba(255, 69, 58, 0.2);
-    color: #ff453a;
-}
-
-.home-batch-remove:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-}
-
-.home-batch-status {
-    flex-shrink: 0;
-    font-size: 0.64rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    padding: 2px 8px;
-    border-radius: 10px;
-    white-space: nowrap;
-}
-
-.home-batch-status--pending {
-    color: rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.home-batch-status--queued {
-    color: #ff9500;
-    background: rgba(255, 149, 0, 0.16);
-}
-
-.home-batch-status--running {
-    color: #6da2ff;
-    background: rgba(62, 123, 250, 0.18);
-}
-
-.home-batch-status--done {
-    color: #34c759;
-    background: rgba(52, 199, 89, 0.16);
-}
-
-.home-batch-status--error {
-    color: #ff453a;
-    background: rgba(255, 69, 58, 0.18);
-}
-
-.chat-submit:disabled {
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.1);
-    cursor: not-allowed;
-    box-shadow: none;
-}
-
-.welcome-samples {
-    width: 100%;
-    max-width: 1100px;
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
-    padding: 4px 6px 16px;
-    margin-bottom: 8px;
-    min-height: 228px;
-    direction: ltr;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-gutter: stable;
-}
-
-.welcome-samples::-webkit-scrollbar {
+.token-meter-bar {
+    display: block;
+    width: 56px;
     height: 4px;
-}
-
-.welcome-samples::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 4px;
-}
-
-.welcome-samples::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: 4px;
-    transition: background 0.3s ease;
-}
-
-.welcome-samples::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.25);
-}
-
-.welcome-sample-tile {
-    flex: 0 0 clamp(190px, 22vw, 280px);
-    height: 200px;
-    min-height: 200px;
-    border-radius: 20px;
-    background-color: rgba(255, 255, 255, 0.06);
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 
-        0 16px 32px rgba(0, 0, 0, 0.45),
-        0 0 0 0 rgba(246, 59, 137, 0);
-    cursor: pointer;
-    position: relative;
+    border-radius: var(--radius-full);
+    background-color: var(--color-border);
     overflow: hidden;
-    transition: transform 0.35s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.35s ease, border-color 0.35s ease;
-    scroll-snap-align: start;
-    animation: tileFadeIn 0.6s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
-.welcome-sample-tile:nth-child(1) { animation-delay: 0.05s; }
-.welcome-sample-tile:nth-child(2) { animation-delay: 0.10s; }
-.welcome-sample-tile:nth-child(3) { animation-delay: 0.15s; }
-.welcome-sample-tile:nth-child(4) { animation-delay: 0.20s; }
-.welcome-sample-tile:nth-child(5) { animation-delay: 0.25s; }
-.welcome-sample-tile:nth-child(6) { animation-delay: 0.30s; }
-.welcome-sample-tile:nth-child(7) { animation-delay: 0.35s; }
-.welcome-sample-tile:nth-child(8) { animation-delay: 0.40s; }
-.welcome-sample-tile:nth-child(9) { animation-delay: 0.45s; }
-.welcome-sample-tile:nth-child(10) { animation-delay: 0.50s; }
-.welcome-sample-tile:nth-child(11) { animation-delay: 0.55s; }
-.welcome-sample-tile:nth-child(12) { animation-delay: 0.60s; }
-
-@keyframes tileFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(16px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+.token-meter-fill {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-full);
+    background-color: var(--color-text-placeholder);
+    transition: width var(--transition-normal), background-color var(--transition-normal);
 }
 
-.welcome-sample-tile::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, 
-        rgba(0, 0, 0, 0.65) 0%, 
-        rgba(0, 0, 0, 0.3) 40%, 
-        transparent 70%);
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    pointer-events: none;
+.token-meter--warn .token-meter-fill {
+    background-color: var(--color-warning);
 }
 
-.welcome-sample-tile:hover::before {
-    opacity: 1;
+.token-meter--warn .token-meter-value {
+    color: var(--color-warning);
 }
 
-.welcome-sample-tile::after {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border-radius: 21px;
-    background: linear-gradient(135deg, rgba(246, 59, 137, 0.3), rgba(0, 194, 255, 0.3));
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    pointer-events: none;
-    z-index: 0;
+.token-meter--danger .token-meter-fill {
+    background-color: var(--color-error);
 }
 
-.welcome-sample-tile:hover {
-    transform: translateY(-8px) scale(1.03);
-    border-color: rgba(255, 255, 255, 0.25);
-    box-shadow: 
-        0 28px 56px rgba(0, 0, 0, 0.6),
-        0 0 40px rgba(246, 59, 137, 0.15);
+.token-meter--danger .token-meter-value {
+    color: var(--color-error);
 }
 
-.welcome-sample-tile:active {
-    transform: translateY(-2px) scale(0.98);
-    transition-duration: 0.1s;
-}
+/* Prompt input */
 
-.welcome-sample-tile:hover::after {
-    opacity: 1;
-}
-
-.welcome-sample-label {
-    position: absolute;
-    left: 12px;
-    right: 12px;
-    bottom: 14px;
-    padding: 8px 12px;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.5);
-    color: #fff;
-    font-size: 0.82rem;
-    font-weight: 600;
-    text-align: center;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    z-index: 1;
-    transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), background 0.3s ease, box-shadow 0.3s ease;
-    letter-spacing: 0.02em;
-}
-
-.welcome-sample-tile:hover .welcome-sample-label {
-    background: rgba(0, 0, 0, 0.6);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-}
-
-.carousel-shell {
+.prompt-input {
     width: 100%;
-    max-width: 1140px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    min-height: 108px;
+    max-height: 260px;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-lg);
+    background-color: var(--input-bg);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: var(--font-size-lg);
+    line-height: var(--line-height-relaxed);
+    resize: vertical;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.carousel-nav {
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.94);
-    width: 44px;
-    height: 44px;
-    border-radius: 999px;
-    flex-shrink: 0;
-    cursor: pointer;
-    font-size: 1.6rem;
-    line-height: 1;
-    transition: transform 0.25s cubic-bezier(0.23, 1, 0.32, 1), background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.prompt-input::placeholder {
+    color: var(--color-text-placeholder);
+}
+
+.prompt-input:focus-visible {
+    outline: none;
+    border-color: var(--input-border-focus);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.prompt-input--sm {
+    min-height: 64px;
+    max-height: 160px;
+    font-size: var(--font-size-base);
+}
+
+.prompt-input--mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+}
+
+.rtl-input {
+    direction: rtl;
+    text-align: right;
+}
+
+.neg-area {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xxs);
+}
+
+.neg-label {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.04em;
+    color: var(--color-text-tertiary);
+}
+
+.json-hint {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+}
+
+.json-hint--invalid {
+    color: var(--color-warning);
+}
+
+/* Chips */
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.chips-label {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-placeholder);
+    margin-inline-end: var(--space-xxs);
+}
+
+.chip {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    gap: 5px;
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    line-height: 1;
+    cursor: pointer;
+    transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
-.carousel-nav:hover {
-    transform: translateY(-2px) scale(1.08);
-    background: rgba(62, 123, 250, 0.18);
-    border-color: rgba(62, 123, 250, 0.5);
-    box-shadow: 0 8px 24px rgba(62, 123, 250, 0.2);
+.chip:hover {
+    border-color: var(--color-border-strong);
+    background-color: var(--color-bg-hover);
+    color: var(--color-text-primary);
 }
 
-.carousel-nav:active {
-    transform: translateY(0) scale(0.95);
-    transition-duration: 0.1s;
+.chip:focus-visible {
+    outline: none;
+    border-color: var(--input-border-focus);
+    box-shadow: 0 0 0 2px var(--color-primary-light);
 }
 
-@media (max-width: 900px) {
-    .welcome-samples {
-        min-height: 240px;
-    }
-
-    .welcome-sample-tile {
-        flex-basis: 72vw;
-        height: 220px;
-    }
-
-    .quick-options-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .prompt-library-strip {
-        flex-direction: column;
-    }
-
-    .prompt-library-actions {
-        justify-content: flex-start;
-    }
-
-    .recent-prompts-menu {
-        width: 280px;
-        right: -60px;
-    }
+.chip--active {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary-light);
+    color: var(--color-text-primary);
 }
 
-.onboarding-banner {
-    width: 100%;
-    max-width: 900px;
-    margin: 0 0 22px;
-    padding: 18px 20px;
-    border-radius: 22px;
-    background: linear-gradient(135deg, rgba(62, 123, 250, 0.18), rgba(108, 92, 231, 0.12));
-    border: 1px solid rgba(62, 123, 250, 0.28);
+.chip--idea {
+    color: var(--color-text-tertiary);
+}
+
+.chip--style {
+    height: 30px;
+}
+
+/* Composer footer */
+
+.composer-foot {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: var(--space-sm);
     flex-wrap: wrap;
+    padding-top: var(--space-xs);
+    border-top: 1px solid var(--color-border);
 }
 
-.onboarding-banner-kicker {
-    margin: 0 0 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.55);
-}
-
-.onboarding-banner-title {
-    margin: 0 0 6px;
-    font-size: 1.05rem;
-    color: rgba(255, 255, 255, 0.96);
-}
-
-.onboarding-banner-desc {
-    margin: 0;
-    font-size: 0.86rem;
-    color: rgba(255, 255, 255, 0.62);
-    max-width: 520px;
-}
-
-.onboarding-banner-actions {
+.foot-tools {
     display: flex;
-    gap: 10px;
+    align-items: center;
+    gap: var(--space-xxs);
     flex-wrap: wrap;
 }
 
-.onboarding-primary-btn,
-.onboarding-secondary-btn {
-    border-radius: 999px;
-    padding: 11px 18px;
-    font-weight: 700;
+.foot-tools .btn.is-active {
+    background-color: var(--color-primary-light);
+    color: var(--color-text-primary);
+}
+
+.foot-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-inline-start: auto;
+}
+
+.foot-hint {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-placeholder);
+    white-space: nowrap;
+}
+
+.btn-generate {
+    min-width: 128px;
+    font-weight: var(--font-weight-semibold);
+}
+
+.btn-block {
+    width: 100%;
+}
+
+/* ── Settings rail ───────────────────────────────────────────────────── */
+
+.settings {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    padding: var(--space-lg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-xl);
+    background-color: var(--card-bg);
+}
+
+.settings-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.settings-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-xs);
+}
+
+.settings-label {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-tertiary);
+}
+
+.link-btn {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-text-tertiary);
+    font-family: inherit;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
     cursor: pointer;
-    border: 1px solid transparent;
-    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    text-decoration: underline;
+    text-underline-offset: 2px;
 }
 
-.onboarding-primary-btn {
-    background: #3E7BFA;
-    color: #fff;
-    border-color: rgba(62, 123, 250, 0.5);
+.link-btn:hover {
+    color: var(--color-text-primary);
 }
 
-.onboarding-primary-btn:hover {
-    transform: translateY(-1px);
-    background: #4d86fb;
+.link-btn:focus-visible {
+    outline: none;
+    border-radius: var(--radius-xs);
+    box-shadow: 0 0 0 2px var(--color-primary);
 }
 
-.onboarding-primary-btn--compact {
-    padding: 9px 14px;
-    font-size: 0.82rem;
+.segmented--numeric {
+    direction: ltr;
 }
 
-.onboarding-secondary-btn {
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.9);
-    border-color: rgba(255, 255, 255, 0.14);
+.segmented {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: var(--radius-md);
+    background-color: var(--color-bg-hover);
 }
 
-.onboarding-secondary-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+.segmented-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 28px;
+    padding: 0 var(--space-xxs);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
-.quick-controls-card .quick-option-group {
+.segmented-btn:hover {
+    color: var(--color-text-primary);
+}
+
+.segmented-btn--active {
+    background-color: var(--color-bg-elevated);
+    color: var(--color-text-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.segmented-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.ratio-shape {
+    display: inline-block;
+    border: 1.5px solid currentColor;
+    border-radius: 2px;
+    opacity: 0.75;
+}
+
+.ratio-shape[data-shape='square'] {
+    width: 10px;
+    height: 10px;
+}
+
+.ratio-shape[data-shape='portrait'] {
+    width: 8px;
+    height: 11px;
+}
+
+.ratio-shape[data-shape='landscape'] {
+    width: 12px;
+    height: 8px;
+}
+
+/* The model badge carries the model family; the `float16` meta line is
+   technical detail that does not fit (and is not actionable) in this rail.
+   Long model names wrap rather than truncate mid-word. */
+.settings ::v-deep .model-selector-trigger-meta {
+    display: none;
+}
+
+.settings ::v-deep .model-selector-trigger-title {
+    white-space: normal;
+    line-height: var(--line-height-tight);
+}
+
+.settings-summary {
+    margin: 0;
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--font-size-xs);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-tertiary);
+}
+
+/* ── Batch queue ─────────────────────────────────────────────────────── */
+
+.batch-panel {
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-xl);
+    background-color: var(--card-bg);
+    overflow: hidden;
+}
+
+.batch-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.batch-head-copy {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-xs);
     min-width: 0;
 }
 
-.quick-model-picker {
-    margin-top: 12px;
-    padding: 12px 14px;
-    border-radius: 18px;
-    background: rgba(0, 0, 0, 0.18);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-.quick-model-picker--empty {
+.batch-actions {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: var(--space-xs);
+    flex-shrink: 0;
 }
 
-.quick-model-picker-row {
-    display: flex;
+.batch-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.batch-row {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) auto auto 28px;
     align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: var(--space-sm);
+    padding: var(--space-xs) var(--space-md);
 }
 
-.quick-model-picker-row .model-selector {
-    min-width: min(100%, 320px);
-    flex: 1;
+.batch-row + .batch-row {
+    border-top: 1px solid var(--color-border);
 }
 
-.sd-badge {
-    background: rgba(34, 197, 94, 0.2);
-    color: rgba(34, 197, 94, 0.8);
+.batch-index {
+    font-size: var(--font-size-xs);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-placeholder);
+    text-align: center;
 }
 
-.model-count-badge {
-    font-size: 0.75rem;
-    padding: 2px 10px;
-    border-radius: 10px;
-    background: rgba(99, 102, 241, 0.2);
-    color: rgba(255,255,255,0.6);
-    font-weight: 600;
+.batch-prompt {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
 }
 
-.styles-section {
-    padding: 0 60px;
-    margin-bottom: 50px;
+.batch-dims {
+    font-size: var(--font-size-xs);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
 }
 
-.tools-sections {
-    width: 100%;
-}
-
-.styles-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-
-.style-chip {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    padding: 8px 16px;
+.batch-state {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 5px;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
+}
+
+.batch-state-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-text-placeholder);
+}
+
+.batch-state--queued .batch-state-dot,
+.batch-state--running .batch-state-dot {
+    background-color: var(--color-primary);
+}
+
+.batch-state--done .batch-state-dot {
+    background-color: var(--color-success);
+}
+
+.batch-state--error .batch-state-dot {
+    background-color: var(--color-error);
+}
+
+.batch-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-placeholder);
     cursor: pointer;
-    font-family: var(--main-font-text), sans-serif;
-    color: inherit;
-    transition: all 0.3s ease;
-    font-size: 0.9rem;
-    font-weight: 500;
 }
 
-.style-chip:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
-    transform: translateY(-3px);
+.batch-remove:hover:not(:disabled) {
+    background-color: var(--color-bg-hover);
+    color: var(--color-text-primary);
 }
 
-.style-icon {
-    font-size: 1.1rem;
+.batch-remove:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
-.tools-section {
-    padding: 40px 60px;
-    margin-bottom: 40px;
+.batch-remove:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-primary);
 }
 
-.category-title {
-    color: rgba(255,255,255,0.9);
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin-bottom: 30px;
+/* ── Section primitives ──────────────────────────────────────────────── */
+
+.section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-md);
+}
+
+.section-head-copy {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xxs);
+    min-width: 0;
+}
+
+.section-title {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: var(--space-xs);
+    margin: 0;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-tight);
+    letter-spacing: -0.01em;
+    color: var(--color-text-primary);
 }
 
-.category-title::after {
-    content: '';
-    flex-grow: 1;
-    height: 1px;
-    background: linear-gradient(to right, rgba(255,255,255,0.15), transparent);
+.section-meta {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+    color: var(--color-text-tertiary);
 }
 
-.icon_container {
+.section-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-bg-hover);
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    font-variant-numeric: tabular-nums;
+}
+
+.section-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    flex-shrink: 0;
+}
+
+/* ── Generations ─────────────────────────────────────────────────────── */
+
+.generations {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    scroll-margin-top: var(--space-lg);
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xxl) var(--space-lg);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-xl);
+    color: var(--color-text-tertiary);
+    text-align: center;
+}
+
+.empty-title {
+    margin: 0;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+}
+
+.empty-copy {
+    margin: 0;
+    max-width: 44ch;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+    color: var(--color-text-tertiary);
+}
+
+.gallery-host {
+    min-width: 0;
+}
+
+/* The gallery component carries its own illustration-based empty screen and a
+   320px min-height. The page already renders a clearer empty state above it,
+   so collapse the redundant one while there is nothing to show. The gallery
+   must stay mounted either way: jobs attach their output through its ref. */
+.gallery-host--empty ::v-deep .gallery-empty {
+    display: none;
+}
+
+.gallery-host--empty ::v-deep .generation_gallery_div--compact {
+    min-height: 0;
+}
+
+/* ── Library & styles ────────────────────────────────────────────────── */
+
+.library {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 30px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: var(--space-xl);
+    align-items: center;
+    padding: var(--space-xl);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-xl);
+    background-color: var(--card-bg);
+    scroll-margin-top: var(--space-lg);
 }
 
-.select_app {
-    display: block;
-    width: 100%;
-    height: 260px;
-    background-size: cover;
-    background-position: center;
-    background-color: rgba(255, 255, 255, 0.03);
-    border-radius: 24px;
-    position: relative;
-    overflow: hidden;
-    cursor: pointer;
-    padding: 0;
-    font-family: var(--main-font-text), sans-serif;
-    color: inherit;
-    text-align: left;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid rgba(255,255,255,0.08);
+.library-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-xs);
+    min-width: 0;
 }
 
-.select_app:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-    border-color: rgba(255, 255, 255, 0.2);
+.library-desc {
+    margin: 0 0 var(--space-xs);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-relaxed);
+    color: var(--color-text-secondary);
 }
 
-.select_app_desc {
-    background: linear-gradient(to top, 
-        rgba(0,0,0,0.98) 0%, 
-        rgba(0,0,0,0.8) 50%, 
-        rgba(0,0,0,0.4) 80%,
-        transparent 100%);
-    padding: 30px 25px 25px;
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    box-sizing: border-box;
-    transition: all 0.4s ease;
+.library-styles {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    min-width: 0;
 }
 
-.select_app_desc h2 {
-    color: white;
-    margin-bottom: 8px;
-    font-size: 1.4rem;
-    font-weight: 700;
+.library-styles-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-xs);
 }
 
-.select_app_desc p {
-    color: rgba(255,255,255,0.6);
-    margin-bottom: 20px;
-    font-size: 0.95rem;
-    line-height: 1.5;
-    height: 2.8rem;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+.style-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
 }
 
-.button_colored {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 25px;
-    padding: 10px 24px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    display: inline-block;
-    transition: all 0.3s ease;
+/* ── Tools ───────────────────────────────────────────────────────────── */
+
+.tools {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    scroll-margin-top: var(--space-lg);
 }
 
-/* Tool-card "Open" button: center it under the card text. The element also
-   carries the legacy global .l_button (ApplicationFrame.vue) whose rules
-   (`display: inline-block; margin: 0 9px 0 0; height: 22px; padding: 3px 10px`)
-   left it flush-left with a stray 9px margin. A block + fit-content +
-   auto-margin centers it regardless of the card's left text-align, and
-   height/padding are re-asserted so the legacy 22px box does not win. */
-.select_app_desc .l_button.button_colored {
-    display: block;
-    width: fit-content;
-    margin: 10px auto 0;
-    height: auto;
-    padding: 10px 24px;
-    font-size: 0.9rem;
+/* ── Pending note ────────────────────────────────────────────────────── */
+
+.pending-note {
+    margin: 0;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-primary-light);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
 }
 
-.select_app:hover .button_colored {
-    background: #ffffff;
-    color: #000000;
-    transform: scale(1.05);
+/* ── Responsive ──────────────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+    .workbench {
+        grid-template-columns: minmax(0, 1fr) 272px;
+    }
+
+    .library {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 880px) {
+    .home-inner {
+        padding: var(--space-xl) var(--space-md) var(--space-xxl);
+        gap: var(--space-xl);
+    }
+
+    .workbench {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .settings {
+        position: static;
+    }
+
+    .home-header {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }        .home-header-side {
+            padding-top: 0;
+        }
+
+        .lang-btn {
+            align-self: flex-start;
+        }
+
+    .setup-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 640px) {
+    .home-title {
+        font-size: var(--font-size-xxl);
+    }
+
+    .composer {
+        padding: var(--space-md);
+    }
+
+    .composer-foot {
+        align-items: stretch;
+    }
+
+    .foot-actions {
+        width: 100%;
+        margin-inline-start: 0;
+    }
+
+    .foot-hint {
+        display: none;
+    }
+
+    .btn-generate {
+        flex: 1;
+    }
+
+    .batch-row {
+        grid-template-columns: 20px minmax(0, 1fr) auto 24px;
+    }
+
+    .batch-dims {
+        display: none;
+    }
+}
+
+/* Respect reduced-motion preferences across the page. */
+@media (prefers-reduced-motion: reduce) {
+    .sample-card,
+    .sample-card-img,
+    .thumb,
+    .chip,
+    .segmented-btn,
+    .meta-btn,
+    .composer,
+    .prompt-input,
+    .token-meter-fill {
+        transition: none;
+    }
 }
 </style>

@@ -66,6 +66,46 @@ const FLUX2_MODELS = [
       family: 'flux2',
     },
   },
+  {
+    id: 'Qwen-Image-2.1-Uncensored',
+    title: 'Qwen-Image 2.1 Uncensored (Q4_K_M)',
+    description: 'Quantized Qwen-Image 2.1 for local text-to-image generation. 4.6 GB GGUF from abenzerps on Hugging Face.',
+    filename: 'qwen-image-2.1-UC-Q4_K_M.gguf',
+    hf_repo_id: 'abenzerps/Qwen-Image-2.1-Uncensored-Quantized',
+    hf_filename: 'qwen-image-2.1-UC-Q4_K_M.gguf',
+    source_page_url: 'https://huggingface.co/abenzerps/Qwen-Image-2.1-Uncensored-Quantized',
+    is_stock_model: false,
+    requires_hf_token: false,
+    min_ram_gb: 16,
+    recommended_for_onboarding: true,
+    size_bytes: 4600000000,
+    model_meta_data: {
+      type: 'qwen_image_model',
+      float_type: 'q4_k_m',
+      sd_type: 'qwen_image_2_1',
+      family: 'qwen_image',
+    },
+  },
+  {
+    id: 'FLUX.3-Image-Klein',
+    title: 'FLUX.3 Image Klein (Distilled)',
+    description: '5.6B open-weight FLUX.3 Image Klein distilled model from Black Forest Labs. 16-step generation.',
+    filename: 'model.safetensors',
+    hf_repo_id: 'black-forest-labs/flux-3-image-klein',
+    hf_filename: 'model.safetensors',
+    source_page_url: 'https://huggingface.co/black-forest-labs/flux-3-image-klein',
+    is_stock_model: false,
+    requires_hf_token: true,
+    min_ram_gb: 16,
+    recommended_for_onboarding: false,
+    size_bytes: 11000000000,
+    model_meta_data: {
+      type: 'flux3_model',
+      float_type: 'bfloat16',
+      sd_type: 'flux3_klein',
+      family: 'flux3',
+    },
+  },
 ];
 
 /**
@@ -95,7 +135,7 @@ const FLUX2_MODELS = [
  * (dev backend only — the frozen binary can't self-report), then the
  * `backend_kind` tag from bridge.js, then the conservative default below.
  */
-const GENERATABLE_MODEL_TYPES = ['sd_model', 'sd_model_inpaint'];
+const GENERATABLE_MODEL_TYPES = ['sd_model', 'sd_model_inpaint', 'qwen_image_model', 'flux3_model'];
 
 const BACKEND_CAPABILITY_MANIFEST = {
   'dev-tf': {
@@ -103,12 +143,16 @@ const BACKEND_CAPABILITY_MANIFEST = {
     sd_model_inpaint: { sd_types: [],                   status: 'runnable' },
     flux_nnc:         { sd_types: [],                   status: 'unsupported' },
     flux2_model:      { sd_types: [],                   status: 'unsupported' },
+    qwen_image_model: { sd_types: ['qwen_image_2_1'],   status: 'runnable' },
+    flux3_model:      { sd_types: ['flux3_klein'],      status: 'runnable' },
   },
   'packaged-binary': {
     sd_model:         { sd_types: ['sd_1x', 'sd_2x', 'sdxl_base'], status: 'runnable' },
     sd_model_inpaint: { sd_types: [],                              status: 'runnable' },
     flux_nnc:         { sd_types: ['flux_schnell', 'flux_dev'],    status: 'unverified' },
     flux2_model:      { sd_types: [],                              status: 'unsupported' },
+    qwen_image_model: { sd_types: ['qwen_image_2_1'],              status: 'runnable' },
+    flux3_model:      { sd_types: ['flux3_klein'],                 status: 'runnable' },
   },
 };
 

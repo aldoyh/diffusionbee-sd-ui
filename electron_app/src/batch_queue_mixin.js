@@ -373,9 +373,9 @@ export default {
             const ar = !!(this.app && this.app.app_state && this.app.app_state.isArabic);
             switch (state) {
                 case 'queued': return ar ? 'في الانتظار' : 'Queued';
-                case 'running': return ar ? '⏳ توليد' : '⏳ Generating';
-                case 'done': return ar ? '✓ تم' : '✓ Done';
-                case 'error': return ar ? '⚠ خطأ' : '⚠ Error';
+                case 'running': return ar ? 'جارٍ التوليد' : 'Generating';
+                case 'done': return ar ? 'تم' : 'Done';
+                case 'error': return ar ? 'خطأ' : 'Error';
                 default: return ar ? 'معلق' : 'Pending';
             }
         },

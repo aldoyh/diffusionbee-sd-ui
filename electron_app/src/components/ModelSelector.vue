@@ -115,7 +115,12 @@ export default {
         },
         close(refocusTrigger) {
             this.isOpen = false;
-            if (refocusTrigger && this.$refs.trigger) {
+            // `v-click-outside` invokes this handler with the DOM event, so
+            // only an explicit `true` means "restore focus to the trigger".
+            // Treating any truthy value as a refocus request yanked focus back
+            // to the selector every time the user clicked elsewhere on the
+            // page (e.g. into the prompt box).
+            if (refocusTrigger === true && this.$refs.trigger) {
                 this.$refs.trigger.focus();
             }
         },

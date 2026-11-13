@@ -640,7 +640,7 @@ export default
                 const machineProfile = getMachineProfile();
                 const hfToken = getHfTokenSync();
                 const mergedModels = mergeFlux2IntoCatalog(models, hfToken);
-                const downloadableModels = mergedModels.filter((model) => model && model.id && model.url && isSelectableOnboardingModel(model, {
+                let downloadableModels = mergedModels.filter((model) => model && model.id && model.url && isSelectableOnboardingModel(model, {
                     profile: machineProfile,
                     hasHfToken: Boolean(hfToken),
                 }));
